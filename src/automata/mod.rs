@@ -12,6 +12,7 @@ pub mod minimize;
 pub mod nfa;
 pub mod ops;
 pub mod pda;
+pub mod tm;
 pub mod regex;
 pub mod trace;
 

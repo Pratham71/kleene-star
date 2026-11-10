@@ -28,6 +28,7 @@ pub const NAMES: &[&str] = &[
     "to_pda",
     "to_grammar",
     "derive",
+    "run",
 ];
 
 /// What kind of argument a built-in accepts.
@@ -38,8 +39,9 @@ enum Param {
     LangOrGrammar,
     /// A Dfa or an Nfa.
     Machine,
-    /// A Dfa, an Nfa or a Pda.
+    /// A Dfa, an Nfa, a Pda or a Tm.
     AnyMachine,
+    Tm,
     /// Something with a length: Str, Set or Alphabet.
     Sized,
     Alphabet,
@@ -78,6 +80,16 @@ fn error(arg: Option<usize>, message: String) -> CallError {
 pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
     use Param::*;
     if name == "equivalent" {
+        if let Some(i) = args.iter().position(|ty| *ty == Type::Tm) {
+            return Err(CallError {
+                arg: Some(i),
+                message: "`equivalent` cannot compare Turing machines".into(),
+                hint: Some(
+                    "whether two Turing machines accept the same language is undecidable (by Rice's theorem, no program can decide any such question about every machine). Compare them on sample words with `accepts` instead"
+                        .into(),
+                ),
+            });
+        }
         if let Some(i) = args.iter().position(is_context_free) {
             return Err(CallError {
                 arg: Some(i),
@@ -115,6 +127,7 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
         "to_pda" => (&[Grammar], Type::Pda),
         "to_grammar" => (&[Lang], Type::Grammar),
         "derive" => (&[Grammar, Str], Type::Str),
+        "run" => (&[Tm, Str], Type::Str),
         _ => unreachable!("not a built-in: {name}"),
     };
     if args.len() != params.len() {
@@ -134,7 +147,8 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
             Lang => (is_lang(arg), "a regular language (Dfa, Nfa, Regex or Set[Str])"),
             LangOrGrammar => (is_lang(arg) || *arg == Type::Grammar, "a Grammar or a regular language"),
             Machine => (matches!(arg, Type::Dfa | Type::Nfa), "a machine (Dfa or Nfa)"),
-            AnyMachine => (matches!(arg, Type::Dfa | Type::Nfa | Type::Pda), "a machine (Dfa, Nfa or Pda)"),
+            AnyMachine => (matches!(arg, Type::Dfa | Type::Nfa | Type::Pda | Type::Tm), "a machine (Dfa, Nfa, Pda or Tm)"),
+            Tm => (*arg == Type::Tm, "a Turing machine (Tm)"),
             Sized => (
                 matches!(arg, Type::Str | Type::Set(_) | Type::EmptySet | Type::Alphabet),
                 "a Str, Set or Alphabet",
@@ -148,7 +162,7 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
                 Some(i),
                 format!("argument {} of `{name}` must be {wanted}, but this is {}", i + 1, article(arg)),
             );
-            if matches!(param, Lang) && is_context_free(arg) {
+            if matches!(param, Lang) && (is_context_free(arg) || *arg == Type::Tm) {
                 err.hint = Some(format!(
                     "`{name}` works on regular languages only; {} can describe a language that is not regular",
                     article(arg)

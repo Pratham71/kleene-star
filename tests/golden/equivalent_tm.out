@@ -1,0 +1,5 @@
+Error in equivalent_tm.toc, line 6:
+    print equivalent(M, M)
+                     ^
+TypeError: `equivalent` cannot compare Turing machines
+  hint: whether two Turing machines accept the same language is undecidable (by Rice's theorem, no program can decide any such question about every machine). Compare them on sample words with `accepts` instead

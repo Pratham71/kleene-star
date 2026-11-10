@@ -11,6 +11,7 @@ use super::error::{Diag, ErrorKind};
 use super::token::Span;
 use crate::automata::grammar::{Grammar, Rule, Sym};
 use crate::automata::pda::{self, Pda};
+use crate::automata::tm::{self, Tm};
 use crate::automata::{fmt_alphabet, Dfa, Nfa};
 use std::collections::BTreeSet;
 
@@ -31,6 +32,8 @@ pub struct MachineSpec {
     pub header: Span,
     pub starts: Vec<(String, Span)>,
     pub accepts: Vec<(String, Span)>,
+    /// Turing machines only.
+    pub rejects: Vec<(String, Span)>,
     pub transitions: Vec<Transition>,
 }
 
@@ -38,6 +41,7 @@ pub enum Built {
     Dfa(Dfa),
     Nfa(Nfa),
     Pda(Pda),
+    Tm(Tm),
 }
 
 /// An error for a symbol that is not in the alphabet.
@@ -79,6 +83,7 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
     let start = id(start);
     let mut edges = Vec::new();
     let mut moves = Vec::new();
+    let mut tape_moves: Vec<(tm::Move, Span)> = Vec::new();
     for t in &spec.transitions {
         let (from, to) = (id(&t.from), id(&t.to));
         match &t.action {
@@ -109,11 +114,49 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
                     to,
                 });
             }
+            Action::Tape { read, write, dir, .. } => {
+                let (Some(r), Some(w)) = (read.symbol, write.symbol) else {
+                    unreachable!("the parser never makes an eps tape symbol")
+                };
+                // A Turing machine is deterministic: one move per state and symbol.
+                if let Some((other, _)) = tape_moves.iter().find(|(m, _)| m.from == from && m.read == r) {
+                    if other.write != w || other.dir != *dir || other.to != to {
+                        return Err(machine_error(
+                            t.span,
+                            format!("state `{}` already has a move when reading `{r}`", states[from]),
+                        )
+                        .hint("a Turing machine here is deterministic: one move per state and symbol"));
+                    }
+                    continue;
+                }
+                tape_moves.push((tm::Move { from, read: r, write: w, dir: *dir, to }, t.span));
+            }
         }
     }
     let accept: BTreeSet<usize> = spec.accepts.iter().map(|(name, _)| id(name)).collect();
+    let reject: BTreeSet<usize> = spec.rejects.iter().map(|(name, _)| id(name)).collect();
 
     match spec.kind {
+        MachineKind::Tm => {
+            if spec.alphabet.contains(&tm::BLANK) {
+                return Err(machine_error(
+                    spec.header,
+                    format!("{title} is over an alphabet containing `_`, which is the blank"),
+                )
+                .hint("the input cannot contain blanks; leave `_` out of the alphabet"));
+            }
+            if let Some((name, span)) = spec.rejects.iter().find(|(name, _)| spec.accepts.iter().any(|(a, _)| a == name)) {
+                return Err(machine_error(*span, format!("state `{name}` cannot both accept and reject")));
+            }
+            return Ok(Built::Tm(Tm {
+                alphabet: spec.alphabet.clone(),
+                states,
+                start,
+                accept,
+                reject,
+                moves: tape_moves.into_iter().map(|(m, _)| m).collect(),
+            }));
+        }
         MachineKind::Pda => {
             return Ok(Built::Pda(Pda {
                 alphabet: spec.alphabet.clone(),

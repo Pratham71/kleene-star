@@ -12,6 +12,7 @@ use super::trace as show_trace;
 use super::machine::GrammarSpec;
 use crate::automata::grammar::{DeriveError, Grammar};
 use crate::automata::pda::{self, Outcome, Pda};
+use crate::automata::tm::{self, Halt, Tm};
 use crate::automata::{convert, dot, fmt_alphabet, minimize, ops, trace, Dfa, Nfa};
 use std::collections::{BTreeSet, HashMap};
 use std::io::Write;
@@ -239,6 +240,7 @@ impl Interp {
             Value::Dfa(dfa) => dot::dfa_to_dot(&dfa),
             Value::Nfa(nfa) => dot::nfa_to_dot(&nfa),
             Value::Pda(pda) => dot::pda_to_dot(&pda),
+            Value::Tm(m) => dot::tm_to_dot(&m),
             other => dot::nfa_to_dot(&to_nfa(&other, &symbols_of(&other))),
         };
         // `draw d` writes d.dot; anything more complex gets a numbered name.
@@ -283,6 +285,7 @@ impl Interp {
             Value::Dfa(dfa) => show_trace::render_dfa(dfa, &word, &trace::trace_dfa(dfa, &word), dash),
             Value::Nfa(nfa) => show_trace::render_nfa(nfa, &word, &trace::trace_nfa(nfa, &word), dash),
             Value::Pda(pda) => show_trace::render_pda(pda, &word, &pda.search(&word, pda::STEP_LIMIT), dash),
+            Value::Tm(m) => show_trace::render_tm(m, &word, &m.run(&word, show_trace::TM_TRACE_LIMIT, true), dash),
             other => unreachable!("checker allowed tracing {other:?}"),
         };
         // A blank line after each trace keeps several traces apart.
@@ -304,6 +307,7 @@ impl Interp {
             header: m.header,
             starts: Vec::new(),
             accepts: Vec::new(),
+            rejects: Vec::new(),
             transitions: Vec::new(),
         };
         self.machine_items(&m.items, &mut spec)?;
@@ -311,6 +315,7 @@ impl Interp {
             Built::Dfa(dfa) => Value::dfa(dfa),
             Built::Nfa(nfa) => Value::nfa(nfa),
             Built::Pda(pda) => Value::Pda(Rc::new(pda)),
+            Built::Tm(m) => Value::Tm(Rc::new(m)),
         })
     }
 
@@ -337,6 +342,11 @@ impl Interp {
                 MachineItem::Accept(states) => {
                     for state in states {
                         spec.accepts.push((self.state_name(state)?, state.span));
+                    }
+                }
+                MachineItem::Reject(states) => {
+                    for state in states {
+                        spec.rejects.push((self.state_name(state)?, state.span));
                     }
                 }
                 MachineItem::Transition { from, action, to, span } => {
@@ -495,6 +505,10 @@ impl Interp {
                     Outcome::GaveUp => Err(self.pda_gave_up(word_span)),
                 };
             }
+            Value::Tm(m) => {
+                let run = self.run_tm(m, word, word_span)?;
+                return Ok(run.halt == Halt::Accepted);
+            }
             // A regex has no fixed alphabet, so a foreign symbol just fails to match.
             regex => {
                 let mut alphabet = symbols_of(regex);
@@ -514,6 +528,22 @@ impl Interp {
             format!("the word contains `{c}`, which is not in the machine's alphabet"),
         )
         .hint(format!("the machine is over {}", fmt_alphabet(alphabet)))
+    }
+
+    /// Runs a Turing machine to the end, or reports why it could not.
+    fn run_tm(&self, m: &Tm, word: &str, span: Span) -> Run<tm::Run> {
+        let run = m.run(word, tm::STEP_LIMIT, false);
+        match run.halt {
+            Halt::Foreign { symbol, .. } => Err(self.foreign_word(symbol, &m.alphabet, span)),
+            Halt::GaveUp => Err(self
+                .error(
+                    ErrorKind::Limit,
+                    span,
+                    format!("the Turing machine is still running after {} steps", tm::STEP_LIMIT),
+                )
+                .hint("it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so TOC-Lang stops here instead of waiting forever")),
+            _ => Ok(run),
+        }
     }
 
     fn pda_gave_up(&self, span: Span) -> Diag {
@@ -571,6 +601,12 @@ impl Interp {
             ("rename", Value::Dfa(d)) => return Ok(Value::dfa(d.renamed())),
             ("rename", Value::Nfa(n)) => return Ok(Value::nfa(n.renamed())),
             ("states", Value::Pda(p)) => return Ok(Value::Int(p.states.len() as i64)),
+            ("states", Value::Tm(m)) => return Ok(Value::Int(m.states.len() as i64)),
+            ("run", Value::Tm(m)) => {
+                let Value::Str(word) = &args[1] else { unreachable!("checker ensures a Str") };
+                let run = self.run_tm(m, word, spans[1])?;
+                return Ok(Value::str(&run.last().tape.contents()));
+            }
             ("is_empty", Value::Grammar(g)) => return Ok(Value::Bool(g.is_empty())),
             ("to_cnf", Value::Grammar(g)) => return Ok(Value::Grammar(Rc::new(g.to_cnf()))),
             ("to_pda", Value::Grammar(g)) => return Ok(Value::Pda(Rc::new(Pda::from_grammar(g)))),

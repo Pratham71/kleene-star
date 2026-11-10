@@ -362,3 +362,6 @@ TypeError: `equivalent` cannot compare context-free languages, and this is a Gra
 The same goes for the other operations that only work on regular languages,
 such as `minimize`, `complement` and `union`: they need a Dfa, Nfa, Regex or
 set of strings.
+
+The [next chapter](08-turing.md) goes one step further, to machines that can
+compute anything a program can.

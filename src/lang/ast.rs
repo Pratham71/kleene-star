@@ -16,7 +16,7 @@ pub struct Stmt {
 pub enum StmtKind {
     /// `alphabet B = {0, 1}`
     Alphabet { name: Name, symbols: Vec<(char, Span)> },
-    /// `dfa Name over B { ... }`, and the same for `nfa` and `pda`
+    /// `dfa Name over B { ... }`, and the same for `nfa`, `pda` and `tm`
     MachineDef { name: Name, machine: MachineExpr },
     /// `grammar Name over B { S -> a S b | eps }`
     GrammarDef { name: Name, grammar: GrammarExpr },
@@ -135,6 +135,7 @@ pub enum MachineKind {
     Dfa,
     Nfa,
     Pda,
+    Tm,
 }
 
 impl MachineKind {
@@ -144,6 +145,7 @@ impl MachineKind {
             MachineKind::Dfa => "dfa",
             MachineKind::Nfa => "nfa",
             MachineKind::Pda => "pda",
+            MachineKind::Tm => "tm",
         }
     }
 
@@ -153,6 +155,7 @@ impl MachineKind {
             MachineKind::Dfa => "DFA",
             MachineKind::Nfa => "NFA",
             MachineKind::Pda => "PDA",
+            MachineKind::Tm => "TM",
         }
     }
 
@@ -162,11 +165,12 @@ impl MachineKind {
             MachineKind::Dfa => Type::Dfa,
             MachineKind::Nfa => Type::Nfa,
             MachineKind::Pda => Type::Pda,
+            MachineKind::Tm => Type::Tm,
         }
     }
 }
 
-/// The body of a `dfa`, `nfa` or `pda` definition.
+/// The body of a `dfa`, `nfa`, `pda` or `tm` definition.
 #[derive(Debug, Clone)]
 pub struct MachineExpr {
     pub kind: MachineKind,
@@ -186,6 +190,8 @@ pub enum MachineItem {
     Start(StateRef),
     /// `accept q1, q2`
     Accept(Vec<StateRef>),
+    /// `reject q3` (Turing machines only)
+    Reject(Vec<StateRef>),
     /// `q0 --a,b--> q1`, or in a PDA `q0 --a, Z/AZ--> q1`
     Transition { from: StateRef, action: Action, to: StateRef, span: Span },
     /// `for i in 0..n { ... }` generating more items
@@ -215,7 +221,13 @@ pub enum Action {
     /// PDA: `read, pop/push`. `read` and `pop` may be `eps`; `push` is a
     /// string of stack symbols, top first, empty for `eps`.
     Stack { read: Label, pop: Label, push: Vec<char>, push_span: Span },
+    /// Turing machine: `read/write,move`, for example `0/1,R`. The blank
+    /// is `_`; `move` is `L`, `R` or `S` (stay).
+    Tape { read: Label, write: Label, dir: Dir, dir_span: Span },
 }
+
+/// Which way a Turing machine's head moves.
+pub use crate::automata::tm::Dir;
 
 /// The body of a `grammar` definition.
 #[derive(Debug, Clone)]
@@ -262,6 +274,7 @@ pub enum Type {
     Regex,
     Grammar,
     Pda,
+    Tm,
     Set(Box<Type>),
     /// The type of `{}`, which fits any `Set[T]`.
     EmptySet,
@@ -279,6 +292,7 @@ impl std::fmt::Display for Type {
             Type::Regex => write!(f, "Regex"),
             Type::Grammar => write!(f, "Grammar"),
             Type::Pda => write!(f, "Pda"),
+            Type::Tm => write!(f, "Tm"),
             Type::Set(inner) => write!(f, "Set[{inner}]"),
             Type::EmptySet => write!(f, "Set[?]"),
         }

@@ -2,6 +2,7 @@
 
 use crate::automata::grammar::Grammar;
 use crate::automata::pda::Pda;
+use crate::automata::tm::Tm;
 use crate::automata::{fmt_alphabet, Dfa, Nfa, Regex};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -20,6 +21,7 @@ pub enum Value {
     Regex(Rc<Regex>),
     Grammar(Rc<Grammar>),
     Pda(Rc<Pda>),
+    Tm(Rc<Tm>),
     Set(Rc<BTreeSet<Value>>),
 }
 
@@ -49,6 +51,7 @@ impl fmt::Display for Value {
             Value::Regex(r) => write!(f, "/{r}/"),
             Value::Grammar(g) => write!(f, "{g}"),
             Value::Pda(p) => write!(f, "{p}"),
+            Value::Tm(m) => write!(f, "{m}"),
             Value::Set(items) => {
                 // Inside a set, strings are quoted so "" and "a b" stay readable.
                 let parts: Vec<String> = items

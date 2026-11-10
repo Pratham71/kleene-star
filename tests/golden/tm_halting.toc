@@ -1,0 +1,21 @@
+# Halting by rejecting, by having no move, and not halting at all.
+alphabet B = {0, 1}
+
+tm StartsWith1 over B {
+    start  s
+    accept yes
+    reject no
+    s --1/1,S--> yes
+    s --0/0,S--> no
+}
+
+print StartsWith1 accepts "10", StartsWith1 accepts "01", StartsWith1 accepts ""
+trace StartsWith1 on "01"
+trace StartsWith1 on ""
+
+# Rewrites the same cell forever without moving.
+tm Forever over B {
+    start  spin
+    spin --1/1,S--> spin
+}
+trace Forever on "1"

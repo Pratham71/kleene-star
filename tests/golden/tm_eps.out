@@ -1,0 +1,5 @@
+Error in tm_eps.toc, line 4:
+    s --eps/1,R--> s
+        ^^^
+SyntaxError: a Turing machine always reads and writes a symbol, so `eps` cannot be used here
+  hint: write `_` for the blank cell

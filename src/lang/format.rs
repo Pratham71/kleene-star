@@ -389,6 +389,10 @@ impl Formatter<'_> {
                         let states: Vec<String> = states.iter().map(|s| f.state(s)).collect();
                         f.push(&format!("accept {}", states.join(", ")));
                     }
+                    MachineItem::Reject(states) => {
+                        let states: Vec<String> = states.iter().map(|s| f.state(s)).collect();
+                        f.push(&format!("reject {}", states.join(", ")));
+                    }
                     MachineItem::Transition { from, action, to, .. } => {
                         let (from, to) = (f.state(from), f.state(to));
                         f.push(&format!(
@@ -433,7 +437,7 @@ impl Formatter<'_> {
     fn item_end(&self, item: &MachineItem, after: usize) -> usize {
         match item {
             MachineItem::Start(state) => state.span.end,
-            MachineItem::Accept(states) => states.last().map_or(after, |s| s.span.end),
+            MachineItem::Accept(states) | MachineItem::Reject(states) => states.last().map_or(after, |s| s.span.end),
             MachineItem::Transition { span, .. } => span.end,
             MachineItem::For { items, body, .. } => {
                 let open = self.find(Tok::LBrace, items.span.end);
@@ -531,13 +535,13 @@ impl Formatter<'_> {
 fn item_start(item: &MachineItem) -> usize {
     match item {
         MachineItem::Start(state) => state.span.start,
-        MachineItem::Accept(states) => states.first().map_or(0, |s| s.span.start),
+        MachineItem::Accept(states) | MachineItem::Reject(states) => states.first().map_or(0, |s| s.span.start),
         MachineItem::Transition { span, .. } => span.start,
         MachineItem::For { var, .. } => var.span.start,
     }
 }
 
-/// What goes between `--` and `-->`: `0,1` or, in a PDA, `a, Z/AZ`.
+/// What goes between `--` and `-->`: `0,1`; in a PDA `a, Z/AZ`; in a TM `0/1,R`.
 fn action_text(action: &Action) -> String {
     let label = |l: &Label| l.symbol.map_or("eps".to_string(), |c| c.to_string());
     match action {
@@ -546,6 +550,7 @@ fn action_text(action: &Action) -> String {
             let push: String = if push.is_empty() { "eps".into() } else { push.iter().collect() };
             format!("{}, {}/{push}", label(read), label(pop))
         }
+        Action::Tape { read, write, dir, .. } => format!("{}/{},{}", label(read), label(write), dir.letter()),
     }
 }
 

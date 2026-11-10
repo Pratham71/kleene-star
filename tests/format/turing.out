@@ -1,0 +1,13 @@
+# Turing machine moves line up like any other transitions.
+alphabet B = {0, 1}
+tm Increment over B {
+    start  right
+    accept done
+    reject never
+    right --0/0,R--> right
+    right --1/1,R--> right
+    right --_/_,L--> carry
+    carry --1/0,L--> carry
+    carry --0/1,S--> done
+    carry --_/1,S--> done
+}

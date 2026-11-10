@@ -1,0 +1,4 @@
+Error in tm_accept_and_reject.toc, line 5:
+    reject s
+           ^
+MachineError: state `s` cannot both accept and reject

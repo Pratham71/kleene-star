@@ -41,6 +41,8 @@ tests: 2 passed, 0 failed
 - **Trace** a run step by step: states, sets of states, or a PDA's stack.
 - **Go beyond regular languages** with context-free grammars (CNF, CYK,
   derivations) and pushdown automata.
+- **Run Turing machines**, with a step limit that explains the halting problem
+  instead of hanging.
 - **Catch mistakes early**: a DFA that is missing a transition, a symbol outside
   the alphabet, or a type mix-up is reported before the program runs, with the
   exact place underlined and a hint.
@@ -75,6 +77,7 @@ were no errors and no failed tests.
 5. [Functions and machine families](docs/tutorial/05-functions.md)
 6. [Watching a machine run](docs/tutorial/06-trace.md)
 7. [Grammars and pushdown automata](docs/tutorial/07-context-free.md)
+8. [Turing machines](docs/tutorial/08-turing.md)
 
 Appendix: [tools](docs/tutorial/tools.md), including `toc fmt`.
 

@@ -1,0 +1,6 @@
+alphabet B = {0, 1}
+tm M over B {
+    start  s
+    accept s
+}
+print equivalent(M, M)

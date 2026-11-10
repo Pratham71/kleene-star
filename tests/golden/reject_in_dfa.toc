@@ -1,0 +1,6 @@
+alphabet B = {0, 1}
+dfa M over B {
+    start  s
+    reject s
+    s --0,1--> s
+}

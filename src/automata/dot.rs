@@ -4,6 +4,7 @@
 //! into any online Graphviz viewer.
 
 use super::pda::Pda;
+use super::tm::Tm;
 use super::{Dfa, Nfa, State};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -40,6 +41,21 @@ pub fn pda_to_dot(pda: &Pda) -> String {
     }
     // `\n` inside a DOT label is a line break.
     render(&pda.states, pda.start, &pda.accept, &edges, "\\n")
+}
+
+/// A Turing machine's moves are labelled `0/1,R`. Rejecting states are
+/// drawn as boxes so they stand out from ordinary states.
+pub fn tm_to_dot(m: &Tm) -> String {
+    let mut edges: BTreeMap<(State, State), Vec<String>> = BTreeMap::new();
+    for mv in &m.moves {
+        edges.entry((mv.from, mv.to)).or_default().push(m.label(mv));
+    }
+    let mut dot = render(&m.states, m.start, &m.accept, &edges, "\\n");
+    for &s in &m.reject {
+        let name = format!("\"{}\"", m.states[s].replace('\\', "\\\\").replace('"', "\\\""));
+        dot = dot.replacen(&format!("    {name};\n"), &format!("    {name} [shape=box];\n"), 1);
+    }
+    dot
 }
 
 /// Parallel edges are merged into one arrow labelled `0, 1`.

@@ -1,0 +1,5 @@
+alphabet B = {0, _}
+tm M over B {
+    start s
+    s --0/0,R--> s
+}

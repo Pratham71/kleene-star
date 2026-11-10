@@ -17,6 +17,7 @@ comment that runs to the end of the line.
 | `dfa Name over B { ... }` | Defines a DFA. See [machines](#machines). |
 | `nfa Name over B { ... }` | Defines an NFA, with or without eps moves. |
 | `pda Name over B { ... }` | Defines a pushdown automaton. See [pushdown automata](#pushdown-automata). |
+| `tm Name over B { ... }` | Defines a Turing machine. See [Turing machines](#turing-machines). |
 | `grammar Name over B { ... }` | Defines a context-free grammar. See [grammars](#grammars). |
 | `let x = value` | Names a value. |
 | `fn name(a: T, b: U) -> R { ... }` | Defines a function. Top level only. |
@@ -26,7 +27,7 @@ comment that runs to the end of the line.
 | `print a, b, c` | Prints the values on one line, separated by spaces. |
 | `test cond` | Checks a condition. Failures are reported and counted. |
 | `draw machine` | Writes a Graphviz `.dot` file (and `.svg` if Graphviz is installed). |
-| `trace machine on word` | Runs a `Dfa`, `Nfa` or `Pda` on a `Str` and prints every step. See [tracing](#tracing). |
+| `trace machine on word` | Runs a `Dfa`, `Nfa`, `Pda` or `Tm` on a `Str` and prints every step. See [tracing](#tracing). |
 
 ### Names and scope
 
@@ -110,6 +111,29 @@ pda Name over Alphabet {
   "no").
 - `for` loops and `name[expr]` states work as in other machines.
 
+## Turing machines
+
+```text
+tm Name over Alphabet {
+    start  state
+    accept state, ...
+    reject state, ...
+    state --read/write,move--> state
+}
+```
+
+- `read` and `write` are tape symbols: letters, digits, or `_` for the
+  blank. Symbols the machine writes need not be in the alphabet; the alphabet
+  says only what the input may contain, and it cannot contain `_`.
+- `move` is `L` (left), `R` (right) or `S` (stay).
+- The input starts on the tape with the head on its first symbol.
+- The machine halts on entering an `accept` or `reject` state, or when no
+  move applies (which rejects). A state cannot both accept and reject.
+- At most one move per state and symbol: machines are deterministic.
+- `accepts` and `run` stop after 100 000 steps with a `LimitError`, since a
+  Turing machine may never halt (the halting problem); `trace` shows at most
+  100 steps and then reports `UNKNOWN`.
+
 ## Grammars
 
 ```text
@@ -131,7 +155,7 @@ grammar Name over Alphabet {
 
 ## Tracing
 
-`trace M on "0110"` runs `M` (a `Dfa`, `Nfa` or `Pda`) on the word and prints a
+`trace M on "0110"` runs `M` (a `Dfa`, `Nfa`, `Pda` or `Tm`) on the word and prints a
 table with one row per symbol, then the result and the reason for it:
 
 ```toc
@@ -172,6 +196,8 @@ Reason: Ended in non-accepting state even
   stack, top first. An accepted word shows a shortest accepting run; a
   rejected one shows a run that read as much as possible. If the search gives
   up, the result is `UNKNOWN`.
+- For a `Tm` the columns are `Step  Move  State  Tape`, with the head's cell
+  in brackets (`10[1]1`), and a last line `Tape:` with the final contents.
 - A blank line follows each trace.
 
 ## Types
@@ -186,6 +212,7 @@ Reason: Ended in non-accepting state even
 | `Nfa` | a nondeterministic machine | `nfa over B { ... }` |
 | `Regex` | a regular expression | `/(0\|1)*01/` |
 | `Pda` | a pushdown automaton | `pda over B { ... }` |
+| `Tm` | a Turing machine | `tm over B { ... }` |
 | `Grammar` | a context-free grammar | `grammar over B { ... }` |
 | `Set[T]` | a set of `Int`, `Str` or `Bool` | `{1, 2, 3}`, `{"a", "ab"}`, `0..5` |
 
@@ -212,7 +239,7 @@ From loosest to tightest binding:
 | `not` | `Bool` | `Bool` |
 | `==` `!=` | two values of the same type (not machines, regexes or grammars) | `Bool` |
 | `<` `<=` `>` `>=` | `Int` | `Bool` |
-| `accepts` | language, `Pda` or `Grammar`, then `Str` | `Bool` |
+| `accepts` | language, `Pda`, `Tm` or `Grammar`, then `Str` | `Bool` |
 | `..` | `Int` | `Set[Int]`: `a..b` is `a` up to but not including `b` |
 | `+` `-` | `Int`; `+` also joins two `Str` | `Int` or `Str` |
 | `*` `%` | `Int` | `Int` |
@@ -290,7 +317,7 @@ Postfix operators bind tightest, then concatenation, then `|`.
 |---|---|---|
 | `equivalent(a, b)` | `Bool` | Do `a` and `b` contain exactly the same strings? |
 | `is_empty(a)` | `Bool` | Does `a` contain no strings? Also works on a `Grammar`. |
-| `states(machine)` | `Int` | The number of states of a `Dfa`, `Nfa` or `Pda`. |
+| `states(machine)` | `Int` | The number of states of a `Dfa`, `Nfa`, `Pda` or `Tm`. |
 | `len(x)` | `Int` | Length of a `Str`, or size of a `Set` or `Alphabet`. |
 
 ### Grammars and pushdown automata
@@ -306,6 +333,15 @@ Postfix operators bind tightest, then concatenation, then `|`.
 grammars and PDAs before running: equivalence of context-free languages is
 undecidable. Operations for regular languages (`minimize`, `union`,
 `complement`, ...) refuse them too.
+
+### Turing machines
+
+| Function | Returns | What it does |
+|---|---|---|
+| `run(m, w)` | `Str` | Runs Turing machine `m` on `w` until it halts and returns the tape, without the blanks at either end. A `LimitError` after 100 000 steps. |
+
+`equivalent` refuses Turing machines: whether two of them accept the same
+language is undecidable.
 
 ### Alphabets in operations
 
@@ -326,11 +362,11 @@ running also show the chain of calls, most recent last.
 | `SyntaxError` | The text is not a valid program. |
 | `NameError` | A name is unknown, defined twice, or used before its definition has run; a grammar variable with no rules. |
 | `TypeError` | A value of the wrong type, a wrong number of arguments, a function that might not return, or `trace` on something that is not a `Dfa` or `Nfa`. |
-| `MachineError` | A machine breaks a rule: no start state, a DFA that is not total or not deterministic, an eps move in a DFA, a grammar with no rules. |
+| `MachineError` | A machine breaks a rule: no start state, a DFA that is not total or not deterministic, an eps move in a DFA, a grammar with no rules, a Turing machine with two moves for one state and symbol or a blank in its alphabet. |
 | `AlphabetError` | A symbol outside the alphabet, or two machines over different alphabets. |
 | `MathError` | Modulo by zero, a result too large for an `Int`, or a range that is too large. |
 | `RecursionError` | More than 500 function calls in progress at once. |
-| `LimitError` | A search gave up: a PDA run (50 000 configurations or a stack of 1 000) or a derivation (200 000 sentential forms). |
+| `LimitError` | A search gave up: a PDA run (50 000 configurations or a stack of 1 000), a derivation (200 000 sentential forms), or a Turing machine still running after 100 000 steps. |
 | `ValueError` | A value of the right type that cannot be used, such as a word a grammar cannot derive. |
 | `IOError` | `draw` could not write its file. |
 
@@ -428,7 +464,7 @@ optional, and `|` separates alternatives.
 program     := statement*
 
 statement   := 'alphabet' NAME '=' '{' (symbol (',' symbol)*)? '}'
-             | ('dfa' | 'nfa' | 'pda') NAME machine
+             | ('dfa' | 'nfa' | 'pda' | 'tm') NAME machine
              | 'grammar' NAME grammar
              | 'let' NAME '=' expr
              | 'fn' NAME '(' (param (',' param)*)? ')' '->' type block
@@ -442,17 +478,20 @@ statement   := 'alphabet' NAME '=' '{' (symbol (',' symbol)*)? '}'
 
 block       := '{' statement* '}'
 param       := NAME ':' type
-type        := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Pda'
+type        := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Pda' | 'Tm'
              | 'Regex' | 'Grammar' | 'Set' '[' type ']'
 
 machine     := 'over' NAME '{' item* '}'
 item        := 'start' state
              | 'accept' state (',' state)*
+             | 'reject' state (',' state)*                  (tm)
              | state '--' action '-->' state
              | 'for' NAME 'in' expr '{' item* '}'
 state       := NAME ('[' expr ']')?
 action      := label (',' label)*                  (dfa, nfa)
              | label ',' label '/' push             (pda)
+             | tape '/' tape ',' ('L' | 'R' | 'S')  (tm)
+tape        := symbol | '_'
 push        := 'eps' | letters and digits written together, top first
 label       := symbol | 'eps'
 symbol      := one letter or digit
@@ -476,13 +515,14 @@ primary     := INT | STRING | REGEX | 'true' | 'false'
              | NAME '(' (expr (',' expr)*)? ')'
              | '(' expr ')'
              | '{' (expr (',' expr)*)? '}'
-             | ('dfa' | 'nfa' | 'pda') machine
+             | ('dfa' | 'nfa' | 'pda' | 'tm') machine
              | 'grammar' grammar
 ```
 
 Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 `dfa` `draw` `else` `eps` `false` `fn` `for` `grammar` `if` `in` `let` `nfa`
-`not` `on` `or` `over` `pda` `print` `return` `start` `test` `trace` `true`.
+`not` `on` `or` `over` `pda` `print` `reject` `return` `start` `test` `tm`
+`trace` `true`.
 
 ## The `toc` command
 

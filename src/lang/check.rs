@@ -198,7 +198,7 @@ impl Checker {
             StmtKind::Test(cond) => self.expect(cond, &Type::Bool, "a `test`"),
             StmtKind::Draw(value) => {
                 let ty = self.expr(value)?;
-                if !is_lang(&ty) && ty != Type::Pda {
+                if !is_lang(&ty) && !matches!(ty, Type::Pda | Type::Tm) {
                     let mut err = type_error(
                         value.span,
                         format!("`draw` needs a machine or regex, but this is {}", article(&ty)),
@@ -212,10 +212,10 @@ impl Checker {
             }
             StmtKind::Trace { machine, word } => {
                 let ty = self.expr(machine)?;
-                if !matches!(ty, Type::Dfa | Type::Nfa | Type::Pda) {
+                if !matches!(ty, Type::Dfa | Type::Nfa | Type::Pda | Type::Tm) {
                     let mut err = type_error(
                         machine.span,
-                        format!("`trace` needs a Dfa, Nfa or Pda, but this is {}", article(&ty)),
+                        format!("`trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is {}", article(&ty)),
                     );
                     if is_lang(&ty) {
                         err = err.hint("a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on \"01\"`");
@@ -277,6 +277,7 @@ impl Checker {
                 header: m.header,
                 starts: Vec::new(),
                 accepts: Vec::new(),
+                rejects: Vec::new(),
                 transitions: Vec::new(),
             };
             for item in &m.items {
@@ -284,6 +285,9 @@ impl Checker {
                     MachineItem::Start(s) => spec.starts.push((s.name.clone(), s.span)),
                     MachineItem::Accept(states) => {
                         spec.accepts.extend(states.iter().map(|s| (s.name.clone(), s.span)))
+                    }
+                    MachineItem::Reject(states) => {
+                        spec.rejects.extend(states.iter().map(|s| (s.name.clone(), s.span)))
                     }
                     MachineItem::Transition { from, action, to, span } => {
                         spec.transitions.push(Transition {
@@ -338,7 +342,7 @@ impl Checker {
         for item in items {
             match item {
                 MachineItem::Start(state) => literal &= self.state(state)?,
-                MachineItem::Accept(states) => {
+                MachineItem::Accept(states) | MachineItem::Reject(states) => {
                     for state in states {
                         literal &= self.state(state)?;
                     }
@@ -480,7 +484,7 @@ impl Checker {
                 _ => Err(mismatch("two Ints")),
             },
             BinOp::Eq | BinOp::NotEq => {
-                if matches!(l, Type::Dfa | Type::Nfa | Type::Pda | Type::Regex | Type::Grammar) {
+                if matches!(l, Type::Dfa | Type::Nfa | Type::Pda | Type::Tm | Type::Regex | Type::Grammar) {
                     return Err(type_error(
                         span,
                         format!("`{}` cannot compare machines or regexes", op.symbol()),
@@ -494,11 +498,11 @@ impl Checker {
                 }
             }
             BinOp::Accepts => {
-                if !is_lang(&l) && !is_context_free(&l) {
+                if !is_lang(&l) && !is_context_free(&l) && l != Type::Tm {
                     return Err(type_error(
                         left.span,
                         format!(
-                            "the left side of `accepts` must be a language (Dfa, Nfa, Pda, Regex, Grammar or Set[Str]), but this is {}",
+                            "the left side of `accepts` must be a language (Dfa, Nfa, Pda, Tm, Regex, Grammar or Set[Str]), but this is {}",
                             article(&l)
                         ),
                     ));
@@ -651,7 +655,7 @@ mod tests {
         assert!(error("fn f(n: Int) -> Int { if n > 0 { return 1 } }").contains("without returning"));
         assert!(error("for x in 3 { print x }").contains("cannot loop over an Int"));
         assert!(error("let a = 1\ndfa M over a { start q }").contains("not an Alphabet"));
-        assert!(error("trace /a/ on \"a\"").contains("`trace` needs a Dfa, Nfa or Pda, but this is a Regex"));
+        assert!(error("trace /a/ on \"a\"").contains("`trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is a Regex"));
         assert!(error("trace 1 on \"a\"").contains("but this is an Int"));
         assert!(error(&format!("{B}nfa M over B {{ start a }}\ntrace M on 1")).contains("word to trace must be a Str"));
         check(&format!("{B}nfa M over B {{ start a }}\ntrace M on \"01\"")).unwrap();
@@ -671,7 +675,7 @@ mod tests {
         assert!(err("print minimize(G)").contains("must be a regular language"));
         assert!(err("print to_pda(P)").contains("must be a Grammar"));
         assert!(err("draw G").contains("`draw` needs a machine or regex"));
-        assert!(err("trace G on \"0\"").contains("needs a Dfa, Nfa or Pda"));
+        assert!(err("trace G on \"0\"").contains("needs a machine (Dfa, Nfa, Pda or Tm)"));
         assert!(err("print G == G").contains("cannot compare machines"));
         assert!(error("alphabet B = {0}\ngrammar G over B { S -> T }").starts_with("NameError: variable `T` has no rules"));
         assert!(error("alphabet B = {0}\ngrammar G over B { S -> 1 }").starts_with("AlphabetError"));
@@ -679,6 +683,21 @@ mod tests {
         assert!(error("alphabet B = {0}\npda P over B { p --0, Z/Z--> p }").contains("PDA `P` has no start state"));
         let hint = check("alphabet B = {0}\nlet x = equivalent(grammar over B { S -> 0 }, /0/)").unwrap_err().hint.unwrap();
         assert!(hint.contains("undecidable"));
+    }
+
+    #[test]
+    fn turing_machines() {
+        const M: &str = "alphabet B = {0, 1}\ntm M over B { start s  accept y  s --0/0,R--> s  s --_/_,S--> y }\n";
+        let ok = |rest: &str| check(&format!("{M}{rest}")).unwrap();
+        ok("test M accepts \"00\"\nprint run(M, \"0\"), states(M)\ntrace M on \"0\"\ndraw M");
+        ok("fn f(m: Tm) -> Str { return run(m, \"\") }\nprint f(M)");
+        let err = |rest: &str| error(&format!("{M}{rest}"));
+        assert!(err("print equivalent(M, /0*/)").contains("cannot compare Turing machines"));
+        assert!(err("print run(M, 0)").contains("argument 2 of `run` must be a Str"));
+        assert!(err("print run(/0/, \"0\")").contains("must be a Turing machine"));
+        assert!(err("print minimize(M)").contains("must be a regular language"));
+        assert!(error("alphabet B = {0}\ntm M over B { start s  s --0/0,R--> s  s --0/1,R--> s }").contains("already has a move"));
+        assert!(error("alphabet B = {0}\ntm M over B { start s  accept s  reject s }").contains("both accept and reject"));
     }
 
     #[test]

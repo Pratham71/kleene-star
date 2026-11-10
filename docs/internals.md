@@ -133,6 +133,7 @@ changes needed to turn one into the other.
 | `trace.rs` | Running a machine step by step and recording each move. |
 | `grammar.rs` | Context-free grammars: CNF, CYK, emptiness, derivations, grammars from DFAs. |
 | `pda.rs` | Pushdown automata: the configuration search, PDAs from grammars. |
+| `tm.rs` | Turing machines: the tape, running with a step limit. |
 
 A state is just a number: its position in the machine's list of state names.
 A DFA's transitions are a table indexed by state and symbol, so a DFA is
@@ -219,7 +220,27 @@ bracket, so after one of those the lexer reads `/` as a plain slash.
 undecidable. That is a deliberate difference from regular languages, where
 the product construction always answers it.
 
-## 9. The formatter
+## 9. Turing machines
+
+`src/automata/tm.rs`
+
+A `Tm` has `Move`s (`from`, `read`, `write`, `dir`, `to`), accepting and
+rejecting states, and the input alphabet. The `Tape` is a `Vec<char>` with an
+offset, so it can grow to the left as well as the right; any cell outside it
+reads as the blank `_`.
+
+`run` steps the machine until it enters an accepting or rejecting state, has
+no move, or reaches the step limit. Each of those is a different `Halt`, so
+the language can tell "rejected" apart from "still running": `accepts` and
+`run` turn `GaveUp` into a `LimitError` whose hint explains the halting
+problem, while `trace` (which records every configuration, and so uses a
+smaller limit) reports `UNKNOWN`.
+
+In the language, a Turing machine is one more `MachineKind`, with its own
+transition `Action::Tape` and a `reject` item. Determinism and the other rules
+are checked in `machine.rs`, like every other machine.
+
+## 10. The formatter
 
 `src/lang/format.rs`
 
@@ -253,7 +274,7 @@ bug, and the file is left alone with an error instead of being changed. The
 tests check, in addition, that every example formats to itself and that
 formatting never changes what a program prints.
 
-## 10. Tying it together
+## 11. Tying it together
 
 `src/lib.rs`, `src/main.rs`
 
@@ -296,7 +317,6 @@ Ideas that fit the current design, roughly in order of size:
 
 - `export`: write a DFA out as a standalone Rust function. This is where a
   compile step makes sense, since the result would run without TOC-Lang.
-- Turing machines.
 
 New machine types belong in `src/automata/` as plain Rust first, with tests,
 and get syntax in `src/lang/` second.

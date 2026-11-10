@@ -113,8 +113,8 @@ impl<'a> Parser<'a> {
         let start = self.span();
         let kind = match self.peek() {
             Tok::Alphabet => self.alphabet()?,
-            Tok::Dfa | Tok::Nfa | Tok::Pda => {
-                // machine-def := ('dfa' | 'nfa' | 'pda') NAME 'over' NAME '{' item* '}'
+            Tok::Dfa | Tok::Nfa | Tok::Pda | Tok::Tm => {
+                // machine-def := ('dfa' | 'nfa' | 'pda' | 'tm') NAME 'over' NAME '{' item* '}'
                 let kind = machine_kind(&self.advance().tok);
                 let word = kind.keyword();
                 if *self.peek() == Tok::Over {
@@ -186,7 +186,7 @@ impl<'a> Parser<'a> {
             other => {
                 return Err(self
                     .error(format!("expected a statement, found {}", other.describe()))
-                    .hint("a statement starts with one of: alphabet, dfa, nfa, pda, grammar, let, fn, return, if, for, print, test, draw, trace"));
+                    .hint("a statement starts with one of: alphabet, dfa, nfa, pda, tm, grammar, let, fn, return, if, for, print, test, draw, trace"));
             }
         };
         Ok(Stmt { kind, span: start.to(self.prev()) })
@@ -270,11 +270,11 @@ impl<'a> Parser<'a> {
         Ok(StmtKind::Fn(Rc::new(FnDef { name, params, ret, body })))
     }
 
-    // type := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Pda' | 'Regex' | 'Grammar'
+    // type := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Pda' | 'Tm' | 'Regex' | 'Grammar'
     //       | 'Set' '[' type ']'
     fn type_name(&mut self) -> Parse<Type> {
         let name = self.name("a type").map_err(|e| {
-            e.hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Regex, Grammar, Set[T]")
+            e.hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Tm, Regex, Grammar, Set[T]")
         })?;
         Ok(match name.text.as_str() {
             "Int" => Type::Int,
@@ -286,6 +286,7 @@ impl<'a> Parser<'a> {
             "Regex" => Type::Regex,
             "Grammar" => Type::Grammar,
             "Pda" => Type::Pda,
+            "Tm" => Type::Tm,
             "Set" => {
                 self.expect(Tok::LBracket, "`[` after `Set`")?;
                 let inner = self.type_name()?;
@@ -298,7 +299,7 @@ impl<'a> Parser<'a> {
                     name.span,
                     format!("unknown type `{other}`"),
                 )
-                .hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Regex, Grammar, Set[T]"));
+                .hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Tm, Regex, Grammar, Set[T]"));
             }
         })
     }
@@ -364,6 +365,7 @@ impl<'a> Parser<'a> {
 
     // item := 'start' state
     //       | 'accept' state (',' state)*
+    //       | 'reject' state (',' state)*                  (tm only)
     //       | 'for' NAME 'in' expr '{' item* '}'
     //       | state '--' action '-->' state
     fn machine_item(&mut self, kind: MachineKind) -> Parse<MachineItem> {
@@ -379,6 +381,19 @@ impl<'a> Parser<'a> {
                     states.push(self.state()?);
                 }
                 Ok(MachineItem::Accept(states))
+            }
+            Tok::Reject => {
+                if kind != MachineKind::Tm {
+                    return Err(self
+                        .error(format!("only a Turing machine has `reject` states, and this is {} `{}`", if kind == MachineKind::Nfa { "an" } else { "a" }, kind.keyword()))
+                        .hint("a finite automaton rejects every word that does not end in an accepting state"));
+                }
+                self.advance();
+                let mut states = vec![self.state()?];
+                while self.eat(Tok::Comma) {
+                    states.push(self.state()?);
+                }
+                Ok(MachineItem::Reject(states))
             }
             Tok::For => {
                 self.advance();
@@ -400,6 +415,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let action = match kind {
                     MachineKind::Pda => self.stack_action()?,
+                    MachineKind::Tm => self.tape_action()?,
                     _ => {
                         let mut labels = vec![self.label()?];
                         while self.eat(Tok::Comma) {
@@ -470,6 +486,48 @@ impl<'a> Parser<'a> {
             }
             other => Err(self.error(format!("expected the symbols to push, found {}", other.describe())).hint(hint)),
         }
+    }
+
+    // tape-action := tape-symbol '/' tape-symbol ',' ('L' | 'R' | 'S')     in a TM
+    // tape-symbol := symbol | '_'
+    fn tape_action(&mut self) -> Parse<Action> {
+        let hint = "a Turing machine move is written `q0 --0/1,R--> q1`: read `0`, write `1`, move right (L, R, or S to stay); `_` is the blank";
+        let read = self.tape_symbol(hint)?;
+        if !self.eat(Tok::Slash) {
+            return Err(self
+                .error(format!("expected `/` and the symbol to write, found {}", self.peek().describe()))
+                .hint(hint));
+        }
+        let write = self.tape_symbol(hint)?;
+        if !self.eat(Tok::Comma) {
+            return Err(self
+                .error(format!("expected `,` and a direction (L, R or S), found {}", self.peek().describe()))
+                .hint(hint));
+        }
+        let dir_span = self.span();
+        let dir = match self.peek() {
+            Tok::Ident(d) if d == "L" => Dir::Left,
+            Tok::Ident(d) if d == "R" => Dir::Right,
+            Tok::Ident(d) if d == "S" => Dir::Stay,
+            other => {
+                return Err(self
+                    .error(format!("expected a direction (L, R or S), found {}", other.describe()))
+                    .hint(hint));
+            }
+        };
+        self.advance();
+        Ok(Action::Tape { read, write, dir, dir_span })
+    }
+
+    /// One tape symbol: a letter or digit, or `_` for the blank. (A Turing
+    /// machine always reads and writes something, so `eps` is not allowed.)
+    fn tape_symbol(&mut self, hint: &str) -> Parse<Label> {
+        if *self.peek() == Tok::Eps {
+            return Err(self
+                .error("a Turing machine always reads and writes a symbol, so `eps` cannot be used here")
+                .hint("write `_` for the blank cell"));
+        }
+        self.label().map_err(|e| e.hint(hint))
     }
 
     // grammar-body := 'over' NAME '{' rule* '}'
@@ -784,7 +842,7 @@ impl<'a> Parser<'a> {
                 self.expect(Tok::RBrace, "`,` or `}`")?;
                 ExprKind::Set(items)
             }
-            Tok::Dfa | Tok::Nfa | Tok::Pda => {
+            Tok::Dfa | Tok::Nfa | Tok::Pda | Tok::Tm => {
                 let kind = machine_kind(&self.advance().tok);
                 if let Tok::Ident(name) = self.peek() {
                     return Err(self
@@ -810,12 +868,13 @@ impl<'a> Parser<'a> {
     }
 }
 
-/// The kind of machine a `dfa`, `nfa` or `pda` keyword introduces.
+/// The kind of machine a `dfa`, `nfa`, `pda` or `tm` keyword introduces.
 fn machine_kind(tok: &Tok) -> MachineKind {
     match tok {
         Tok::Dfa => MachineKind::Dfa,
         Tok::Nfa => MachineKind::Nfa,
-        _ => MachineKind::Pda,
+        Tok::Pda => MachineKind::Pda,
+        _ => MachineKind::Tm,
     }
 }
 
@@ -926,6 +985,24 @@ mod tests {
         let hint = |src: &str| parse(src).unwrap_err().hint.unwrap_or_default();
         assert!(hint("pda P over B { p --a--> q }").contains("read `a`, pop `Z`"));
         assert!(hint("pda P over B { p --a, Z--> q }").contains("read `a`, pop `Z`"));
+    }
+
+    #[test]
+    fn parses_turing_machines() {
+        let src = "tm M over B { start s  accept y  reject n  s --0/_,R--> s  s --_/1,L--> y }";
+        let stmts = parse(src).unwrap();
+        let StmtKind::MachineDef { machine, .. } = &stmts[0].kind else { panic!() };
+        assert_eq!(machine.kind, MachineKind::Tm);
+        assert!(matches!(machine.items[2], MachineItem::Reject(_)));
+        let MachineItem::Transition { action: Action::Tape { read, write, dir, .. }, .. } = &machine.items[3] else {
+            panic!()
+        };
+        assert_eq!((read.symbol, write.symbol, *dir), (Some('0'), Some('_'), Dir::Right));
+        let hint = |src: &str| parse(src).unwrap_err().hint.unwrap_or_default();
+        assert!(hint("tm M over B { s --0/1--> s }").contains("move right"));
+        assert!(hint("tm M over B { s --0/1,X--> s }").contains("move right"));
+        assert!(hint("tm M over B { s --eps/1,R--> s }").contains("`_`"));
+        assert!(hint("dfa M over B { reject s }").contains("finite automaton"));
     }
 
     #[test]

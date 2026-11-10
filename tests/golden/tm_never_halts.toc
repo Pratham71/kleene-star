@@ -1,0 +1,13 @@
+# accepts gives up on a machine that never halts, and says why.
+alphabet B = {0, 1}
+tm Forever over B {
+    start  walk
+    accept never
+    walk --0/0,R--> walk
+    walk --1/1,R--> walk
+    walk --_/_,R--> walk
+}
+fn check(word: Str) -> Bool {
+    return Forever accepts word
+}
+print check("01")

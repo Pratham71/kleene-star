@@ -1,0 +1,66 @@
+# Chapter 8: Turing machines.
+
+alphabet B = {0, 1}
+
+# Adds one to a binary number: walk right, then carry leftwards.
+tm Increment over B {
+    start  right
+    accept done
+    right --0/0,R--> right
+    right --1/1,R--> right
+    right --_/_,L--> carry
+    carry --1/0,L--> carry
+    carry --0/1,S--> done
+    carry --_/1,S--> done
+}
+
+test run(Increment, "1011") == "1100"
+test run(Increment, "111") == "1000"
+test run(Increment, "") == "1"
+trace Increment on "1011"
+
+# a^n b^n c^n: beyond any PDA, easy for a Turing machine.
+# Cross off one a, b and c per pass (as X, Y and Z).
+alphabet ABC = {a, b, c}
+tm Abc over ABC {
+    start  find_a
+    accept yes
+    reject no
+    find_a --a/X,R--> find_b
+    find_a --Y/Y,R--> check
+    find_a --_/_,S--> yes
+    find_a --b/b,S--> no
+    find_a --c/c,S--> no
+    find_b --a/a,R--> find_b
+    find_b --Y/Y,R--> find_b
+    find_b --b/Y,R--> find_c
+    find_b --c/c,S--> no
+    find_b --_/_,S--> no
+    find_c --b/b,R--> find_c
+    find_c --Z/Z,R--> find_c
+    find_c --c/Z,L--> back
+    find_c --a/a,S--> no
+    find_c --_/_,S--> no
+    back   --a/a,L--> back
+    back   --b/b,L--> back
+    back   --Y/Y,L--> back
+    back   --Z/Z,L--> back
+    back   --X/X,R--> find_a
+    check  --Y/Y,R--> check
+    check  --Z/Z,R--> check
+    check  --_/_,S--> yes
+    check  --a/a,S--> no
+    check  --b/b,S--> no
+    check  --c/c,S--> no
+}
+
+for w in {"", "abc", "aabbcc", "aaabbbccc"} {
+    test Abc accepts w
+}
+for w in {"aabbc", "abcabc", "acb", "cba"} {
+    test not (Abc accepts w)
+}
+print states(Abc)
+trace Abc on "abc"
+
+draw Increment

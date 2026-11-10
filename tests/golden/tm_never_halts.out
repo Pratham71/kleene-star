@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  tm_never_halts.toc, line 13, in <main>
+    print check("01")
+  tm_never_halts.toc, line 11, in check
+    return Forever accepts word
+                           ^^^^
+LimitError: the Turing machine is still running after 100000 steps
+  hint: it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so TOC-Lang stops here instead of waiting forever

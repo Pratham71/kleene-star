@@ -16,6 +16,7 @@
 
 use crate::automata::trace::{End, Trace};
 use crate::automata::pda::{Config, Outcome, Pda, Search};
+use crate::automata::tm::{self, Halt, Tm};
 use crate::automata::{fmt_alphabet, Dfa, Nfa, State};
 use std::collections::BTreeSet;
 
@@ -145,6 +146,48 @@ pub fn render_pda(pda: &Pda, word: &str, search: &Search, dash: &str) -> String 
     };
     let shown_word = if word.is_empty() { "(the empty string)" } else { word };
     format!("Input: {shown_word}\n\n{}Result: {result}\nReason: {reason}", table(&rows))
+}
+
+/// How many steps `trace` shows of a Turing machine before stopping. (A
+/// table of thousands of rows helps nobody; `accepts` and `run` go further.)
+pub const TM_TRACE_LIMIT: usize = 100;
+
+/// Shows a Turing machine run: one row per step, with the move taken, the
+/// state after it, and the tape with the head's cell in brackets.
+pub fn render_tm(m: &Tm, word: &str, run: &tm::Run, dash: &str) -> String {
+    let mut rows: Vec<Vec<String>> = vec![["Step", "Move", "State", "Tape"].map(String::from).to_vec()];
+    for (i, config) in run.configs.iter().enumerate() {
+        let shown_move = match i {
+            0 => dash.to_string(),
+            _ => m.label(&m.moves[run.moves[i - 1]]),
+        };
+        rows.push(vec![i.to_string(), shown_move, m.states[config.state].clone(), config.tape.show(config.head)]);
+    }
+    let last = run.last();
+    let state = &m.states[last.state];
+    let (result, reason) = match run.halt {
+        Halt::Accepted => ("ACCEPTED", format!("Entered accepting state {state}")),
+        Halt::Rejected => ("REJECTED", format!("Entered rejecting state {state}")),
+        Halt::Stuck { symbol } => (
+            "REJECTED",
+            format!("No move from {state} reading `{symbol}`, so the machine halts without accepting"),
+        ),
+        Halt::GaveUp => (
+            "UNKNOWN",
+            format!("Still running after {} steps; it may never halt", run.steps),
+        ),
+        Halt::Foreign { position, symbol } => (
+            "REJECTED",
+            format!(
+                "Symbol `{symbol}` (position {position}) is not in the alphabet {}, so the machine never starts",
+                fmt_alphabet(&m.alphabet)
+            ),
+        ),
+    };
+    let shown_word = if word.is_empty() { "(the empty string)" } else { word };
+    let tape = last.tape.contents();
+    let tape = if tape.is_empty() { "(blank)".to_string() } else { tape };
+    format!("Input: {shown_word}\n\n{}Result: {result}\nReason: {reason}\nTape: {tape}", table(&rows))
 }
 
 /// Lines up the cells in columns two spaces apart. Each column is as wide as
