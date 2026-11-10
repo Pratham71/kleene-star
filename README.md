@@ -79,7 +79,8 @@ were no errors and no failed tests.
 7. [Grammars and pushdown automata](docs/tutorial/07-context-free.md)
 8. [Turing machines](docs/tutorial/08-turing.md)
 
-Appendix: [tools](docs/tutorial/tools.md), including `toc fmt`.
+Appendix: [tools](docs/tutorial/tools.md), including `toc fmt` and the `toc-lsp`
+language server ([VS Code extension](editors/vscode/README.md)).
 
 Then keep [the reference](docs/reference.md) open: every statement, type,
 built-in function and error on one page.

@@ -3,8 +3,10 @@
 //! * `automata` is a plain Rust library of machines and algorithms.
 //! * `lang` is the language built on top of it.
 //! * `Session` (below) ties the stages of `lang` together.
+//! * `ide` answers editor questions; the `toc-lsp` server is built on it.
 
 pub mod automata;
+pub mod ide;
 pub mod lang;
 
 use lang::ast::Stmt;

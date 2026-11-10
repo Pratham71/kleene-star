@@ -8,6 +8,7 @@
 use super::ast::*;
 use super::builtins::{self, article, is_context_free, is_lang};
 use super::error::{did_you_mean, Diag, ErrorKind};
+use super::index::{Body, Call, Def, DefKind, Index};
 use super::machine::{self, GrammarSpec, MachineSpec, Transition};
 use super::token::Span;
 use std::collections::HashMap;
@@ -18,12 +19,15 @@ struct Var {
     /// For alphabets declared with `alphabet`, the symbols, so machines that
     /// use them can be validated before running.
     alphabet: Option<Vec<char>>,
+    /// Its entry in the index.
+    def: usize,
 }
 
 #[derive(Clone)]
 struct Signature {
     params: Vec<Type>,
     ret: Type,
+    def: usize,
 }
 
 #[derive(Clone)]
@@ -35,6 +39,11 @@ pub struct Checker {
     ret: Option<Type>,
     /// The REPL lets you redefine top-level names.
     repl: bool,
+    /// Where the innermost block being checked ends, so the index knows how
+    /// far a name defined in it can be seen.
+    block_end: usize,
+    /// Every definition, use and type found, for editor tools.
+    pub index: Index,
 }
 
 type Check<T> = Result<T, Diag>;
@@ -45,7 +54,14 @@ fn type_error(span: Span, message: impl Into<String>) -> Diag {
 
 impl Checker {
     pub fn new(repl: bool) -> Checker {
-        Checker { scopes: vec![HashMap::new()], funcs: HashMap::new(), ret: None, repl }
+        Checker {
+            scopes: vec![HashMap::new()],
+            funcs: HashMap::new(),
+            ret: None,
+            repl,
+            block_end: usize::MAX,
+            index: Index::default(),
+        }
     }
 
     /// Checks a whole program (or, in the REPL, one more piece of it).
@@ -60,9 +76,19 @@ impl Checker {
                         format!("`{}` is a built-in function and cannot be redefined", f.name.text),
                     ));
                 }
+                let params: Vec<String> = f.params.iter().map(|(n, ty)| format!("{}: {ty}", n.text)).collect();
+                let def = self.index.add_def(Def {
+                    name: f.name.text.clone(),
+                    kind: DefKind::Function,
+                    ty: None,
+                    span: f.name.span,
+                    visible: (0, usize::MAX),
+                    detail: format!("fn {}({}) -> {}", f.name.text, params.join(", "), f.ret),
+                });
                 let signature = Signature {
                     params: f.params.iter().map(|(_, ty)| ty.clone()).collect(),
                     ret: f.ret.clone(),
+                    def,
                 };
                 if self.funcs.insert(f.name.text.clone(), signature).is_some() && !self.repl {
                     return Err(Diag::new(
@@ -78,10 +104,18 @@ impl Checker {
 
     // ---- names ----
 
-    fn define(&mut self, name: &Name, ty: Type, alphabet: Option<Vec<char>>) -> Check<()> {
+    /// Defines `name` in the innermost scope. `kind` and `detail` are only
+    /// for the index.
+    fn define(
+        &mut self,
+        name: &Name,
+        ty: Type,
+        alphabet: Option<Vec<char>>,
+        kind: DefKind,
+        detail: String,
+    ) -> Check<()> {
         let top_level = self.scopes.len() == 1;
-        let scope = self.scopes.last_mut().unwrap();
-        if scope.contains_key(&name.text) && !(self.repl && top_level) {
+        if self.scopes.last().unwrap().contains_key(&name.text) && !(self.repl && top_level) {
             return Err(Diag::new(
                 ErrorKind::Name,
                 name.span,
@@ -89,13 +123,34 @@ impl Checker {
             )
             .hint("values cannot be changed once defined; choose a new name"));
         }
-        scope.insert(name.text.clone(), Var { ty, alphabet });
+        let def = self.index.add_def(Def {
+            name: name.text.clone(),
+            kind,
+            ty: Some(ty.clone()),
+            span: name.span,
+            visible: (name.span.end, self.block_end),
+            detail,
+        });
+        self.scopes.last_mut().unwrap().insert(name.text.clone(), Var { ty, alphabet, def });
         Ok(())
     }
 
-    fn lookup(&self, name: &str, span: Span) -> Check<Var> {
+    /// Defines a `let`, a parameter or a loop variable: the detail is just
+    /// its name and type.
+    fn define_value(&mut self, name: &Name, ty: Type, kind: DefKind, alphabet: Option<Vec<char>>) -> Check<()> {
+        let detail = match kind {
+            DefKind::Parameter => format!("{}: {ty} (parameter)", name.text),
+            DefKind::LoopVariable => format!("for {}: {ty}", name.text),
+            _ => format!("let {}: {ty}", name.text),
+        };
+        self.define(name, ty, alphabet, kind, detail)
+    }
+
+    fn lookup(&mut self, name: &str, span: Span) -> Check<Var> {
         if let Some(var) = self.scopes.iter().rev().find_map(|scope| scope.get(name)) {
-            return Ok(var.clone());
+            let var = var.clone();
+            self.index.add_ref(span, var.def);
+            return Ok(var);
         }
         let mut err = Diag::new(ErrorKind::Name, span, format!("`{name}` is not defined"));
         if self.funcs.contains_key(name) || builtins::NAMES.contains(&name) {
@@ -109,10 +164,13 @@ impl Checker {
         Err(err)
     }
 
-    /// Runs `body` with a fresh inner scope.
-    fn scoped<T>(&mut self, body: impl FnOnce(&mut Checker) -> Check<T>) -> Check<T> {
+    /// Runs `body` with a fresh inner scope, for a block that ends at byte
+    /// `end` of the source.
+    fn scoped<T>(&mut self, end: usize, body: impl FnOnce(&mut Checker) -> Check<T>) -> Check<T> {
         self.scopes.push(HashMap::new());
+        let outer_end = std::mem::replace(&mut self.block_end, end);
         let result = body(self);
+        self.block_end = outer_end;
         self.scopes.pop();
         result
     }
@@ -138,15 +196,18 @@ impl Checker {
                     seen.push(c);
                 }
                 seen.sort();
-                self.define(name, Type::Alphabet, Some(seen))
+                let detail = format!("alphabet {} = {}", name.text, crate::automata::fmt_alphabet(&seen));
+                self.define(name, Type::Alphabet, Some(seen), DefKind::Alphabet, detail)
             }
             StmtKind::MachineDef { name, machine } => {
                 let ty = self.machine(machine, Some(&name.text))?;
-                self.define(name, ty, None)
+                let detail = format!("{} {} over {}", machine.kind.keyword(), name.text, machine.alphabet.text);
+                self.define(name, ty, None, DefKind::Machine, detail)
             }
             StmtKind::GrammarDef { name, grammar } => {
                 let ty = self.grammar(grammar, Some(&name.text))?;
-                self.define(name, ty, None)
+                let detail = format!("grammar {} over {}", name.text, grammar.alphabet.text);
+                self.define(name, ty, None, DefKind::Grammar, detail)
             }
             StmtKind::Let { name, value } => {
                 let ty = self.expr(value)?;
@@ -155,9 +216,9 @@ impl Checker {
                     ExprKind::Name(other) => self.lookup(other, value.span)?.alphabet,
                     _ => None,
                 };
-                self.define(name, ty, alphabet)
+                self.define_value(name, ty, DefKind::Variable, alphabet)
             }
-            StmtKind::Fn(f) => self.function(f),
+            StmtKind::Fn(f) => self.function(f, stmt.span.end),
             StmtKind::Return(value) => {
                 let Some(expected) = self.ret.clone() else {
                     return Err(Diag::new(
@@ -181,16 +242,16 @@ impl Checker {
             }
             StmtKind::If { cond, then, otherwise } => {
                 self.expect(cond, &Type::Bool, "the condition of `if`")?;
-                self.scoped(|c| c.statements(then))?;
+                self.scoped(stmt.span.end, |c| c.statements(then))?;
                 match otherwise {
-                    Some(block) => self.scoped(|c| c.statements(block)),
+                    Some(block) => self.scoped(stmt.span.end, |c| c.statements(block)),
                     None => Ok(()),
                 }
             }
             StmtKind::For { var, items, body } => {
                 let element = self.element_type(items)?;
-                self.scoped(|c| {
-                    c.define(var, element, None)?;
+                self.scoped(stmt.span.end, |c| {
+                    c.define_value(var, element, DefKind::LoopVariable, None)?;
                     c.statements(body)
                 })
             }
@@ -237,18 +298,23 @@ impl Checker {
         }
     }
 
-    fn function(&mut self, f: &FnDef) -> Check<()> {
+    fn function(&mut self, f: &FnDef, end: usize) -> Check<()> {
         // A function body sees its parameters and the globals defined so far,
         // but not the local variables of whoever calls it.
         let globals = self.scopes[0].clone();
         let outer = std::mem::replace(&mut self.scopes, vec![globals, HashMap::new()]);
+        let outer_end = std::mem::replace(&mut self.block_end, end);
         self.ret = Some(f.ret.clone());
+        if let Some(signature) = self.funcs.get(&f.name.text) {
+            self.index.add_ref(f.name.span, signature.def);
+        }
         let result = f
             .params
             .iter()
-            .try_for_each(|(name, ty)| self.define(name, ty.clone(), None))
+            .try_for_each(|(name, ty)| self.define_value(name, ty.clone(), DefKind::Parameter, None))
             .and_then(|()| self.statements(&f.body));
         self.ret = None;
+        self.block_end = outer_end;
         self.scopes = outer;
         result?;
         if !always_returns(&f.body) {
@@ -265,7 +331,9 @@ impl Checker {
 
     fn machine(&mut self, m: &MachineExpr, name: Option<&str>) -> Check<Type> {
         let alphabet = self.alphabet_of(&m.alphabet)?;
-        let literal = self.machine_items(&m.items)?;
+        self.index_states(m, name);
+        self.index.bodies.push(Body { span: m.body, symbols: alphabet.clone().unwrap_or_default() });
+        let literal = self.scoped(m.body.end, |c| c.machine_items(&m.items))?;
         // A machine written out in full can be validated right now. One built
         // with loops or `q[i]` has to wait until it runs.
         if let (true, Some(symbols)) = (literal, alphabet) {
@@ -305,10 +373,94 @@ impl Checker {
         Ok(m.kind.ty())
     }
 
+    /// Records the states of a machine in the index: the first mention of
+    /// each state is its definition, later mentions are uses. States are only
+    /// visible inside the machine's body. (`q[i]` names a family of states
+    /// that only exists when the machine runs, so it is left out.)
+    fn index_states(&mut self, m: &MachineExpr, name: Option<&str>) {
+        fn mentions<'a>(items: &'a [MachineItem], out: &mut Vec<(&'a StateRef, &'static str)>) {
+            for item in items {
+                match item {
+                    MachineItem::Start(s) => out.push((s, "start")),
+                    MachineItem::Accept(states) => out.extend(states.iter().map(|s| (s, "accepting"))),
+                    MachineItem::Reject(states) => out.extend(states.iter().map(|s| (s, "rejecting"))),
+                    MachineItem::Transition { from, to, .. } => out.extend([(from, ""), (to, "")]),
+                    MachineItem::For { body, .. } => mentions(body, out),
+                }
+            }
+        }
+        let mut all = Vec::new();
+        mentions(&m.items, &mut all);
+        let owner = match name {
+            Some(name) => format!("{} `{name}`", m.kind.title()),
+            None => format!("this {}", m.kind.title()),
+        };
+        let mut defs: Vec<(String, usize, Vec<&str>)> = Vec::new();
+        for (state, role) in all.into_iter().filter(|(s, _)| s.index.is_none()) {
+            match defs.iter_mut().find(|(n, _, _)| *n == state.name) {
+                Some((_, def, roles)) => {
+                    self.index.add_ref(state.span, *def);
+                    if !role.is_empty() && !roles.contains(&role) {
+                        roles.push(role);
+                    }
+                }
+                None => {
+                    let def = self.index.add_def(Def {
+                        name: state.name.clone(),
+                        kind: DefKind::State,
+                        ty: None,
+                        span: state.span,
+                        visible: (m.body.start, m.body.end),
+                        detail: String::new(),
+                    });
+                    defs.push((state.name.clone(), def, if role.is_empty() { vec![] } else { vec![role] }));
+                }
+            }
+        }
+        for (state, def, roles) in defs {
+            let roles = if roles.is_empty() { String::new() } else { format!(" ({})", roles.join(", ")) };
+            self.index.defs[def].detail = format!("state {state} of {owner}{roles}");
+        }
+    }
+
+    /// Records a grammar's variables in the index, like `index_states`.
+    fn index_variables(&mut self, g: &GrammarExpr, name: Option<&str>) {
+        let owner = name.map_or("this grammar".to_string(), |n| format!("grammar `{n}`"));
+        let mut defs: Vec<(String, usize)> = Vec::new();
+        for (i, rule) in g.rules.iter().enumerate() {
+            match defs.iter().find(|(n, _)| *n == rule.head.text) {
+                Some(&(_, def)) => self.index.add_ref(rule.head.span, def),
+                None => {
+                    let start = if i == 0 { " (the start variable)" } else { "" };
+                    let def = self.index.add_def(Def {
+                        name: rule.head.text.clone(),
+                        kind: DefKind::GrammarVariable,
+                        ty: None,
+                        span: rule.head.span,
+                        visible: (g.body.start, g.body.end),
+                        detail: format!("variable {} of {owner}{start}", rule.head.text),
+                    });
+                    defs.push((rule.head.text.clone(), def));
+                }
+            }
+        }
+        for rule in &g.rules {
+            for sym in rule.alternatives.iter().flatten() {
+                if let GSymKind::Variable(v) = &sym.kind {
+                    if let Some(&(_, def)) = defs.iter().find(|(n, _)| n == v) {
+                        self.index.add_ref(sym.span, def);
+                    }
+                }
+            }
+        }
+    }
+
     /// Checks a grammar. Like a machine, it is validated now if its
     /// alphabet is known; otherwise when it is built while running.
     fn grammar(&mut self, g: &GrammarExpr, name: Option<&str>) -> Check<Type> {
         let alphabet = self.alphabet_of(&g.alphabet)?;
+        self.index_variables(g, name);
+        self.index.bodies.push(Body { span: g.body, symbols: alphabet.clone().unwrap_or_default() });
         if let Some(symbols) = alphabet {
             machine::build_grammar(&GrammarSpec {
                 name: name.map(str::to_string),
@@ -323,7 +475,7 @@ impl Checker {
 
     /// Checks that `name` (after `over`) is an alphabet, and returns its
     /// symbols if they are known before running.
-    fn alphabet_of(&self, name: &Name) -> Check<Option<Vec<char>>> {
+    fn alphabet_of(&mut self, name: &Name) -> Check<Option<Vec<char>>> {
         let alphabet = self.lookup(&name.text, name.span)?;
         if alphabet.ty != Type::Alphabet {
             return Err(type_error(
@@ -353,8 +505,9 @@ impl Checker {
                 }
                 MachineItem::For { var, items, body } => {
                     let element = self.element_type(items)?;
-                    self.scoped(|c| {
-                        c.define(var, element, None)?;
+                    let end = self.block_end;
+                    self.scoped(end, |c| {
+                        c.define_value(var, element, DefKind::LoopVariable, None)?;
                         c.machine_items(body)
                     })?;
                     literal = false;
@@ -401,7 +554,14 @@ impl Checker {
         }
     }
 
+    /// The type of `expr`, which is also recorded in the index.
     fn expr(&mut self, expr: &Expr) -> Check<Type> {
+        let ty = self.expr_type(expr)?;
+        self.index.exprs.push((expr.span, ty.clone()));
+        Ok(ty)
+    }
+
+    fn expr_type(&mut self, expr: &Expr) -> Check<Type> {
         match &expr.kind {
             ExprKind::Int(_) => Ok(Type::Int),
             ExprKind::Str(_) => Ok(Type::Str),
@@ -520,6 +680,10 @@ impl Checker {
     }
 
     fn call(&mut self, name: &Name, args: &[Expr], span: Span) -> Check<Type> {
+        self.index.calls.push(Call { name: name.text.clone(), name_span: name.span, span });
+        if let Some(signature) = self.funcs.get(&name.text) {
+            self.index.add_ref(name.span, signature.def);
+        }
         let types = args.iter().map(|arg| self.expr(arg)).collect::<Check<Vec<Type>>>()?;
 
         if builtins::NAMES.contains(&name.text.as_str()) {

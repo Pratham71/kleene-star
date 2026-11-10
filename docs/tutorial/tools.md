@@ -3,6 +3,17 @@
 The `toc` command does more than run programs. This page covers the tools
 that help you write them.
 
+## Editor support with `toc-lsp`
+
+`toc-lsp` is a language server: editors start it to get errors as you type,
+hover information (types, signatures, built-in documentation, which states
+are start or accepting), go to definition, find all references, completion
+(keywords, built-ins, names in scope, and the states and symbols of the
+machine you are in), and signature help. It uses the same lexer, parser and
+checker as `toc`, so it reports exactly the errors `toc check` would.
+
+For VS Code, see [`editors/vscode`](../../editors/vscode/README.md).
+
 ## Formatting with `toc fmt`
 
 People lay code out differently, and a TOC program does not care: line breaks

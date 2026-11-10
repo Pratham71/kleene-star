@@ -12,5 +12,12 @@ path = "src/lib.rs"
 name = "toc"
 path = "src/main.rs"
 
+# The language server for editors; see editors/vscode.
+[[bin]]
+name = "toc-lsp"
+path = "src/bin/toc-lsp.rs"
+
 [dependencies]
 rustyline = "19.0.0"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std"] }
+tower-lsp-server = "0.23"

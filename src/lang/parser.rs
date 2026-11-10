@@ -346,8 +346,10 @@ impl<'a> Parser<'a> {
         self.expect(Tok::Over, "`over` and an alphabet")?;
         let alphabet = self.name("the name of an alphabet")?;
         let header = start.to(self.prev());
+        let open = self.span();
         let items = self.machine_items(kind)?;
-        Ok(MachineExpr { kind, alphabet, items, header })
+        let body = open.to(self.prev());
+        Ok(MachineExpr { kind, alphabet, items, header, body })
     }
 
     fn machine_items(&mut self, kind: MachineKind) -> Parse<Vec<MachineItem>> {
@@ -551,7 +553,8 @@ impl<'a> Parser<'a> {
             rules.push(self.rule()?);
         }
         self.advance();
-        Ok(GrammarExpr { alphabet, rules, header })
+        let body = open.to(self.prev());
+        Ok(GrammarExpr { alphabet, rules, header, body })
     }
 
     fn rule(&mut self) -> Parse<RuleDef> {

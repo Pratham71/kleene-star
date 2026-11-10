@@ -89,6 +89,13 @@ pub enum Tok {
 }
 
 impl Tok {
+    /// Every keyword, for editors to offer as completions.
+    pub const KEYWORDS: &'static [&'static str] = &[
+        "alphabet", "dfa", "nfa", "pda", "tm", "grammar", "over", "start", "accept", "reject", "eps", "fn",
+        "let", "return", "if", "else", "for", "in", "print", "test", "draw", "trace", "on", "true", "false",
+        "and", "or", "not", "accepts",
+    ];
+
     pub fn keyword(word: &str) -> Option<Tok> {
         Some(match word {
             "alphabet" => Tok::Alphabet,
@@ -201,4 +208,22 @@ impl Tok {
 pub struct Token {
     pub tok: Tok,
     pub span: Span,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Tok;
+
+    #[test]
+    fn keyword_list_matches_the_lexer() {
+        for word in Tok::KEYWORDS {
+            assert!(Tok::keyword(word).is_some(), "`{word}` is listed but not a keyword");
+        }
+        // Every keyword the lexer knows is in the list.
+        let known = include_str!("token.rs")
+            .lines()
+            .filter(|line| line.trim_start().starts_with('"') && line.contains("=> Tok::"))
+            .count();
+        assert_eq!(known, Tok::KEYWORDS.len());
+    }
 }

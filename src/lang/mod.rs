@@ -9,6 +9,7 @@ pub mod builtins;
 pub mod check;
 pub mod error;
 pub mod format;
+pub mod index;
 pub mod interp;
 pub mod lexer;
 pub mod machine;

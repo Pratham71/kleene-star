@@ -179,6 +179,8 @@ pub struct MachineExpr {
     pub items: Vec<MachineItem>,
     /// The `dfa ... over B` header, used when an error is about the whole machine.
     pub header: Span,
+    /// From `{` to `}`.
+    pub body: Span,
 }
 
 // A transition is much bigger than `start q0`, but the syntax tree is built
@@ -237,6 +239,8 @@ pub struct GrammarExpr {
     pub rules: Vec<RuleDef>,
     /// The `grammar ... over B` header.
     pub header: Span,
+    /// From `{` to `}`.
+    pub body: Span,
 }
 
 /// `S -> a S b | eps`: a variable and its alternatives.

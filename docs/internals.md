@@ -240,7 +240,30 @@ In the language, a Turing machine is one more `MachineKind`, with its own
 transition `Action::Tape` and a `reject` item. Determinism and the other rules
 are checked in `machine.rs`, like every other machine.
 
-## 10. The formatter
+## 10. The language server
+
+`src/lang/index.rs`, `src/ide.rs`, `src/bin/toc-lsp.rs`
+
+While checking, the checker already knows what every name refers to. It
+writes this down in an `Index`: every definition (with its kind, type,
+visible range and a one-line description), every use mapped to its
+definition, the type of every expression, every call, and the bodies of
+machines and grammars. States and grammar variables are indexed per machine
+or grammar. The checker stops at the first error, but the index keeps what
+it learned up to there.
+
+`ide.rs` answers editor questions from the index using byte offsets:
+`hover`, `definition`, `references`, `completions` and `signature_help`.
+Signature help reads the tokens before the cursor instead of the syntax
+tree, so it works while a call is half typed; when the text does not parse,
+`with_fallback` keeps the previous index for completion. All of this is
+tested directly, without an editor.
+
+`toc-lsp` is a thin `tower-lsp-server` shell: it keeps one `Analysis` per
+open file, converts between LSP positions (UTF-16 columns) and offsets, and
+publishes the first error as a diagnostic.
+
+## 11. The formatter
 
 `src/lang/format.rs`
 
@@ -274,7 +297,7 @@ bug, and the file is left alone with an error instead of being changed. The
 tests check, in addition, that every example formats to itself and that
 formatting never changes what a program prints.
 
-## 11. Tying it together
+## 12. Tying it together
 
 `src/lib.rs`, `src/main.rs`
 

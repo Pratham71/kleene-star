@@ -183,3 +183,53 @@ pub fn article(ty: &Type) -> String {
     let an = name.starts_with(['A', 'E', 'I', 'O', 'U']);
     format!("{} {name}", if an { "an" } else { "a" })
 }
+
+/// What editor tools show for a built-in: its signature, the names of its
+/// parameters (for signature help), and a sentence about what it does.
+pub struct BuiltinDoc {
+    pub signature: &'static str,
+    pub params: &'static [&'static str],
+    pub doc: &'static str,
+}
+
+/// The documentation of built-in `name`, if it is one.
+pub fn doc(name: &str) -> Option<BuiltinDoc> {
+    let (signature, params, doc): (&str, &[&str], &str) = match name {
+        "to_dfa" => ("to_dfa(lang, alphabet?) -> Dfa", &["lang", "alphabet"], "The subset construction: a DFA for the language. States are named after sets, like `{a,b}`."),
+        "to_nfa" => ("to_nfa(lang, alphabet?) -> Nfa", &["lang", "alphabet"], "An NFA for the language; a regex becomes an eps-NFA by Thompson's construction."),
+        "to_regex" => ("to_regex(lang) -> Regex", &["lang"], "A regular expression for the language, by state elimination."),
+        "minimize" => ("minimize(lang) -> Dfa", &["lang"], "The unique smallest DFA for the language. Merged states are named `q1+q2`."),
+        "reduce" => ("reduce(lang) -> Nfa", &["lang"], "A smaller NFA: useless states removed and equivalent ones merged (not guaranteed smallest)."),
+        "remove_eps" => ("remove_eps(lang) -> Nfa", &["lang"], "The same language as an NFA without eps moves."),
+        "rename" => ("rename(machine) -> same type", &["machine"], "Renames the states `q0, q1, ...` outward from the start."),
+        "union" => ("union(a, b) -> Dfa", &["a", "b"], "Strings in `a` or `b` (product construction)."),
+        "intersect" => ("intersect(a, b) -> Dfa", &["a", "b"], "Strings in both `a` and `b` (product construction)."),
+        "difference" => ("difference(a, b) -> Dfa", &["a", "b"], "Strings in `a` but not in `b`."),
+        "complement" => ("complement(lang) -> Dfa", &["lang"], "Strings over the alphabet that are not in the language."),
+        "concat" => ("concat(a, b) -> Nfa", &["a", "b"], "A string of `a` followed by a string of `b`."),
+        "star" => ("star(lang) -> Nfa", &["lang"], "Zero or more strings of the language joined together."),
+        "reverse" => ("reverse(lang) -> Nfa", &["lang"], "The strings of the language written backwards."),
+        "equivalent" => ("equivalent(a, b) -> Bool", &["a", "b"], "Do two regular languages contain exactly the same strings? (Undecidable for grammars, PDAs and Turing machines.)"),
+        "is_empty" => ("is_empty(lang) -> Bool", &["lang"], "Does the language (or grammar) contain no strings at all?"),
+        "states" => ("states(machine) -> Int", &["machine"], "The number of states of a Dfa, Nfa, Pda or Tm."),
+        "len" => ("len(x) -> Int", &["x"], "The length of a Str, or the size of a Set or Alphabet."),
+        "to_cnf" => ("to_cnf(grammar) -> Grammar", &["grammar"], "An equivalent grammar in Chomsky normal form."),
+        "to_pda" => ("to_pda(grammar) -> Pda", &["grammar"], "The three-state PDA that simulates leftmost derivations of the grammar."),
+        "to_grammar" => ("to_grammar(lang) -> Grammar", &["lang"], "A right-linear grammar for a regular language."),
+        "derive" => ("derive(grammar, word) -> Str", &["grammar", "word"], "A shortest leftmost derivation of the word, one sentential form per line."),
+        "run" => ("run(tm, word) -> Str", &["tm", "word"], "Runs a Turing machine until it halts and returns what is left on the tape."),
+        _ => return None,
+    };
+    Some(BuiltinDoc { signature, params, doc })
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn every_builtin_is_documented() {
+        for name in super::NAMES {
+            let doc = super::doc(name).unwrap_or_else(|| panic!("`{name}` has no documentation"));
+            assert!(doc.signature.starts_with(&format!("{name}(")));
+        }
+    }
+}

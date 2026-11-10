@@ -1,0 +1,45 @@
+{
+  "name": "toc-lang",
+  "displayName": "TOC-Lang",
+  "description": "Highlighting, errors, hover, go to definition and completion for TOC-Lang (.toc) files.",
+  "version": "0.2.0",
+  "publisher": "toc-lang",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.91.0"
+  },
+  "categories": ["Programming Languages"],
+  "main": "./extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "languages": [
+      {
+        "id": "toc",
+        "aliases": ["TOC-Lang", "toc"],
+        "extensions": [".toc"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "toc",
+        "scopeName": "source.toc",
+        "path": "./syntaxes/toc.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "TOC-Lang",
+      "properties": {
+        "toc.serverPath": {
+          "type": "string",
+          "default": "toc-lsp",
+          "description": "The toc-lsp program to run. The default finds it on your PATH; give a full path if it is somewhere else."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^11.0.0"
+  }
+}
