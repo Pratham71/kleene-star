@@ -1,0 +1,23 @@
+# Tracing an NFA shows the set of states it could be in after each symbol,
+# including the states reached by eps moves.
+alphabet B = {0, 1}
+
+nfa EndsIn01 over B {
+    start  a
+    accept c
+    a --0,1--> a
+    a --0-->   b
+    b --1-->   c
+}
+
+trace EndsIn01 on "1101"
+trace EndsIn01 on "10"
+
+nfa Stuck over B {
+    start  p
+    accept q
+    p --eps--> q
+}
+
+trace Stuck on ""
+trace Stuck on "0"

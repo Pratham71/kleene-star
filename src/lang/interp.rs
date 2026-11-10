@@ -8,7 +8,8 @@ use super::error::{Diag, ErrorKind, TraceFrame};
 use super::machine::{self, Built, MachineSpec, Transition};
 use super::token::Span;
 use super::value::Value;
-use crate::automata::{convert, dot, fmt_alphabet, minimize, ops, Dfa, Nfa};
+use super::trace as show_trace;
+use crate::automata::{convert, dot, fmt_alphabet, minimize, ops, trace, Dfa, Nfa};
 use std::collections::{BTreeSet, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
@@ -43,6 +44,9 @@ pub struct Interp {
     out_dir: PathBuf,
     /// Whether `draw` should also try to make an SVG with Graphviz.
     pub render_svg: bool,
+    /// Print only ASCII (`-` instead of an em dash) for consoles that
+    /// cannot show anything else.
+    pub ascii: bool,
     pub passed: usize,
     pub failed: usize,
     drawings: usize,
@@ -65,6 +69,7 @@ impl Interp {
             out,
             out_dir,
             render_svg: false,
+            ascii: false,
             passed: 0,
             failed: 0,
             drawings: 0,
@@ -203,6 +208,7 @@ impl Interp {
                 }
             }
             StmtKind::Draw(value) => self.draw(value)?,
+            StmtKind::Trace { machine, word } => self.trace(machine, word)?,
         }
         Ok(Flow::Normal)
     }
@@ -251,6 +257,26 @@ impl Interp {
                 let _ = writeln!(self.out, "wrote {base}.svg");
             }
         }
+        Ok(())
+    }
+
+    /// `trace machine on word`: runs the machine and prints every step.
+    fn trace(&mut self, machine: &Expr, word: &Expr) -> Run<()> {
+        let machine = self.eval(machine)?;
+        let Value::Str(word) = self.eval(word)? else {
+            unreachable!("checker ensures the word is a Str")
+        };
+        // Step 0 has no symbol and no "from" state. An em dash marks those
+        // cells, unless the console cannot show one.
+        let dash = if self.ascii { "-" } else { "\u{2014}" };
+        let shown = match &machine {
+            Value::Dfa(dfa) => show_trace::render_dfa(dfa, &word, &trace::trace_dfa(dfa, &word), dash),
+            Value::Nfa(nfa) => show_trace::render_nfa(nfa, &word, &trace::trace_nfa(nfa, &word), dash),
+            other => unreachable!("checker allowed tracing {other:?}"),
+        };
+        // A blank line after each trace keeps several traces apart.
+        let _ = writeln!(self.out, "{shown}
+");
         Ok(())
     }
 

@@ -24,6 +24,7 @@ comment that runs to the end of the line.
 | `print a, b, c` | Prints the values on one line, separated by spaces. |
 | `test cond` | Checks a condition. Failures are reported and counted. |
 | `draw machine` | Writes a Graphviz `.dot` file (and `.svg` if Graphviz is installed). |
+| `trace machine on word` | Runs a `Dfa` or `Nfa` on a `Str` and prints every step. See [tracing](#tracing). |
 
 ### Names and scope
 
@@ -82,6 +83,46 @@ Rules checked for a `dfa`:
 An `nfa` has none of these restrictions. Machines written out in full are
 checked before the program runs; machines built with `for` or `name[expr]` are
 checked when they are built.
+
+## Tracing
+
+`trace M on "0110"` runs `M` (a `Dfa` or `Nfa`) on the word and prints a
+table with one row per symbol, then the result and the reason for it:
+
+```toc
+alphabet B = {0, 1}
+dfa Ones over B {
+    start  even
+    accept odd
+    even --0--> even
+    even --1--> odd
+    odd  --0--> odd
+    odd  --1--> even
+}
+trace Ones on "011"
+```
+
+```text
+Input: 011
+
+Step  Symbol  From  To
+0     —       —     even
+1     0       even  even
+2     1       even  odd
+3     1       odd   even
+Result: REJECTED
+Reason: Ended in non-accepting state even
+```
+
+- Step 0 is the start, before anything is read; its empty cells show `—`
+  (or `-` on a Windows console whose code page cannot show `—`).
+- For an `Nfa`, `From` and `To` are sets of states, written `{a,b}`, and
+  already include the states reachable by eps moves. The reason names an
+  accepting state in the final set, or says there is none.
+- A symbol outside the alphabet ends the trace with `Result: REJECTED` and a
+  reason naming the symbol and its position. It is not an error: the program
+  carries on.
+- A blank line follows each trace.
 
 ## Types
 
@@ -215,7 +256,7 @@ running also show the chain of calls, most recent last.
 |---|---|
 | `SyntaxError` | The text is not a valid program. |
 | `NameError` | A name is unknown, defined twice, or used before its definition has run. |
-| `TypeError` | A value of the wrong type, a wrong number of arguments, or a function that might not return. |
+| `TypeError` | A value of the wrong type, a wrong number of arguments, a function that might not return, or `trace` on something that is not a `Dfa` or `Nfa`. |
 | `MachineError` | A machine breaks a rule: no start state, a DFA that is not total or not deterministic, an eps move in a DFA. |
 | `AlphabetError` | A symbol outside the alphabet, or two machines over different alphabets. |
 | `MathError` | Modulo by zero, a result too large for an `Int`, or a range that is too large. |
@@ -283,6 +324,24 @@ MachineError: state `a` already goes to `a` on `0`
 ```
 
 ```toc-error
+alphabet B = {0, 1}
+dfa Any over B {
+    start  q
+    accept q
+    q --0,1--> q
+}
+trace Any accepts "01"
+```
+
+```text
+Error in demo.toc, line 7:
+    trace Any accepts "01"
+              ^^^^^^^
+SyntaxError: expected `on` after the machine to trace, found `accepts`
+  hint: write `trace M on "0110"`
+```
+
+```toc-error
 fn forever(n: Int) -> Int {
     return forever(n + 1)
 }
@@ -307,6 +366,7 @@ statement   := 'alphabet' NAME '=' '{' (symbol (',' symbol)*)? '}'
              | 'print' expr (',' expr)*
              | 'test' expr
              | 'draw' expr
+             | 'trace' range 'on' expr
 
 block       := '{' statement* '}'
 param       := NAME ':' type
@@ -340,8 +400,8 @@ primary     := INT | STRING | REGEX | 'true' | 'false'
 ```
 
 Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
-`dfa` `draw` `else` `eps` `false` `fn` `for` `if` `in` `let` `nfa` `not` `or`
-`over` `print` `return` `start` `test` `true`.
+`dfa` `draw` `else` `eps` `false` `fn` `for` `if` `in` `let` `nfa` `not` `on`
+`or` `over` `print` `return` `start` `test` `trace` `true`.
 
 ## The `toc` command
 

@@ -1,0 +1,43 @@
+# Chapter 6: watching machines run, one symbol at a time.
+
+alphabet B = {0, 1}
+
+# Binary numbers divisible by 3. The state is the remainder so far.
+dfa Div3 over B {
+    start  r0
+    accept r0
+    r0 --0--> r0
+    r0 --1--> r1
+    r1 --0--> r2
+    r1 --1--> r0
+    r2 --0--> r1
+    r2 --1--> r2
+}
+
+# 22 leaves remainder 1: rejected, ending in r1.
+trace Div3 on "10110"
+# 6 is divisible by 3: accepted.
+trace Div3 on "110"
+
+# An NFA is in a set of states at once; eps moves are already followed.
+nfa EndsIn01 over B {
+    start  a
+    accept c
+    a --0,1--> a
+    a --0-->   b
+    b --1-->   c
+}
+
+trace EndsIn01 on "1101"
+
+# The same language as a DFA: the subset construction builds exactly the sets
+# that the NFA trace above went through.
+trace to_dfa(EndsIn01) on "1101"
+
+# A symbol outside the alphabet stops the trace, not the program.
+trace Div3 on "1021"
+
+test Div3 accepts "110"
+test EndsIn01 accepts "1101"
+
+draw Div3

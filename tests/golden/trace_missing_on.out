@@ -1,0 +1,5 @@
+Error in trace_missing_on.toc, line 7:
+    trace Any accepts "101"
+              ^^^^^^^
+SyntaxError: expected `on` after the machine to trace, found `accepts`
+  hint: write `trace M on "0110"`

@@ -1,0 +1,2 @@
+# Only a DFA or NFA can be traced; a regex has no states to show.
+trace /(0|1)*/ on "01"

@@ -129,6 +129,7 @@ changes needed to turn one into the other.
 | `minimize.rs` | DFA minimisation and NFA reduction, both by partition refinement. |
 | `ops.rs` | The product construction, complement, concatenation, star, reversal, emptiness, equivalence. |
 | `dot.rs` | Graphviz output. |
+| `trace.rs` | Running a machine step by step and recording each move. |
 
 A state is just a number: its position in the machine's list of state names.
 A DFA's transitions are a table indexed by state and symbol, so a DFA is
@@ -138,7 +139,32 @@ eps, to a set of states.
 Each algorithm has a comment explaining the idea, and unit tests beside it that
 use small machines with known answers.
 
-## 7. Tying it together
+## 7. Tracing a run
+
+`src/automata/trace.rs`, `src/lang/trace.rs`
+
+A `trace` statement is split along the same line as everything else:
+
+- `automata/trace.rs` runs the machine and records a `Trace`: the starting
+  point, one `Step` (symbol, from, to) per symbol read, and how the run
+  `End`ed: accepted, rejected, or stopped at a foreign symbol. `Trace<S>` is
+  generic over what the machine "is in": a `State` for a DFA, a
+  `BTreeSet<State>` for an NFA. The NFA version uses the same `eps_closure`
+  and `step` as `accepts`, so a trace can never disagree with `accepts`.
+- `lang/trace.rs` only formats: it names the states, lays the cells out in
+  columns as wide as their widest cell, and writes the result and reason.
+
+The parser reads the machine with `range`, one level below comparisons, so a
+mistaken `trace M accepts "01"` stops at `accepts` and gets a clear message
+instead of being read as one Bool.
+
+Step 0 marks its empty cells with an em dash. On Windows, `main.rs` asks
+whether that will survive: a console window always shows it (Rust writes
+UTF-16 to it), but output piped into another program is decoded with the
+console's code page, so unless that is UTF-8 (65001) the session is switched
+to ASCII and prints `-` instead.
+
+## 8. Tying it together
 
 `src/lib.rs`, `src/main.rs`
 

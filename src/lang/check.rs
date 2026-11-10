@@ -202,6 +202,28 @@ impl Checker {
                 }
                 Ok(())
             }
+            StmtKind::Trace { machine, word } => {
+                let ty = self.expr(machine)?;
+                if !matches!(ty, Type::Dfa | Type::Nfa) {
+                    let mut err = type_error(
+                        machine.span,
+                        format!("`trace` needs a Dfa or an Nfa, but this is {}", article(&ty)),
+                    );
+                    if is_lang(&ty) {
+                        err = err.hint("a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on \"01\"`");
+                    }
+                    return Err(err);
+                }
+                let word_ty = self.expr(word)?;
+                if word_ty != Type::Str {
+                    return Err(type_error(
+                        word.span,
+                        format!("the word to trace must be a Str, but this is {}", article(&word_ty)),
+                    )
+                    .hint("write the word in quotes: `trace M on \"0101\"`"));
+                }
+                Ok(())
+            }
         }
     }
 
@@ -590,6 +612,10 @@ mod tests {
         assert!(error("fn f(n: Int) -> Int { if n > 0 { return 1 } }").contains("without returning"));
         assert!(error("for x in 3 { print x }").contains("cannot loop over an Int"));
         assert!(error("let a = 1\ndfa M over a { start q }").contains("not an Alphabet"));
+        assert!(error("trace /a/ on \"a\"").contains("`trace` needs a Dfa or an Nfa, but this is a Regex"));
+        assert!(error("trace 1 on \"a\"").contains("but this is an Int"));
+        assert!(error(&format!("{B}nfa M over B {{ start a }}\ntrace M on 1")).contains("word to trace must be a Str"));
+        check(&format!("{B}nfa M over B {{ start a }}\ntrace M on \"01\"")).unwrap();
     }
 
     #[test]

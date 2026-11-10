@@ -210,5 +210,6 @@ MathError: modulo by zero
   hint: the right-hand side of `%` is 0 here
 ```
 
-That is the whole language. [The reference](../reference.md) lists everything
-on one page.
+That covers the whole language. The [next chapter](06-trace.md) shows how to
+watch a machine run step by step, and [the reference](../reference.md) lists
+everything on one page.

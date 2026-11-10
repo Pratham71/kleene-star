@@ -1,0 +1,10 @@
+Input: 01201
+
+Step  Symbol  From  To
+0     —       —     q
+1     0       q     q
+2     1       q     q
+Result: REJECTED
+Reason: Symbol `2` (position 3) is not in the alphabet {0, 1}, so the run stops
+
+still running

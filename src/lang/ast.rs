@@ -34,6 +34,8 @@ pub enum StmtKind {
     Test(Expr),
     /// `draw machine`
     Draw(Expr),
+    /// `trace machine on word`: run the machine step by step, printing each step.
+    Trace { machine: Expr, word: Expr },
 }
 
 /// A name together with where it was written.

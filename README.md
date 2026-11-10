@@ -69,6 +69,7 @@ were no errors and no failed tests.
 3. [Regular expressions](docs/tutorial/03-regex.md)
 4. [Combining and comparing languages](docs/tutorial/04-closure.md)
 5. [Functions and machine families](docs/tutorial/05-functions.md)
+6. [Watching a machine run](docs/tutorial/06-trace.md)
 
 Then keep [the reference](docs/reference.md) open: every statement, type,
 built-in function and error on one page.

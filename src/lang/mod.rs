@@ -13,4 +13,5 @@ pub mod lexer;
 pub mod machine;
 pub mod parser;
 pub mod token;
+pub mod trace;
 pub mod value;

@@ -11,6 +11,7 @@ pub mod minimize;
 pub mod nfa;
 pub mod ops;
 pub mod regex;
+pub mod trace;
 
 pub use dfa::Dfa;
 pub use nfa::Nfa;

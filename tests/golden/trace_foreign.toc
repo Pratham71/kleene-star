@@ -1,0 +1,11 @@
+# A symbol outside the alphabet stops the trace, but not the program.
+alphabet B = {0, 1}
+
+dfa Any over B {
+    start  q
+    accept q
+    q --0,1--> q
+}
+
+trace Any on "01201"
+print "still running"

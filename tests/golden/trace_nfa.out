@@ -1,0 +1,35 @@
+Input: 1101
+
+Step  Symbol  From   To
+0     —       —      {a}
+1     1       {a}    {a}
+2     1       {a}    {a}
+3     0       {a}    {a,b}
+4     1       {a,b}  {a,c}
+Result: ACCEPTED
+Reason: Ended in {a,c}, which includes accepting state c
+
+Input: 10
+
+Step  Symbol  From  To
+0     —       —     {a}
+1     1       {a}   {a}
+2     0       {a}   {a,b}
+Result: REJECTED
+Reason: Ended in {a,b}, which includes no accepting state
+
+Input: (the empty string)
+
+Step  Symbol  From  To
+0     —       —     {p,q}
+Result: ACCEPTED
+Reason: Ended in {p,q}, which includes accepting state q
+
+Input: 0
+
+Step  Symbol  From   To
+0     —       —      {p,q}
+1     0       {p,q}  {}
+Result: REJECTED
+Reason: No state is possible any more, so no accepting state was reached
+

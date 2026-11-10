@@ -1,0 +1,39 @@
+Input: 10110
+
+Step  Symbol  From  To
+0     —       —     r0
+1     1       r0    r1
+2     0       r1    r2
+3     1       r2    r2
+4     1       r2    r2
+5     0       r2    r1
+Result: REJECTED
+Reason: Ended in non-accepting state r1
+
+Input: 110
+
+Step  Symbol  From  To
+0     —       —     r0
+1     1       r0    r1
+2     1       r1    r0
+3     0       r0    r0
+Result: ACCEPTED
+Reason: Ended in accepting state r0
+
+Input: (the empty string)
+
+Step  Symbol  From  To
+0     —       —     r0
+Result: ACCEPTED
+Reason: Ended in accepting state r0
+
+Input: 001
+
+Step  Symbol  From             To
+0     —       —                waiting_for_one
+1     0       waiting_for_one  waiting_for_one
+2     0       waiting_for_one  waiting_for_one
+3     1       waiting_for_one  seen_a_one
+Result: ACCEPTED
+Reason: Ended in accepting state seen_a_one
+

@@ -55,6 +55,7 @@ fn run_file(file: &str, out_dir: &str, check_only: bool) -> ExitCode {
     toc::with_big_stack(move || {
         let mut session = Session::new(&shown_name, Box::new(std::io::stdout()), out_dir, false);
         session.render_svg(true);
+        session.ascii_only(console_needs_ascii());
         let result = if check_only {
             session.check(&text).map(|_| println!("{shown_name}: no errors found"))
         } else {
@@ -73,6 +74,35 @@ fn run_file(file: &str, out_dir: &str, check_only: bool) -> ExitCode {
             }
         }
     })
+}
+
+/// True when non-ASCII output, such as the em dash in a `trace` table, would
+/// come out garbled.
+///
+/// Rust writes straight to a Windows console in UTF-16, so a console window
+/// always shows it correctly. The risk is output piped into another program
+/// (PowerShell, for example) that decodes it with the console's code page:
+/// unless that code page is UTF-8 (65001), the em dash turns into junk. Other
+/// systems use UTF-8 throughout.
+fn console_needs_ascii() -> bool {
+    #[cfg(windows)]
+    {
+        use std::io::IsTerminal;
+        if std::io::stdout().is_terminal() {
+            return false;
+        }
+        extern "system" {
+            fn GetConsoleOutputCP() -> u32;
+        }
+        // SAFETY: GetConsoleOutputCP takes no arguments and only reads a
+        // setting; it returns 0 when there is no console at all.
+        let code_page = unsafe { GetConsoleOutputCP() };
+        code_page != 0 && code_page != 65001
+    }
+    #[cfg(not(windows))]
+    {
+        false
+    }
 }
 
 const REPL_HELP: &str = "Type a statement or an expression and press Enter. Examples:
@@ -95,6 +125,7 @@ fn repl() -> ExitCode {
     println!("TOC-Lang {}. Type :help for help, :quit to leave.", env!("CARGO_PKG_VERSION"));
     let mut session = Session::new("<repl>", Box::new(std::io::stdout()), PathBuf::from("."), true);
     session.render_svg(true);
+    session.ascii_only(console_needs_ascii());
     let mut entry = String::new();
     loop {
         let prompt = if entry.is_empty() { "toc> " } else { "...> " };

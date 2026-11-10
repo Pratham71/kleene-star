@@ -46,6 +46,12 @@ impl Session {
         self.interp.render_svg = enabled;
     }
 
+    /// Makes `trace` print `-` instead of an em dash, for consoles that
+    /// would show the em dash as garbage.
+    pub fn ascii_only(&mut self, enabled: bool) {
+        self.interp.ascii = enabled;
+    }
+
     /// Checks and runs `text`. On failure returns the formatted error.
     pub fn run(&mut self, text: &str) -> Result<(), String> {
         let program = self.check(text)?;

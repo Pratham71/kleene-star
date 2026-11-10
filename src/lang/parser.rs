@@ -108,7 +108,7 @@ impl<'a> Parser<'a> {
     // ---- statements ----
 
     // statement := alphabet | machine-def | let | fn | return | if | for
-    //            | print | test | draw
+    //            | print | test | draw | trace
     fn statement(&mut self) -> Parse<Stmt> {
         let start = self.span();
         let kind = match self.peek() {
@@ -164,6 +164,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 StmtKind::Draw(self.expr()?)
             }
+            Tok::Trace => self.trace()?,
             Tok::Ident(_) if *self.peek_next() == Tok::Assign => {
                 return Err(self.error("assignment needs `let`").hint(
                     "write `let x = ...`; values cannot be changed once defined, so pick a new name",
@@ -173,7 +174,7 @@ impl<'a> Parser<'a> {
             other => {
                 return Err(self
                     .error(format!("expected a statement, found {}", other.describe()))
-                    .hint("a statement starts with one of: alphabet, dfa, nfa, let, fn, return, if, for, print, test, draw"));
+                    .hint("a statement starts with one of: alphabet, dfa, nfa, let, fn, return, if, for, print, test, draw, trace"));
             }
         };
         Ok(Stmt { kind, span: start.to(self.prev()) })
@@ -201,6 +202,26 @@ impl<'a> Parser<'a> {
         }
         self.expect(Tok::RBrace, "`,` or `}`")?;
         Ok(StmtKind::Alphabet { name, symbols })
+    }
+
+    // trace := 'trace' range 'on' expr
+    //
+    // The machine is parsed as a `range`, one level below comparisons, so
+    // that a mistaken `trace M accepts "01"` stops at `accepts` and can be
+    // reported clearly instead of being read as one Bool expression.
+    fn trace(&mut self) -> Parse<StmtKind> {
+        self.advance();
+        let machine = self.range()?;
+        if *self.peek() != Tok::On {
+            return Err(self
+                .error(format!(
+                    "expected `on` after the machine to trace, found {}",
+                    self.peek().describe()
+                ))
+                .hint("write `trace M on \"0110\"`"));
+        }
+        self.advance();
+        Ok(StmtKind::Trace { machine, word: self.expr()? })
     }
 
     // fn := 'fn' NAME '(' (NAME ':' type (',' NAME ':' type)*)? ')' '->' type block
@@ -697,6 +718,15 @@ mod tests {
         assert!(hint("let if = 1").contains("keyword"));
         assert!(parse("if true { fn f() -> Int { return 1 } }").is_err());
         assert!(parse("let r = /(ab/").unwrap_err().message.contains("never closed"));
+        assert!(hint("trace M accepts \"01\"").contains("trace M on"));
+    }
+
+    #[test]
+    fn parses_trace() {
+        let stmts = parse("trace minimize(M) on \"01\" + \"1\"").unwrap();
+        let StmtKind::Trace { machine, word } = &stmts[0].kind else { panic!() };
+        assert_eq!(show(machine), "minimize(M)");
+        assert_eq!(show(word), "(\"01\" + \"1\")");
     }
 
     #[test]

@@ -1,0 +1,29 @@
+# A step-by-step run of a DFA: one accepted word, one rejected word,
+# the empty word, and long state names that make the columns wider.
+alphabet B = {0, 1}
+
+# Binary numbers divisible by 3; the state is the remainder so far.
+dfa Div3 over B {
+    start  r0
+    accept r0
+    r0 --0--> r0
+    r0 --1--> r1
+    r1 --0--> r2
+    r1 --1--> r0
+    r2 --0--> r1
+    r2 --1--> r2
+}
+
+trace Div3 on "10110"
+trace Div3 on "110"
+trace Div3 on ""
+
+dfa Long over B {
+    start  waiting_for_one
+    accept seen_a_one
+    waiting_for_one --0--> waiting_for_one
+    waiting_for_one --1--> seen_a_one
+    seen_a_one --0,1--> seen_a_one
+}
+
+trace Long on "001"
