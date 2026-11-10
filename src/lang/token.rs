@@ -31,6 +31,8 @@ pub enum Tok {
     Alphabet,
     Dfa,
     Nfa,
+    Pda,
+    Grammar,
     Over,
     Start,
     Accept,
@@ -77,7 +79,9 @@ pub enum Tok {
     DotDot,    // ..
     DashDash,  // --   opens a transition label
     LongArrow, // -->  closes a transition label
-    Arrow,     // ->   return type
+    Arrow,     // ->   return type, grammar rules
+    Bar,       // |    between grammar alternatives
+    Slash,     // /    between pop and push in a PDA move
 
     Eof,
 }
@@ -88,6 +92,8 @@ impl Tok {
             "alphabet" => Tok::Alphabet,
             "dfa" => Tok::Dfa,
             "nfa" => Tok::Nfa,
+            "pda" => Tok::Pda,
+            "grammar" => Tok::Grammar,
             "over" => Tok::Over,
             "start" => Tok::Start,
             "accept" => Tok::Accept,
@@ -131,6 +137,8 @@ impl Tok {
             Tok::Alphabet => "alphabet",
             Tok::Dfa => "dfa",
             Tok::Nfa => "nfa",
+            Tok::Pda => "pda",
+            Tok::Grammar => "grammar",
             Tok::Over => "over",
             Tok::Start => "start",
             Tok::Accept => "accept",
@@ -176,6 +184,8 @@ impl Tok {
             Tok::DashDash => "--",
             Tok::LongArrow => "-->",
             Tok::Arrow => "->",
+            Tok::Bar => "|",
+            Tok::Slash => "/",
             Tok::Int(_) | Tok::Str(_) | Tok::Regex(_) | Tok::Ident(_) | Tok::Eof => "",
         }
     }

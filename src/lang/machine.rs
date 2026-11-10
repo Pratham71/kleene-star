@@ -1,24 +1,28 @@
-//! Turning a machine definition into a real `Dfa` or `Nfa`, and rejecting
-//! definitions that are not valid machines.
+//! Turning a machine or grammar definition into the real thing, and
+//! rejecting definitions that break the rules.
 //!
 //! Both the checker (before the program runs) and the interpreter (for
 //! machines built by loops) describe a machine as a `MachineSpec` and hand it
-//! to `build`, so the rules live in exactly one place.
+//! to `build`, so the rules live in exactly one place. Grammars work the same
+//! way with `GrammarSpec` and `build_grammar`.
 
+use super::ast::{Action, GSymKind, MachineKind, RuleDef};
 use super::error::{Diag, ErrorKind};
 use super::token::Span;
+use crate::automata::grammar::{Grammar, Rule, Sym};
+use crate::automata::pda::{self, Pda};
 use crate::automata::{fmt_alphabet, Dfa, Nfa};
 use std::collections::BTreeSet;
 
 pub struct Transition {
     pub from: String,
-    pub labels: Vec<(Option<char>, Span)>,
+    pub action: Action,
     pub to: String,
     pub span: Span,
 }
 
 pub struct MachineSpec {
-    pub is_dfa: bool,
+    pub kind: MachineKind,
     /// The machine's name, if it has one, for error messages.
     pub name: Option<String>,
     pub alphabet: Vec<char>,
@@ -33,10 +37,17 @@ pub struct MachineSpec {
 pub enum Built {
     Dfa(Dfa),
     Nfa(Nfa),
+    Pda(Pda),
+}
+
+/// An error for a symbol that is not in the alphabet.
+fn foreign_symbol(c: char, span: Span, spec_alphabet: &[char], alphabet_name: &str) -> Diag {
+    Diag::new(ErrorKind::Alphabet, span, format!("symbol `{c}` is not in alphabet `{alphabet_name}`"))
+        .hint(format!("{alphabet_name} = {}", fmt_alphabet(spec_alphabet)))
 }
 
 pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
-    let kind = if spec.is_dfa { "DFA" } else { "NFA" };
+    let kind = spec.kind.title();
     let title = match &spec.name {
         Some(name) => format!("{kind} `{name}`"),
         None => format!("this {kind}"),
@@ -67,38 +78,65 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
     };
     let start = id(start);
     let mut edges = Vec::new();
+    let mut moves = Vec::new();
     for t in &spec.transitions {
         let (from, to) = (id(&t.from), id(&t.to));
-        for &(label, span) in &t.labels {
-            if let Some(c) = label {
-                if !spec.alphabet.contains(&c) {
-                    return Err(Diag::new(
-                        ErrorKind::Alphabet,
-                        span,
-                        format!("symbol `{c}` is not in alphabet `{}`", spec.alphabet_name),
-                    )
-                    .hint(format!("{} = {}", spec.alphabet_name, fmt_alphabet(&spec.alphabet))));
+        match &t.action {
+            Action::Symbols(labels) => {
+                for label in labels {
+                    if let Some(c) = label.symbol {
+                        if !spec.alphabet.contains(&c) {
+                            return Err(foreign_symbol(c, label.span, &spec.alphabet, &spec.alphabet_name));
+                        }
+                    } else if spec.kind == MachineKind::Dfa {
+                        return Err(machine_error(label.span, "a DFA cannot have eps transitions".into())
+                            .hint("eps moves need nondeterminism; declare the machine with `nfa` instead"));
+                    }
+                    edges.push((from, label.symbol, to, t));
                 }
-            } else if spec.is_dfa {
-                return Err(machine_error(span, "a DFA cannot have eps transitions".into())
-                    .hint("eps moves need nondeterminism; declare the machine with `nfa` instead"));
             }
-            edges.push((from, label, to, t));
+            Action::Stack { read, pop, push, .. } => {
+                if let Some(c) = read.symbol {
+                    if !spec.alphabet.contains(&c) {
+                        return Err(foreign_symbol(c, read.span, &spec.alphabet, &spec.alphabet_name));
+                    }
+                }
+                moves.push(pda::Move {
+                    from,
+                    read: read.symbol,
+                    pop: pop.symbol.map(String::from),
+                    push: push.iter().map(|c| c.to_string()).collect(),
+                    to,
+                });
+            }
         }
     }
     let accept: BTreeSet<usize> = spec.accepts.iter().map(|(name, _)| id(name)).collect();
 
-    if !spec.is_dfa {
-        let mut nfa = Nfa::new(spec.alphabet.clone());
-        for name in &states {
-            nfa.add_state(name.clone());
+    match spec.kind {
+        MachineKind::Pda => {
+            return Ok(Built::Pda(Pda {
+                alphabet: spec.alphabet.clone(),
+                states,
+                start,
+                accept,
+                moves,
+                bottom: "Z".to_string(),
+            }))
         }
-        for (from, label, to, _) in edges {
-            nfa.add_edge(from, label, to);
+        MachineKind::Nfa => {
+            let mut nfa = Nfa::new(spec.alphabet.clone());
+            for name in &states {
+                nfa.add_state(name.clone());
+            }
+            for (from, label, to, _) in edges {
+                nfa.add_edge(from, label, to);
+            }
+            nfa.start = start;
+            nfa.accept = accept;
+            return Ok(Built::Nfa(nfa));
         }
-        nfa.start = start;
-        nfa.accept = accept;
-        return Ok(Built::Nfa(nfa));
+        MachineKind::Dfa => {}
     }
 
     // A DFA needs exactly one transition per state and symbol.
@@ -144,4 +182,66 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
         accept,
         delta: delta.into_iter().map(|row| row.into_iter().map(Option::unwrap).collect()).collect(),
     }))
+}
+
+pub struct GrammarSpec<'a> {
+    pub name: Option<String>,
+    pub alphabet: Vec<char>,
+    pub alphabet_name: String,
+    pub header: Span,
+    pub rules: &'a [RuleDef],
+}
+
+/// Builds a grammar. The rules: there is at least one rule, every variable
+/// used on a right-hand side has rules of its own, and every terminal is in
+/// the alphabet. The first rule's variable is the start variable.
+pub fn build_grammar(spec: &GrammarSpec) -> Result<Grammar, Diag> {
+    if spec.rules.is_empty() {
+        let title = spec.name.as_ref().map_or("this grammar".to_string(), |n| format!("grammar `{n}`"));
+        return Err(Diag::new(ErrorKind::Machine, spec.header, format!("{title} has no rules"))
+            .hint("add a rule such as `S -> a S b | eps`; the first rule's variable is the start variable"));
+    }
+    // Variables in order of their first rule, so the start variable is 0.
+    let mut variables: Vec<String> = Vec::new();
+    for rule in spec.rules {
+        if !variables.contains(&rule.head.text) {
+            variables.push(rule.head.text.clone());
+        }
+    }
+    let mut rules = Vec::new();
+    for rule in spec.rules {
+        let head = variables.iter().position(|v| *v == rule.head.text).expect("added above");
+        for alternative in &rule.alternatives {
+            let mut body = Vec::new();
+            for sym in alternative {
+                body.push(match &sym.kind {
+                    GSymKind::Terminal(c) => {
+                        if !spec.alphabet.contains(c) {
+                            return Err(foreign_symbol(*c, sym.span, &spec.alphabet, &spec.alphabet_name));
+                        }
+                        Sym::T(*c)
+                    }
+                    GSymKind::Variable(name) => match variables.iter().position(|v| v == name) {
+                        Some(v) => Sym::V(v),
+                        None => {
+                            let mut hint = format!("add a rule such as `{name} -> ...`");
+                            if name.chars().count() == 1 && spec.alphabet.contains(&name.chars().next().unwrap_or_default()) {
+                                hint = format!(
+                                    "`{name}` is in the alphabet, but a name starting with a capital letter is always a variable in a grammar; {hint}"
+                                );
+                            }
+                            return Err(Diag::new(
+                                ErrorKind::Name,
+                                sym.span,
+                                format!("variable `{name}` has no rules"),
+                            )
+                            .hint(hint));
+                        }
+                    },
+                });
+            }
+            rules.push(Rule { head, body });
+        }
+    }
+    Ok(Grammar { alphabet: spec.alphabet.clone(), variables, start: 0, rules })
 }

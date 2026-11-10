@@ -131,6 +131,8 @@ changes needed to turn one into the other.
 | `ops.rs` | The product construction, complement, concatenation, star, reversal, emptiness, equivalence. |
 | `dot.rs` | Graphviz output. |
 | `trace.rs` | Running a machine step by step and recording each move. |
+| `grammar.rs` | Context-free grammars: CNF, CYK, emptiness, derivations, grammars from DFAs. |
+| `pda.rs` | Pushdown automata: the configuration search, PDAs from grammars. |
 
 A state is just a number: its position in the machine's list of state names.
 A DFA's transitions are a table indexed by state and symbol, so a DFA is
@@ -165,7 +167,59 @@ UTF-16 to it), but output piped into another program is decoded with the
 console's code page, so unless that is UTF-8 (65001) the session is switched
 to ASCII and prints `-` instead.
 
-## 8. The formatter
+## 8. Grammars and pushdown automata
+
+`src/automata/grammar.rs`, `src/automata/pda.rs`, `src/lang/machine.rs`
+
+Both are plain library types first, with the language on top.
+
+**Grammars.** A `Grammar` is a list of variable names, the alphabet, and
+`Rule`s whose bodies are `Sym::T(char)` (terminal) or `Sym::V(index)`
+(variable). The algorithms:
+
+- `to_cnf` follows the textbook steps in order: a new start variable, a
+  variable per terminal (`T_a`), splitting long bodies (`X1`, `X2`, ...),
+  removing eps rules (adding a copy of each rule with every combination of
+  nullable variables left out), removing unit rules (through the set of
+  variables each one reaches by unit rules), and finally dropping variables
+  that generate nothing or cannot be reached.
+- `accepts` runs CYK on the CNF copy: `table[i][len]` holds the variables that
+  generate the `len` symbols starting at `i`.
+- `is_empty` computes the generating variables, growing the set until it
+  stops changing.
+- `derive` is a breadth-first search over sentential forms, rewriting the
+  leftmost variable. It first confirms membership with CYK, then prunes forms
+  whose leading terminals do not match the word or that already need more
+  symbols than the word has. A limit stops runaway searches.
+- `from_dfa` makes one variable per useful DFA state.
+
+**PDAs.** A `Pda` is a list of `Move`s (`from`, `read`, `pop`, `push`, `to`)
+and a bottom-of-stack symbol. `search` is a breadth-first search over
+configurations (state, symbols read, stack). It remembers every configuration
+it has seen, so loops of eps moves cannot trap it, and it keeps a parent link
+for each, so it can return the run itself, which is what `trace` prints.
+Inside the search, stack symbols are numbered, so stacks are cheap to copy
+and hash. Pushing can still go on forever, so the search stops at a limit on
+configurations and on stack height, and then reports `GaveUp` rather than
+"rejected".
+
+**In the language.** Grammars have their own syntax node (`GrammarExpr`)
+because they are not machines. PDAs reuse the machine syntax, with a
+`MachineKind` saying which kind of machine it is; a transition's `Action` is
+either `Symbols` (DFA, NFA) or `Stack` (PDA). Validity rules for all of them
+live in `machine.rs`.
+
+Two lexer details make the PDA syntax work. `|` is a token for grammar
+alternatives. And `/` normally opens a regex, but in `a, Z/AZ` it follows the
+name `Z`. A regex can never directly follow a name, number, `eps` or closing
+bracket, so after one of those the lexer reads `/` as a plain slash.
+
+`equivalent` on a grammar or PDA is refused by the checker, in
+`builtins::result_type`, with an explanation that the question is
+undecidable. That is a deliberate difference from regular languages, where
+the product construction always answers it.
+
+## 9. The formatter
 
 `src/lang/format.rs`
 
@@ -199,7 +253,7 @@ bug, and the file is left alone with an error instead of being changed. The
 tests check, in addition, that every example formats to itself and that
 formatting never changes what a program prints.
 
-## 9. Tying it together
+## 10. Tying it together
 
 `src/lib.rs`, `src/main.rs`
 
@@ -242,7 +296,6 @@ Ideas that fit the current design, roughly in order of size:
 
 - `export`: write a DFA out as a standalone Rust function. This is where a
   compile step makes sense, since the result would run without TOC-Lang.
-- Context-free grammars and pushdown automata.
 - Turing machines.
 
 New machine types belong in `src/automata/` as plain Rust first, with tests,

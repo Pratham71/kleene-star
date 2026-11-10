@@ -1,0 +1,31 @@
+Grammar with 3 variables over {0, 1}, start S
+S -> 0 A | 1 S
+A -> 0 A | 1 B
+B -> 0 A | 1 S | eps
+PDA with 3 states over {a, b}, stack starts as Z
+start start, accept accept
+From  | Read | Pop | Push | To
+start | eps  | Z   | SZ   | loop
+loop  | eps  | S   | aSa  | loop
+loop  | eps  | S   | bSb  | loop
+loop  | eps  | S   | a    | loop
+loop  | eps  | S   | b    | loop
+loop  | eps  | S   | eps  | loop
+loop  | a    | a   | eps  | loop
+loop  | b    | b   | eps  | loop
+loop  | eps  | Z   | Z    | accept
+Input: aba
+
+Step  Move        State   Input  Stack
+0     —           start   aba    Z
+1     eps, Z/SZ   loop    aba    SZ
+2     eps, S/aSa  loop    aba    aSaZ
+3     a, a/eps    loop    ba     SaZ
+4     eps, S/b    loop    ba     baZ
+5     b, b/eps    loop    a      aZ
+6     a, a/eps    loop    —      Z
+7     eps, Z/Z    accept  —      Z
+Result: ACCEPTED
+Reason: Read all of the input and reached accepting state accept
+
+tests: 3 passed, 0 failed

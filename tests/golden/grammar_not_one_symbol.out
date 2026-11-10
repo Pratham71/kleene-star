@@ -1,0 +1,5 @@
+Error in grammar_not_one_symbol.toc, line 3:
+    S -> aSb | eps
+         ^^^
+SyntaxError: `aSb` is not one symbol
+  hint: write terminals one at a time with spaces between: `a S b`; variables start with a capital letter

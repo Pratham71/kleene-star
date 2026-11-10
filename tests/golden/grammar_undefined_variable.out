@@ -1,0 +1,5 @@
+Error in grammar_undefined_variable.toc, line 3:
+    S -> a T b | eps
+           ^
+NameError: variable `T` has no rules
+  hint: add a rule such as `T -> ...`

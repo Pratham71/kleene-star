@@ -15,6 +15,7 @@
 //! ```
 
 use crate::automata::trace::{End, Trace};
+use crate::automata::pda::{Config, Outcome, Pda, Search};
 use crate::automata::{fmt_alphabet, Dfa, Nfa, State};
 use std::collections::BTreeSet;
 
@@ -63,12 +64,12 @@ fn render<S: Clone>(
     reason: String,
     dash: &str,
 ) -> String {
-    let mut rows: Vec<[String; 4]> = vec![
-        ["Step".into(), "Symbol".into(), "From".into(), "To".into()],
-        ["0".into(), dash.into(), dash.into(), name(&trace.start)],
+    let mut rows: Vec<Vec<String>> = vec![
+        vec!["Step".into(), "Symbol".into(), "From".into(), "To".into()],
+        vec!["0".into(), dash.into(), dash.into(), name(&trace.start)],
     ];
     for (i, step) in trace.steps.iter().enumerate() {
-        rows.push([(i + 1).to_string(), step.symbol.to_string(), name(&step.from), name(&step.to)]);
+        rows.push(vec![(i + 1).to_string(), step.symbol.to_string(), name(&step.from), name(&step.to)]);
     }
 
     let (result, reason) = match trace.end {
@@ -90,10 +91,66 @@ fn render<S: Clone>(
     out
 }
 
+/// Shows a PDA run: one row per move, with the move taken, the state, the
+/// input still to read, and the stack (top first). For a rejected word, the
+/// run shown is one that read as much of the input as any run could.
+pub fn render_pda(pda: &Pda, word: &str, search: &Search, dash: &str) -> String {
+    let total = word.chars().count();
+    let remaining = |read: usize| -> String {
+        let rest: String = word.chars().skip(read).collect();
+        if rest.is_empty() { dash.to_string() } else { rest }
+    };
+    let stack = |config: &Config| -> String {
+        let top_first: Vec<String> = config.stack.iter().rev().cloned().collect();
+        if top_first.is_empty() { dash.to_string() } else { Pda::show_symbols(&top_first) }
+    };
+    let mut rows: Vec<Vec<String>> = vec![
+        ["Step", "Move", "State", "Input", "Stack"].map(String::from).to_vec(),
+    ];
+    for (i, config) in search.path.iter().enumerate() {
+        let shown_move = match i {
+            0 => dash.to_string(),
+            _ => pda.label(&pda.moves[search.moves[i - 1]]),
+        };
+        rows.push(vec![i.to_string(), shown_move, pda.states[config.state].clone(), remaining(config.read), stack(config)]);
+    }
+    let last = search.path.last().expect("a run has at least its start");
+    let (result, reason) = match search.outcome {
+        Outcome::Accepted => (
+            "ACCEPTED",
+            format!("Read all of the input and reached accepting state {}", pda.states[last.state]),
+        ),
+        Outcome::Rejected => (
+            "REJECTED",
+            format!(
+                "No run reads all of the input and ends in an accepting state; the run shown reads the most ({} of {total} symbol{})",
+                last.read,
+                if total == 1 { "" } else { "s" }
+            ),
+        ),
+        Outcome::GaveUp => (
+            "UNKNOWN",
+            format!(
+                "Gave up after {} configurations without finding an accepting run; eps moves may let this PDA run forever",
+                crate::automata::pda::STEP_LIMIT
+            ),
+        ),
+        Outcome::Foreign { position, symbol } => (
+            "REJECTED",
+            format!(
+                "Symbol `{symbol}` (position {position}) is not in the alphabet {}, so the run stops",
+                fmt_alphabet(&pda.alphabet)
+            ),
+        ),
+    };
+    let shown_word = if word.is_empty() { "(the empty string)" } else { word };
+    format!("Input: {shown_word}\n\n{}Result: {result}\nReason: {reason}", table(&rows))
+}
+
 /// Lines up the cells in columns two spaces apart. Each column is as wide as
 /// its widest cell, so long state names simply make their column wider.
-fn table(rows: &[[String; 4]]) -> String {
-    let mut widths = [0; 4];
+fn table(rows: &[Vec<String>]) -> String {
+    let mut widths = vec![0; rows[0].len()];
     for row in rows {
         for (width, cell) in widths.iter_mut().zip(row) {
             *width = (*width).max(cell.chars().count());
@@ -102,7 +159,7 @@ fn table(rows: &[[String; 4]]) -> String {
     let mut out = String::new();
     for row in rows {
         let mut line = String::new();
-        for (cell, width) in row.iter().zip(widths) {
+        for (cell, &width) in row.iter().zip(&widths) {
             line.push_str(cell);
             line.push_str(&" ".repeat(width - cell.chars().count() + 2));
         }

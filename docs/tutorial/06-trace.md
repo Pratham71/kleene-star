@@ -125,7 +125,7 @@ the program goes on
 
 ## What can be traced
 
-`trace` works on a `Dfa` or an `Nfa`. A regex or a finite set has no states to
+`trace` works on a `Dfa`, an `Nfa`, or a `Pda` (see the [next chapter](07-context-free.md)). A regex or a finite set has no states to
 show, so convert it first:
 
 ```toc-error
@@ -136,7 +136,7 @@ trace /(0|1)*01/ on "101"
 Error in demo.toc, line 1:
     trace /(0|1)*01/ on "101"
           ^^^^^^^^^^
-TypeError: `trace` needs a Dfa or an Nfa, but this is a Regex
+TypeError: `trace` needs a Dfa, Nfa or Pda, but this is a Regex
   hint: a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on "01"`
 ```
 

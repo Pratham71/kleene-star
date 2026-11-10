@@ -120,6 +120,17 @@ fn lex_into(
             continue;
         }
 
+        // A `/` right after a name, number, `eps` or closing bracket is the
+        // slash of a PDA move (`a, Z/AZ`): a regex can never follow those.
+        let after_operand = tokens.last().is_some_and(|t: &Token| {
+            matches!(t.tok, Tok::Ident(_) | Tok::Int(_) | Tok::Eps | Tok::RParen | Tok::RBracket)
+        });
+        if c == '/' && after_operand {
+            i += 1;
+            tokens.push(Token { tok: Tok::Slash, span: span(i) });
+            continue;
+        }
+
         // Regex literals: /.../  (the language has no division, so `/` is free)
         if c == '/' {
             i += 1;
@@ -171,6 +182,7 @@ fn lex_into(
                     '-' => (Tok::Minus, 1),
                     '*' => (Tok::Star, 1),
                     '%' => (Tok::Percent, 1),
+                    '|' => (Tok::Bar, 1),
                     ';' => {
                         return Err(error(i + 1, "unexpected `;`".into())
                             .hint("TOC has no semicolons; just end the line"));
@@ -247,6 +259,26 @@ mod tests {
                 Tok::Eof
             ]
         );
+    }
+
+    #[test]
+    fn slash_after_an_operand_is_not_a_regex() {
+        assert_eq!(
+            toks("a, Z/AZ eps/eps"),
+            vec![
+                Tok::Ident("a".into()),
+                Tok::Comma,
+                Tok::Ident("Z".into()),
+                Tok::Slash,
+                Tok::Ident("AZ".into()),
+                Tok::Eps,
+                Tok::Slash,
+                Tok::Eps,
+                Tok::Eof
+            ]
+        );
+        assert_eq!(toks("= /a|b/")[1], Tok::Regex("a|b".into()));
+        assert_eq!(toks("S -> a | eps")[3], Tok::Bar);
     }
 
     #[test]

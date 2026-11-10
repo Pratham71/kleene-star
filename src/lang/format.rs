@@ -235,10 +235,13 @@ impl Formatter<'_> {
                 self.push(&format!("alphabet {} = {{{}}}", name.text, symbols.join(", ")));
             }
             StmtKind::MachineDef { name, machine } => {
-                self.push(if machine.is_dfa { "dfa " } else { "nfa " });
-                self.push(&name.text);
-                self.push(" ");
+                self.push(&format!("{} {} ", machine.kind.keyword(), name.text));
                 let close = self.machine_body(machine);
+                return self.end_line(close.end);
+            }
+            StmtKind::GrammarDef { name, grammar } => {
+                self.push(&format!("grammar {} ", name.text));
+                let close = self.grammar_body(grammar);
                 return self.end_line(close.end);
             }
             StmtKind::Let { name, value } => {
@@ -365,7 +368,7 @@ impl Formatter<'_> {
         // Line up the transitions of this block: pad the source states so
         // every `--` is in one column, and the labels so every `-->` is.
         let transitions = items.iter().filter_map(|item| match item {
-            MachineItem::Transition { from, labels, .. } => Some((self.state(from), labels_text(labels))),
+            MachineItem::Transition { from, action, .. } => Some((self.state(from), action_text(action))),
             _ => None,
         });
         let (mut from_width, mut label_width) = (0, 0);
@@ -386,12 +389,12 @@ impl Formatter<'_> {
                         let states: Vec<String> = states.iter().map(|s| f.state(s)).collect();
                         f.push(&format!("accept {}", states.join(", ")));
                     }
-                    MachineItem::Transition { from, labels, to, .. } => {
+                    MachineItem::Transition { from, action, to, .. } => {
                         let (from, to) = (f.state(from), f.state(to));
                         f.push(&format!(
                             "{} --{}--> {to}",
                             pad(&from, from_width),
-                            pad(&labels_text(labels), label_width)
+                            pad(&action_text(action), label_width)
                         ));
                     }
                     MachineItem::For { var, items: range, body } => {
@@ -402,6 +405,24 @@ impl Formatter<'_> {
                     }
                 }
                 f.end_line(end);
+            }
+        });
+        close
+    }
+
+    /// `over B { ... }` for a grammar: one rule per line, with the `->`
+    /// of every rule in the same column. Returns the span of the `}`.
+    fn grammar_body(&mut self, g: &GrammarExpr) -> Span {
+        self.push(&format!("over {} ", g.alphabet.text));
+        let open = self.find(Tok::LBrace, g.alphabet.span.end);
+        let close = self.find(Tok::RBrace, g.rules.last().map_or(open.end, |r| r.span.end));
+        let width = g.rules.iter().map(|r| r.head.text.chars().count()).max().unwrap_or(0);
+        self.braces(open, close, |f| {
+            for rule in &g.rules {
+                f.start_line(rule.span.start);
+                let alternatives: Vec<String> = rule.alternatives.iter().map(|alt| alternative_text(alt)).collect();
+                f.push(&format!("{} -> {}", pad(&rule.head.text, width), alternatives.join(" | ")));
+                f.end_line(rule.span.end);
             }
         });
         close
@@ -492,8 +513,13 @@ impl Formatter<'_> {
                 self.push("}");
             }
             ExprKind::Machine(m) => {
-                self.push(if m.is_dfa { "dfa " } else { "nfa " });
+                self.push(m.kind.keyword());
+                self.push(" ");
                 self.machine_body(m);
+            }
+            ExprKind::Grammar(g) => {
+                self.push("grammar ");
+                self.grammar_body(g);
             }
         }
     }
@@ -511,10 +537,31 @@ fn item_start(item: &MachineItem) -> usize {
     }
 }
 
-fn labels_text(labels: &[Label]) -> String {
-    let labels: Vec<String> =
-        labels.iter().map(|l| l.symbol.map_or("eps".to_string(), |c| c.to_string())).collect();
-    labels.join(",")
+/// What goes between `--` and `-->`: `0,1` or, in a PDA, `a, Z/AZ`.
+fn action_text(action: &Action) -> String {
+    let label = |l: &Label| l.symbol.map_or("eps".to_string(), |c| c.to_string());
+    match action {
+        Action::Symbols(labels) => labels.iter().map(label).collect::<Vec<_>>().join(","),
+        Action::Stack { read, pop, push, .. } => {
+            let push: String = if push.is_empty() { "eps".into() } else { push.iter().collect() };
+            format!("{}, {}/{push}", label(read), label(pop))
+        }
+    }
+}
+
+/// One alternative of a grammar rule: `a S b`, or `eps` when empty.
+fn alternative_text(symbols: &[GSym]) -> String {
+    if symbols.is_empty() {
+        return "eps".to_string();
+    }
+    let parts: Vec<String> = symbols
+        .iter()
+        .map(|s| match &s.kind {
+            GSymKind::Variable(name) => name.clone(),
+            GSymKind::Terminal(c) => c.to_string(),
+        })
+        .collect();
+    parts.join(" ")
 }
 
 fn pad(text: &str, width: usize) -> String {

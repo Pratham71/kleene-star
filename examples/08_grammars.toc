@@ -1,0 +1,45 @@
+# Chapter 7: context-free grammars and pushdown automata.
+
+alphabet AB = {a, b}
+
+# a^n b^n is not regular, but a grammar generates it easily.
+grammar Equal over AB {
+    S -> a S b | eps
+}
+
+print Equal
+print derive(Equal, "aabb")
+test Equal accepts "aaabbb"
+test not (Equal accepts "aab")
+test not is_empty(Equal)
+
+# A PDA for the same language: push an A per a, pop one per b.
+pda AnBn over AB {
+    start  push
+    accept done
+    push --a, eps/A    --> push
+    push --eps, eps/eps--> pop
+    pop  --b, A/eps    --> pop
+    pop  --eps, Z/Z    --> done
+}
+
+for w in {"", "ab", "aabb", "abab", "aab"} {
+    test (AnBn accepts w) == (Equal accepts w)
+}
+trace AnBn on "aabb"
+
+# Palindromes, as a grammar, in Chomsky normal form, and as a PDA.
+grammar Pal over AB {
+    S -> a S a | b S b | a | b | eps
+}
+print to_cnf(Pal)
+let p = to_pda(Pal)
+test p accepts "abbaabba"
+test not (p accepts "ab")
+
+# Every regular language has a right-linear grammar.
+let g = to_grammar(/a*b/)
+print g
+test g accepts "aaab"
+
+draw AnBn

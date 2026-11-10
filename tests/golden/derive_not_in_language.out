@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  derive_not_in_language.toc, line 8, in <main>
+    print show("aab")
+  derive_not_in_language.toc, line 6, in show
+    return derive(G, word)
+                     ^^^^
+ValueError: the grammar cannot derive "aab"
+  hint: check first with `g accepts "..."`; only words in the language have a derivation

@@ -1,0 +1,5 @@
+alphabet AB = {a, b}
+grammar G over AB {
+    S -> a S b | eps
+}
+print union(G, /a*/)

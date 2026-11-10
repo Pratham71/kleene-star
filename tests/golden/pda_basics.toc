@@ -1,0 +1,20 @@
+# A PDA for a^n b^n, accepting by final state, and tracing it.
+alphabet AB = {a, b}
+
+pda AnBn over AB {
+    start  push
+    accept done
+    push --a, eps/A--> push
+    push --eps, eps/eps--> pop
+    pop  --b, A/eps--> pop
+    pop  --eps, Z/Z--> done
+}
+
+print AnBn
+print states(AnBn)
+for w in {"", "ab", "aabb", "abb", "ba"} {
+    print w, AnBn accepts w
+}
+trace AnBn on "aabb"
+trace AnBn on "abb"
+trace AnBn on "ac"

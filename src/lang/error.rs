@@ -22,6 +22,11 @@ pub enum ErrorKind {
     Math,
     /// Functions called each other too deeply.
     Recursion,
+    /// A search (a PDA run, a derivation) took too many steps to finish.
+    Limit,
+    /// A value is the right type but unsuitable, like a word a grammar
+    /// cannot derive.
+    Value,
     /// A file could not be written.
     Io,
 }
@@ -36,6 +41,8 @@ impl ErrorKind {
             ErrorKind::Alphabet => "AlphabetError",
             ErrorKind::Math => "MathError",
             ErrorKind::Recursion => "RecursionError",
+            ErrorKind::Limit => "LimitError",
+            ErrorKind::Value => "ValueError",
             ErrorKind::Io => "IOError",
         }
     }

@@ -113,18 +113,30 @@ impl<'a> Parser<'a> {
         let start = self.span();
         let kind = match self.peek() {
             Tok::Alphabet => self.alphabet()?,
-            Tok::Dfa | Tok::Nfa => {
-                // machine-def := ('dfa' | 'nfa') NAME 'over' NAME '{' item* '}'
-                let is_dfa = self.advance().tok == Tok::Dfa;
-                let word = if is_dfa { "dfa" } else { "nfa" };
+            Tok::Dfa | Tok::Nfa | Tok::Pda => {
+                // machine-def := ('dfa' | 'nfa' | 'pda') NAME 'over' NAME '{' item* '}'
+                let kind = machine_kind(&self.advance().tok);
+                let word = kind.keyword();
                 if *self.peek() == Tok::Over {
                     return Err(self.error(format!("a `{word}` statement needs a name")).hint(
                         format!("write `{word} Name over B {{ ... }}`, or `let m = {word} over B {{ ... }}`"),
                     ));
                 }
                 let name = self.name("a name for the machine")?;
-                let machine = self.machine_body(is_dfa, start)?;
+                let machine = self.machine_body(kind, start)?;
                 StmtKind::MachineDef { name, machine }
+            }
+            Tok::Grammar => {
+                // grammar-def := 'grammar' NAME grammar-body
+                self.advance();
+                if *self.peek() == Tok::Over {
+                    return Err(self.error("a `grammar` statement needs a name").hint(
+                        "write `grammar G over B { ... }`, or `let g = grammar over B { ... }`",
+                    ));
+                }
+                let name = self.name("a name for the grammar")?;
+                let grammar = self.grammar_body(start)?;
+                StmtKind::GrammarDef { name, grammar }
             }
             Tok::Let => {
                 // let := 'let' NAME '=' expr
@@ -174,7 +186,7 @@ impl<'a> Parser<'a> {
             other => {
                 return Err(self
                     .error(format!("expected a statement, found {}", other.describe()))
-                    .hint("a statement starts with one of: alphabet, dfa, nfa, let, fn, return, if, for, print, test, draw, trace"));
+                    .hint("a statement starts with one of: alphabet, dfa, nfa, pda, grammar, let, fn, return, if, for, print, test, draw, trace"));
             }
         };
         Ok(Stmt { kind, span: start.to(self.prev()) })
@@ -258,10 +270,11 @@ impl<'a> Parser<'a> {
         Ok(StmtKind::Fn(Rc::new(FnDef { name, params, ret, body })))
     }
 
-    // type := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Regex' | 'Set' '[' type ']'
+    // type := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Pda' | 'Regex' | 'Grammar'
+    //       | 'Set' '[' type ']'
     fn type_name(&mut self) -> Parse<Type> {
         let name = self.name("a type").map_err(|e| {
-            e.hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Regex, Set[T]")
+            e.hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Regex, Grammar, Set[T]")
         })?;
         Ok(match name.text.as_str() {
             "Int" => Type::Int,
@@ -271,6 +284,8 @@ impl<'a> Parser<'a> {
             "Dfa" => Type::Dfa,
             "Nfa" => Type::Nfa,
             "Regex" => Type::Regex,
+            "Grammar" => Type::Grammar,
+            "Pda" => Type::Pda,
             "Set" => {
                 self.expect(Tok::LBracket, "`[` after `Set`")?;
                 let inner = self.type_name()?;
@@ -283,7 +298,7 @@ impl<'a> Parser<'a> {
                     name.span,
                     format!("unknown type `{other}`"),
                 )
-                .hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Regex, Set[T]"));
+                .hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Regex, Grammar, Set[T]"));
             }
         })
     }
@@ -326,22 +341,22 @@ impl<'a> Parser<'a> {
     // ---- machines ----
 
     // machine-body := 'over' NAME '{' item* '}'
-    fn machine_body(&mut self, is_dfa: bool, start: Span) -> Parse<MachineExpr> {
+    fn machine_body(&mut self, kind: MachineKind, start: Span) -> Parse<MachineExpr> {
         self.expect(Tok::Over, "`over` and an alphabet")?;
         let alphabet = self.name("the name of an alphabet")?;
         let header = start.to(self.prev());
-        let items = self.machine_items()?;
-        Ok(MachineExpr { is_dfa, alphabet, items, header })
+        let items = self.machine_items(kind)?;
+        Ok(MachineExpr { kind, alphabet, items, header })
     }
 
-    fn machine_items(&mut self) -> Parse<Vec<MachineItem>> {
+    fn machine_items(&mut self, kind: MachineKind) -> Parse<Vec<MachineItem>> {
         let open = self.expect(Tok::LBrace, "`{`")?;
         let mut items = Vec::new();
         while *self.peek() != Tok::RBrace {
             if *self.peek() == Tok::Eof {
                 return Err(Diag::new(ErrorKind::Syntax, open, "this `{` is never closed"));
             }
-            items.push(self.machine_item()?);
+            items.push(self.machine_item(kind)?);
         }
         self.advance();
         Ok(items)
@@ -350,8 +365,8 @@ impl<'a> Parser<'a> {
     // item := 'start' state
     //       | 'accept' state (',' state)*
     //       | 'for' NAME 'in' expr '{' item* '}'
-    //       | state '--' label (',' label)* '-->' state
-    fn machine_item(&mut self) -> Parse<MachineItem> {
+    //       | state '--' action '-->' state
+    fn machine_item(&mut self, kind: MachineKind) -> Parse<MachineItem> {
         match self.peek() {
             Tok::Start => {
                 self.advance();
@@ -370,7 +385,7 @@ impl<'a> Parser<'a> {
                 let var = self.name("a loop variable")?;
                 self.expect(Tok::In, "`in`")?;
                 let items = self.expr()?;
-                Ok(MachineItem::For { var, items, body: self.machine_items()? })
+                Ok(MachineItem::For { var, items, body: self.machine_items(kind)? })
             }
             Tok::Ident(_) => {
                 let from = self.state()?;
@@ -383,10 +398,16 @@ impl<'a> Parser<'a> {
                         .hint("a transition is written `q0 --a--> q1`"));
                 }
                 self.advance();
-                let mut labels = vec![self.label()?];
-                while self.eat(Tok::Comma) {
-                    labels.push(self.label()?);
-                }
+                let action = match kind {
+                    MachineKind::Pda => self.stack_action()?,
+                    _ => {
+                        let mut labels = vec![self.label()?];
+                        while self.eat(Tok::Comma) {
+                            labels.push(self.label()?);
+                        }
+                        Action::Symbols(labels)
+                    }
+                };
                 if *self.peek() != Tok::LongArrow {
                     return Err(self
                         .error(format!(
@@ -398,12 +419,154 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let to = self.state()?;
                 let span = from.span.to(to.span);
-                Ok(MachineItem::Transition { from, labels, to, span })
+                Ok(MachineItem::Transition { from, action, to, span })
             }
             other => Err(self
                 .error(format!("expected a machine item, found {}", other.describe()))
                 .hint("inside a machine write `start q0`, `accept q1`, or a transition `q0 --a--> q1`")),
         }
+    }
+
+    // action := label (',' label)*               in a DFA or NFA
+    //         | label ',' label '/' push          in a PDA
+    // push   := 'eps' | stack symbols written together, top first: `AZ`
+    fn stack_action(&mut self) -> Parse<Action> {
+        let hint = "a PDA move is written `q0 --a, Z/AZ--> q1`: read `a`, pop `Z`, push `AZ` (top first); any part may be `eps`";
+        let read = self.label().map_err(|e| e.hint(hint))?;
+        if !self.eat(Tok::Comma) {
+            return Err(self
+                .error(format!("expected `,` and the symbol to pop, found {}", self.peek().describe()))
+                .hint(hint));
+        }
+        let pop = self.label().map_err(|e| e.hint(hint))?;
+        if !self.eat(Tok::Slash) {
+            return Err(self
+                .error(format!("expected `/` and the symbols to push, found {}", self.peek().describe()))
+                .hint(hint));
+        }
+        let push_span = self.span();
+        match self.peek() {
+            Tok::Eps => {
+                self.advance();
+                Ok(Action::Stack { read, pop, push: Vec::new(), push_span })
+            }
+            Tok::Ident(_) | Tok::Int(_) => {
+                // `AZ` is one token; `0A` is two tokens that touch. Either
+                // way the symbols are the characters written, top first.
+                let mut push = Vec::new();
+                let mut end = push_span;
+                while matches!(self.peek(), Tok::Ident(_) | Tok::Int(_))
+                    && (push.is_empty() || self.span().start == end.end)
+                {
+                    end = self.advance().span;
+                    push.extend(self.text(end).chars());
+                }
+                let push_span = push_span.to(end);
+                if push.contains(&'_') {
+                    return Err(Diag::new(ErrorKind::Syntax, push_span, "`_` cannot be a stack symbol")
+                        .hint("stack symbols are letters and digits"));
+                }
+                Ok(Action::Stack { read, pop, push, push_span })
+            }
+            other => Err(self.error(format!("expected the symbols to push, found {}", other.describe())).hint(hint)),
+        }
+    }
+
+    // grammar-body := 'over' NAME '{' rule* '}'
+    // rule         := NAME '->' alternative ('|' alternative)*
+    // alternative  := 'eps' | gsymbol gsymbol*
+    // gsymbol      := NAME starting with a capital letter (a variable)
+    //               | symbol                            (a terminal)
+    //
+    // Line breaks mean nothing, so a rule ends where the next one begins:
+    // at a name followed by `->`, or at the closing `}`.
+    fn grammar_body(&mut self, start: Span) -> Parse<GrammarExpr> {
+        self.expect(Tok::Over, "`over` and an alphabet")?;
+        let alphabet = self.name("the name of an alphabet")?;
+        let header = start.to(self.prev());
+        let open = self.expect(Tok::LBrace, "`{`")?;
+        let mut rules = Vec::new();
+        while *self.peek() != Tok::RBrace {
+            if *self.peek() == Tok::Eof {
+                return Err(Diag::new(ErrorKind::Syntax, open, "this `{` is never closed"));
+            }
+            rules.push(self.rule()?);
+        }
+        self.advance();
+        Ok(GrammarExpr { alphabet, rules, header })
+    }
+
+    fn rule(&mut self) -> Parse<RuleDef> {
+        let rule_hint = "a rule is written `S -> a S b | eps`; variables start with a capital letter";
+        let head = self.name("a variable to define").map_err(|e| e.hint(rule_hint))?;
+        if !head.text.starts_with(char::is_uppercase) {
+            return Err(Diag::new(
+                ErrorKind::Syntax,
+                head.span,
+                format!("`{}` cannot have rules: variables start with a capital letter", head.text),
+            )
+            .hint(rule_hint));
+        }
+        if *self.peek() != Tok::Arrow {
+            return Err(self
+                .error(format!("expected `->` after `{}`, found {}", head.text, self.peek().describe()))
+                .hint(rule_hint));
+        }
+        self.advance();
+        let mut alternatives = vec![self.alternative()?];
+        while self.eat(Tok::Bar) {
+            alternatives.push(self.alternative()?);
+        }
+        Ok(RuleDef { span: head.span.to(self.prev()), head, alternatives })
+    }
+
+    /// True where an alternative ends: at `|`, `}`, or the next rule.
+    fn alternative_ends(&self) -> bool {
+        matches!(self.peek(), Tok::RBrace | Tok::Bar | Tok::Eof)
+            || (matches!(self.peek(), Tok::Ident(_)) && *self.peek_next() == Tok::Arrow)
+    }
+
+    fn alternative(&mut self) -> Parse<Vec<GSym>> {
+        let eps_hint = "`eps` is the empty string; write it as a whole alternative: `S -> a S | eps`";
+        if *self.peek() == Tok::Eps {
+            let eps = self.advance().span;
+            if !self.alternative_ends() {
+                return Err(Diag::new(ErrorKind::Syntax, eps, "`eps` must stand alone").hint(eps_hint));
+            }
+            return Ok(Vec::new());
+        }
+        let mut symbols = Vec::new();
+        while !self.alternative_ends() {
+            let span = self.span();
+            let text = self.text(span);
+            let kind = match self.peek() {
+                Tok::Ident(name) if name.starts_with(char::is_uppercase) => GSymKind::Variable(name.clone()),
+                Tok::Ident(_) | Tok::Int(_) if text.chars().count() == 1 => {
+                    GSymKind::Terminal(text.chars().next().unwrap_or_default())
+                }
+                Tok::Ident(_) | Tok::Int(_) => {
+                    let spaced: Vec<String> = text.chars().map(String::from).collect();
+                    return Err(self.error(format!("`{text}` is not one symbol")).hint(format!(
+                        "write terminals one at a time with spaces between: `{}`; variables start with a capital letter",
+                        spaced.join(" ")
+                    )));
+                }
+                Tok::Eps => return Err(self.error("`eps` must stand alone").hint(eps_hint)),
+                other => {
+                    return Err(self
+                        .error(format!("expected a symbol or a variable, found {}", other.describe()))
+                        .hint("a rule is written `S -> a S b | eps`"));
+                }
+            };
+            self.advance();
+            symbols.push(GSym { kind, span });
+        }
+        if symbols.is_empty() {
+            return Err(self
+                .error(format!("expected a symbol, a variable or `eps`, found {}", self.peek().describe()))
+                .hint("write `eps` for the empty string: `S -> a S | eps`"));
+        }
+        Ok(symbols)
     }
 
     // state := NAME ('[' expr ']')?
@@ -621,21 +784,38 @@ impl<'a> Parser<'a> {
                 self.expect(Tok::RBrace, "`,` or `}`")?;
                 ExprKind::Set(items)
             }
-            Tok::Dfa | Tok::Nfa => {
-                let is_dfa = self.advance().tok == Tok::Dfa;
+            Tok::Dfa | Tok::Nfa | Tok::Pda => {
+                let kind = machine_kind(&self.advance().tok);
                 if let Tok::Ident(name) = self.peek() {
-                    let word = if is_dfa { "dfa" } else { "nfa" };
                     return Err(self
                         .error(format!("a machine used as a value cannot have a name (`{name}`)"))
-                        .hint(format!("write `{word} over B {{ ... }}` here")));
+                        .hint(format!("write `{} over B {{ ... }}` here", kind.keyword())));
                 }
-                ExprKind::Machine(Box::new(self.machine_body(is_dfa, start)?))
+                ExprKind::Machine(Box::new(self.machine_body(kind, start)?))
+            }
+            Tok::Grammar => {
+                self.advance();
+                if let Tok::Ident(name) = self.peek() {
+                    return Err(self
+                        .error(format!("a grammar used as a value cannot have a name (`{name}`)"))
+                        .hint("write `grammar over B { ... }` here"));
+                }
+                ExprKind::Grammar(Box::new(self.grammar_body(start)?))
             }
             other => {
                 return Err(self.error(format!("expected a value, found {}", other.describe())));
             }
         };
         Ok(Expr { kind, span: start.to(self.prev()) })
+    }
+}
+
+/// The kind of machine a `dfa`, `nfa` or `pda` keyword introduces.
+fn machine_kind(tok: &Tok) -> MachineKind {
+    match tok {
+        Tok::Dfa => MachineKind::Dfa,
+        Tok::Nfa => MachineKind::Nfa,
+        _ => MachineKind::Pda,
     }
 }
 
@@ -689,10 +869,12 @@ mod tests {
         let stmts = parse(src).unwrap();
         let StmtKind::MachineDef { name, machine } = &stmts[0].kind else { panic!() };
         assert_eq!(name.text, "M");
-        assert!(machine.is_dfa);
+        assert_eq!(machine.kind, MachineKind::Dfa);
         assert_eq!(machine.alphabet.text, "B");
         assert_eq!(machine.items.len(), 4);
-        let MachineItem::Transition { labels, to, .. } = &machine.items[3] else { panic!() };
+        let MachineItem::Transition { action: Action::Symbols(labels), to, .. } = &machine.items[3] else {
+            panic!()
+        };
         assert_eq!(labels[0].symbol, None);
         assert!(to.index.is_some());
         assert_eq!(&src[machine.header.start..machine.header.end], "dfa M over B");
@@ -720,6 +902,49 @@ mod tests {
         assert!(parse("if true { fn f() -> Int { return 1 } }").is_err());
         assert!(parse("let r = /(ab/").unwrap_err().message.contains("never closed"));
         assert!(hint("trace M accepts \"01\"").contains("trace M on"));
+    }
+
+    #[test]
+    fn parses_pda_moves() {
+        let src = "pda P over B { start p  p --a, eps/AZ--> p  p --eps, Z/eps--> q  p --0, A/0A--> p }";
+        let stmts = parse(src).unwrap();
+        let StmtKind::MachineDef { machine, .. } = &stmts[0].kind else { panic!() };
+        assert_eq!(machine.kind, MachineKind::Pda);
+        let moves: Vec<(Option<char>, Option<char>, String)> = machine.items[1..]
+            .iter()
+            .map(|item| match item {
+                MachineItem::Transition { action: Action::Stack { read, pop, push, .. }, .. } => {
+                    (read.symbol, pop.symbol, push.iter().collect())
+                }
+                _ => panic!(),
+            })
+            .collect();
+        assert_eq!(
+            moves,
+            [(Some('a'), None, "AZ".into()), (None, Some('Z'), "".into()), (Some('0'), Some('A'), "0A".into())]
+        );
+        let hint = |src: &str| parse(src).unwrap_err().hint.unwrap_or_default();
+        assert!(hint("pda P over B { p --a--> q }").contains("read `a`, pop `Z`"));
+        assert!(hint("pda P over B { p --a, Z--> q }").contains("read `a`, pop `Z`"));
+    }
+
+    #[test]
+    fn parses_grammars() {
+        let src = "grammar G over B { S -> a S b | eps  T -> S S\n | a }";
+        let stmts = parse(src).unwrap();
+        let StmtKind::GrammarDef { grammar, .. } = &stmts[0].kind else { panic!() };
+        assert_eq!(grammar.rules.len(), 2);
+        let s = &grammar.rules[0];
+        assert_eq!(s.alternatives.len(), 2);
+        assert_eq!(s.alternatives[0][0].kind, GSymKind::Terminal('a'));
+        assert_eq!(s.alternatives[0][1].kind, GSymKind::Variable("S".into()));
+        assert!(s.alternatives[1].is_empty());
+        assert_eq!(grammar.rules[1].alternatives.len(), 2);
+        let hint = |src: &str| parse(src).unwrap_err().hint.unwrap_or_default();
+        assert!(hint("grammar G over B { S -> aSb }").contains("`a S b`"));
+        assert!(hint("grammar G over B { S -> a eps }").contains("whole alternative"));
+        assert!(hint("grammar G over B { s -> a }").contains("capital letter"));
+        assert!(hint("grammar G over B { S -> }").contains("eps"));
     }
 
     #[test]

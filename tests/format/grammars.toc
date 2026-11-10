@@ -1,0 +1,14 @@
+# Grammars and PDAs: `->` lines up across rules, and PDA moves line up
+# like any other transitions.
+alphabet AB={a,b}
+grammar Pal over AB{S->a S a|b S b
+| a | b|eps
+Longer -> S Longer|eps}
+pda AnBn over AB {
+start push accept done
+push--a,eps/A-->push
+push --eps,eps/eps--> pop
+pop --b, A/eps --> pop
+pop --eps,Z/Z-->done
+}
+let g = grammar over AB { S -> a }

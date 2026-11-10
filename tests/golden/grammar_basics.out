@@ -1,0 +1,21 @@
+Grammar with 1 variable over {a, b}, start S
+S -> a S b | eps
+ true
+aab false
+aabb true
+ab true
+ba false
+false
+S
+=> a S b
+=> a a S b b
+=> a a a S b b b
+=> a a a b b b
+Grammar with 5 variables over {l, r}, start S0
+S0  -> S S | T_l X1 | eps
+S   -> S S | T_l X1
+T_l -> l
+X1  -> r | S T_r
+T_r -> r
+true
+tests: 2 passed, 0 failed

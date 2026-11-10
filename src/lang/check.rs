@@ -6,9 +6,9 @@
 //! stay simple.
 
 use super::ast::*;
-use super::builtins::{self, article, is_lang};
+use super::builtins::{self, article, is_context_free, is_lang};
 use super::error::{did_you_mean, Diag, ErrorKind};
-use super::machine::{self, MachineSpec, Transition};
+use super::machine::{self, GrammarSpec, MachineSpec, Transition};
 use super::token::Span;
 use std::collections::HashMap;
 
@@ -144,6 +144,10 @@ impl Checker {
                 let ty = self.machine(machine, Some(&name.text))?;
                 self.define(name, ty, None)
             }
+            StmtKind::GrammarDef { name, grammar } => {
+                let ty = self.grammar(grammar, Some(&name.text))?;
+                self.define(name, ty, None)
+            }
             StmtKind::Let { name, value } => {
                 let ty = self.expr(value)?;
                 // `let A = B` keeps what we know about alphabet B.
@@ -194,23 +198,29 @@ impl Checker {
             StmtKind::Test(cond) => self.expect(cond, &Type::Bool, "a `test`"),
             StmtKind::Draw(value) => {
                 let ty = self.expr(value)?;
-                if !is_lang(&ty) {
-                    return Err(type_error(
+                if !is_lang(&ty) && ty != Type::Pda {
+                    let mut err = type_error(
                         value.span,
                         format!("`draw` needs a machine or regex, but this is {}", article(&ty)),
-                    ));
+                    );
+                    if ty == Type::Grammar {
+                        err = err.hint("a grammar has no states to draw; `draw to_pda(g)` draws its PDA");
+                    }
+                    return Err(err);
                 }
                 Ok(())
             }
             StmtKind::Trace { machine, word } => {
                 let ty = self.expr(machine)?;
-                if !matches!(ty, Type::Dfa | Type::Nfa) {
+                if !matches!(ty, Type::Dfa | Type::Nfa | Type::Pda) {
                     let mut err = type_error(
                         machine.span,
-                        format!("`trace` needs a Dfa or an Nfa, but this is {}", article(&ty)),
+                        format!("`trace` needs a Dfa, Nfa or Pda, but this is {}", article(&ty)),
                     );
                     if is_lang(&ty) {
                         err = err.hint("a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on \"01\"`");
+                    } else if ty == Type::Grammar {
+                        err = err.hint("to see how a grammar makes a word, use `print derive(g, \"...\")`; or trace its PDA: `trace to_pda(g) on \"...\"`");
                     }
                     return Err(err);
                 }
@@ -254,20 +264,13 @@ impl Checker {
     // ---- machines ----
 
     fn machine(&mut self, m: &MachineExpr, name: Option<&str>) -> Check<Type> {
-        let alphabet = self.lookup(&m.alphabet.text, m.alphabet.span)?;
-        if alphabet.ty != Type::Alphabet {
-            return Err(type_error(
-                m.alphabet.span,
-                format!("`{}` is {}, not an Alphabet", m.alphabet.text, article(&alphabet.ty)),
-            )
-            .hint("declare one with `alphabet B = {0, 1}`"));
-        }
+        let alphabet = self.alphabet_of(&m.alphabet)?;
         let literal = self.machine_items(&m.items)?;
         // A machine written out in full can be validated right now. One built
         // with loops or `q[i]` has to wait until it runs.
-        if let (true, Some(symbols)) = (literal, alphabet.alphabet) {
+        if let (true, Some(symbols)) = (literal, alphabet) {
             let mut spec = MachineSpec {
-                is_dfa: m.is_dfa,
+                kind: m.kind,
                 name: name.map(str::to_string),
                 alphabet: symbols,
                 alphabet_name: m.alphabet.text.clone(),
@@ -282,10 +285,10 @@ impl Checker {
                     MachineItem::Accept(states) => {
                         spec.accepts.extend(states.iter().map(|s| (s.name.clone(), s.span)))
                     }
-                    MachineItem::Transition { from, labels, to, span } => {
+                    MachineItem::Transition { from, action, to, span } => {
                         spec.transitions.push(Transition {
                             from: from.name.clone(),
-                            labels: labels.iter().map(|l| (l.symbol, l.span)).collect(),
+                            action: action.clone(),
                             to: to.name.clone(),
                             span: *span,
                         })
@@ -295,7 +298,37 @@ impl Checker {
             }
             machine::build(&spec)?;
         }
-        Ok(if m.is_dfa { Type::Dfa } else { Type::Nfa })
+        Ok(m.kind.ty())
+    }
+
+    /// Checks a grammar. Like a machine, it is validated now if its
+    /// alphabet is known; otherwise when it is built while running.
+    fn grammar(&mut self, g: &GrammarExpr, name: Option<&str>) -> Check<Type> {
+        let alphabet = self.alphabet_of(&g.alphabet)?;
+        if let Some(symbols) = alphabet {
+            machine::build_grammar(&GrammarSpec {
+                name: name.map(str::to_string),
+                alphabet: symbols,
+                alphabet_name: g.alphabet.text.clone(),
+                header: g.header,
+                rules: &g.rules,
+            })?;
+        }
+        Ok(Type::Grammar)
+    }
+
+    /// Checks that `name` (after `over`) is an alphabet, and returns its
+    /// symbols if they are known before running.
+    fn alphabet_of(&self, name: &Name) -> Check<Option<Vec<char>>> {
+        let alphabet = self.lookup(&name.text, name.span)?;
+        if alphabet.ty != Type::Alphabet {
+            return Err(type_error(
+                name.span,
+                format!("`{}` is {}, not an Alphabet", name.text, article(&alphabet.ty)),
+            )
+            .hint("declare one with `alphabet B = {0, 1}`"));
+        }
+        Ok(alphabet.alphabet)
     }
 
     /// Checks the items and reports whether they are all written out
@@ -373,6 +406,7 @@ impl Checker {
             ExprKind::Name(name) => Ok(self.lookup(name, expr.span)?.ty),
             ExprKind::Paren(inner) => self.expr(inner),
             ExprKind::Machine(m) => self.machine(m, None),
+            ExprKind::Grammar(g) => self.grammar(g, None),
             ExprKind::Set(items) => {
                 let Some(first) = items.first() else { return Ok(Type::EmptySet) };
                 let element = self.expr(first)?;
@@ -446,7 +480,7 @@ impl Checker {
                 _ => Err(mismatch("two Ints")),
             },
             BinOp::Eq | BinOp::NotEq => {
-                if matches!(l, Type::Dfa | Type::Nfa | Type::Regex) {
+                if matches!(l, Type::Dfa | Type::Nfa | Type::Pda | Type::Regex | Type::Grammar) {
                     return Err(type_error(
                         span,
                         format!("`{}` cannot compare machines or regexes", op.symbol()),
@@ -460,11 +494,11 @@ impl Checker {
                 }
             }
             BinOp::Accepts => {
-                if !is_lang(&l) {
+                if !is_lang(&l) && !is_context_free(&l) {
                     return Err(type_error(
                         left.span,
                         format!(
-                            "the left side of `accepts` must be a language (Dfa, Nfa, Regex or Set[Str]), but this is {}",
+                            "the left side of `accepts` must be a language (Dfa, Nfa, Pda, Regex, Grammar or Set[Str]), but this is {}",
                             article(&l)
                         ),
                     ));
@@ -485,8 +519,12 @@ impl Checker {
         let types = args.iter().map(|arg| self.expr(arg)).collect::<Check<Vec<Type>>>()?;
 
         if builtins::NAMES.contains(&name.text.as_str()) {
-            return builtins::result_type(&name.text, &types).map_err(|(arg, message)| {
-                type_error(arg.map_or(span, |i| args[i].span), message)
+            return builtins::result_type(&name.text, &types).map_err(|e| {
+                let err = type_error(e.arg.map_or(span, |i| args[i].span), e.message);
+                match e.hint {
+                    Some(hint) => err.hint(hint),
+                    None => err,
+                }
             });
         }
 
@@ -613,10 +651,34 @@ mod tests {
         assert!(error("fn f(n: Int) -> Int { if n > 0 { return 1 } }").contains("without returning"));
         assert!(error("for x in 3 { print x }").contains("cannot loop over an Int"));
         assert!(error("let a = 1\ndfa M over a { start q }").contains("not an Alphabet"));
-        assert!(error("trace /a/ on \"a\"").contains("`trace` needs a Dfa or an Nfa, but this is a Regex"));
+        assert!(error("trace /a/ on \"a\"").contains("`trace` needs a Dfa, Nfa or Pda, but this is a Regex"));
         assert!(error("trace 1 on \"a\"").contains("but this is an Int"));
         assert!(error(&format!("{B}nfa M over B {{ start a }}\ntrace M on 1")).contains("word to trace must be a Str"));
         check(&format!("{B}nfa M over B {{ start a }}\ntrace M on \"01\"")).unwrap();
+    }
+
+    #[test]
+    fn grammars_and_pdas() {
+        const G: &str = "alphabet B = {0, 1}\ngrammar G over B { S -> 0 S 1 | eps }\npda P over B { start p  accept p  p --0, eps/A--> p }\n";
+        let ok = |rest: &str| check(&format!("{G}{rest}")).unwrap();
+        ok("test G accepts \"01\" and P accepts \"0\"");
+        ok("let c = to_cnf(G)\nlet p = to_pda(c)\nprint states(p), is_empty(G), derive(G, \"01\")");
+        ok("let g = to_grammar(/0*1/)\ntrace P on \"00\"\ndraw P");
+        ok("fn f(g: Grammar) -> Pda { return to_pda(g) }\nprint f(grammar over B { S -> 0 })");
+        let err = |rest: &str| error(&format!("{G}{rest}"));
+        assert!(err("print equivalent(G, /0*/)").contains("cannot compare context-free languages"));
+        assert!(err("print equivalent(/0*/, P)").contains("this is a Pda"));
+        assert!(err("print minimize(G)").contains("must be a regular language"));
+        assert!(err("print to_pda(P)").contains("must be a Grammar"));
+        assert!(err("draw G").contains("`draw` needs a machine or regex"));
+        assert!(err("trace G on \"0\"").contains("needs a Dfa, Nfa or Pda"));
+        assert!(err("print G == G").contains("cannot compare machines"));
+        assert!(error("alphabet B = {0}\ngrammar G over B { S -> T }").starts_with("NameError: variable `T` has no rules"));
+        assert!(error("alphabet B = {0}\ngrammar G over B { S -> 1 }").starts_with("AlphabetError"));
+        assert!(error("alphabet B = {0}\npda P over B { start p  p --1, Z/Z--> p }").starts_with("AlphabetError"));
+        assert!(error("alphabet B = {0}\npda P over B { p --0, Z/Z--> p }").contains("PDA `P` has no start state"));
+        let hint = check("alphabet B = {0}\nlet x = equivalent(grammar over B { S -> 0 }, /0/)").unwrap_err().hint.unwrap();
+        assert!(hint.contains("undecidable"));
     }
 
     #[test]

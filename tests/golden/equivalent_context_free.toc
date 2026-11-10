@@ -1,0 +1,11 @@
+# Equivalence of context-free languages is undecidable, so it is refused
+# before the program runs.
+alphabet AB = {a, b}
+grammar G over AB {
+    S -> a S b | eps
+}
+grammar H over AB {
+    S -> a T | eps
+    T -> S b
+}
+print equivalent(G, H)

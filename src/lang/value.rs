@@ -1,5 +1,7 @@
 //! Runtime values: what an expression evaluates to.
 
+use crate::automata::grammar::Grammar;
+use crate::automata::pda::Pda;
 use crate::automata::{fmt_alphabet, Dfa, Nfa, Regex};
 use std::collections::BTreeSet;
 use std::fmt;
@@ -16,6 +18,8 @@ pub enum Value {
     Dfa(Rc<Dfa>),
     Nfa(Rc<Nfa>),
     Regex(Rc<Regex>),
+    Grammar(Rc<Grammar>),
+    Pda(Rc<Pda>),
     Set(Rc<BTreeSet<Value>>),
 }
 
@@ -43,6 +47,8 @@ impl fmt::Display for Value {
             Value::Dfa(d) => write!(f, "{d}"),
             Value::Nfa(n) => write!(f, "{n}"),
             Value::Regex(r) => write!(f, "/{r}/"),
+            Value::Grammar(g) => write!(f, "{g}"),
+            Value::Pda(p) => write!(f, "{p}"),
             Value::Set(items) => {
                 // Inside a set, strings are quoted so "" and "a b" stay readable.
                 let parts: Vec<String> = items

@@ -7,9 +7,11 @@
 pub mod convert;
 pub mod dfa;
 pub mod dot;
+pub mod grammar;
 pub mod minimize;
 pub mod nfa;
 pub mod ops;
+pub mod pda;
 pub mod regex;
 pub mod trace;
 

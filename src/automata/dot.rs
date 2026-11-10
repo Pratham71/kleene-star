@@ -3,6 +3,7 @@
 //! Render the output with `dot -Tsvg machine.dot -o machine.svg`, or paste it
 //! into any online Graphviz viewer.
 
+use super::pda::Pda;
 use super::{Dfa, Nfa, State};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -13,7 +14,7 @@ pub fn dfa_to_dot(dfa: &Dfa) -> String {
             edges.entry((s, t)).or_default().push(dfa.alphabet[i].to_string());
         }
     }
-    render(&dfa.states, dfa.start, &dfa.accept, &edges)
+    render(&dfa.states, dfa.start, &dfa.accept, &edges, ", ")
 }
 
 pub fn nfa_to_dot(nfa: &Nfa) -> String {
@@ -26,7 +27,19 @@ pub fn nfa_to_dot(nfa: &Nfa) -> String {
             }
         }
     }
-    render(&nfa.states, nfa.start, &nfa.accept, &edges)
+    render(&nfa.states, nfa.start, &nfa.accept, &edges, ", ")
+}
+
+/// A PDA's moves are labelled `a, Z/AZ` (with ε for eps); several moves
+/// between the same two states go on separate lines of one label.
+pub fn pda_to_dot(pda: &Pda) -> String {
+    let mut edges: BTreeMap<(State, State), Vec<String>> = BTreeMap::new();
+    for m in &pda.moves {
+        let label = pda.label(m).replace("eps", "\u{3b5}");
+        edges.entry((m.from, m.to)).or_default().push(label);
+    }
+    // `\n` inside a DOT label is a line break.
+    render(&pda.states, pda.start, &pda.accept, &edges, "\\n")
 }
 
 /// Parallel edges are merged into one arrow labelled `0, 1`.
@@ -35,6 +48,7 @@ fn render(
     start: State,
     accept: &BTreeSet<State>,
     edges: &BTreeMap<(State, State), Vec<String>>,
+    separator: &str,
 ) -> String {
     let quote = |name: &str| format!("\"{}\"", name.replace('\\', "\\\\").replace('"', "\\\""));
     let mut out = String::from("digraph machine {\n    rankdir=LR;\n    node [shape=circle];\n");
@@ -52,7 +66,7 @@ fn render(
             "    {} -> {} [label=\"{}\"];\n",
             quote(&states[s]),
             quote(&states[t]),
-            labels.join(", ")
+            labels.join(separator)
         ));
     }
     out.push_str("}\n");

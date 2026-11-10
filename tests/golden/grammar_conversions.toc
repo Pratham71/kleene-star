@@ -1,0 +1,17 @@
+# Converting between grammars, PDAs and regular languages.
+alphabet B = {0, 1}
+
+# A regular language as a right-linear grammar.
+print to_grammar(/(0|1)*01/)
+
+# A grammar as a PDA: the PDA simulates leftmost derivations.
+alphabet AB = {a, b}
+grammar Pal over AB {
+    S -> a S a | b S b | a | b | eps
+}
+let p = to_pda(Pal)
+print p
+for w in {"abba", "aba", "ab"} {
+    test (p accepts w) == (Pal accepts w)
+}
+trace p on "aba"

@@ -1,0 +1,5 @@
+Error in pda_bad_move.toc, line 4:
+    p --a, Z--> p
+            ^^^
+SyntaxError: expected `/` and the symbols to push, found `-->`
+  hint: a PDA move is written `q0 --a, Z/AZ--> q1`: read `a`, pop `Z`, push `AZ` (top first); any part may be `eps`

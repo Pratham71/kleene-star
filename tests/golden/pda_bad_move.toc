@@ -1,0 +1,5 @@
+alphabet AB = {a, b}
+pda P over AB {
+    start p
+    p --a, Z--> p
+}

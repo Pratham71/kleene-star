@@ -1,0 +1,43 @@
+PDA with 3 states over {a, b}, stack starts as Z
+start push, accept done
+From | Read | Pop | Push | To
+push | a    | eps | A    | push
+push | eps  | eps | eps  | pop
+pop  | b    | A   | eps  | pop
+pop  | eps  | Z   | Z    | done
+3
+ true
+aabb true
+ab true
+abb false
+ba false
+Input: aabb
+
+Step  Move          State  Input  Stack
+0     —             push   aabb   Z
+1     a, eps/A      push   abb    AZ
+2     a, eps/A      push   bb     AAZ
+3     eps, eps/eps  pop    bb     AAZ
+4     b, A/eps      pop    b      AZ
+5     b, A/eps      pop    —      Z
+6     eps, Z/Z      done   —      Z
+Result: ACCEPTED
+Reason: Read all of the input and reached accepting state done
+
+Input: abb
+
+Step  Move          State  Input  Stack
+0     —             push   abb    Z
+1     a, eps/A      push   bb     AZ
+2     eps, eps/eps  pop    bb     AZ
+3     b, A/eps      pop    b      Z
+Result: REJECTED
+Reason: No run reads all of the input and ends in an accepting state; the run shown reads the most (2 of 3 symbols)
+
+Input: ac
+
+Step  Move  State  Input  Stack
+0     —     push   ac     Z
+Result: REJECTED
+Reason: Symbol `c` (position 2) is not in the alphabet {a, b}, so the run stops
+

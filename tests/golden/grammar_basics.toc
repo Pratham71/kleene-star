@@ -1,0 +1,28 @@
+# A context-free grammar, membership by CYK, emptiness, and a derivation.
+alphabet AB = {a, b}
+
+grammar Equal over AB {
+    S -> a S b | eps
+}
+
+print Equal
+for w in {"", "ab", "aabb", "aab", "ba"} {
+    print w, Equal accepts w
+}
+print is_empty(Equal)
+print derive(Equal, "aaabbb")
+
+# Balanced brackets, with `l` and `r` for the two brackets.
+alphabet LR = {l, r}
+grammar Balanced over LR {
+    S -> S S | l S r | eps
+}
+print to_cnf(Balanced)
+test Balanced accepts "llrlrr"
+test not (Balanced accepts "lrrl")
+
+# A grammar whose start variable can never finish: an empty language.
+grammar Stuck over AB {
+    S -> a S
+}
+print is_empty(Stuck)

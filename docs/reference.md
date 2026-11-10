@@ -16,6 +16,8 @@ comment that runs to the end of the line.
 | `alphabet B = {0, 1}` | Defines an alphabet. Symbols are single letters or digits. |
 | `dfa Name over B { ... }` | Defines a DFA. See [machines](#machines). |
 | `nfa Name over B { ... }` | Defines an NFA, with or without eps moves. |
+| `pda Name over B { ... }` | Defines a pushdown automaton. See [pushdown automata](#pushdown-automata). |
+| `grammar Name over B { ... }` | Defines a context-free grammar. See [grammars](#grammars). |
 | `let x = value` | Names a value. |
 | `fn name(a: T, b: U) -> R { ... }` | Defines a function. Top level only. |
 | `return value` | Returns from a function. |
@@ -24,7 +26,7 @@ comment that runs to the end of the line.
 | `print a, b, c` | Prints the values on one line, separated by spaces. |
 | `test cond` | Checks a condition. Failures are reported and counted. |
 | `draw machine` | Writes a Graphviz `.dot` file (and `.svg` if Graphviz is installed). |
-| `trace machine on word` | Runs a `Dfa` or `Nfa` on a `Str` and prints every step. See [tracing](#tracing). |
+| `trace machine on word` | Runs a `Dfa`, `Nfa` or `Pda` on a `Str` and prints every step. See [tracing](#tracing). |
 
 ### Names and scope
 
@@ -72,7 +74,8 @@ dfa Name over Alphabet {
   reads nothing.
 - A state is a name, or `name[expr]` for a numbered state: `q[2]` is `q2`.
 - `for` inside a machine repeats the items in its braces.
-- Without a name, a machine is a value: `let m = nfa over B { ... }`.
+- Without a name, a machine is a value: `let m = nfa over B { ... }`. The same
+  goes for `pda` and `grammar`.
 
 Rules checked for a `dfa`:
 
@@ -84,9 +87,51 @@ An `nfa` has none of these restrictions. Machines written out in full are
 checked before the program runs; machines built with `for` or `name[expr]` are
 checked when they are built.
 
+## Pushdown automata
+
+```text
+pda Name over Alphabet {
+    start  state
+    accept state, ...
+    state --read, pop/push--> state
+}
+```
+
+- `read` is an input symbol or `eps`; `pop` is one stack symbol or `eps`;
+  `push` is a string of stack symbols written together, top first (`AZ`
+  leaves `A` on top), or `eps`.
+- Stack symbols are letters and digits; they need not be declared. The stack
+  starts holding one `Z`.
+- Acceptance is **by final state**: a word is accepted if some run reads all
+  of it and ends in an accepting state, whatever is left on the stack.
+- A PDA may be nondeterministic. Runs are searched breadth first; the search
+  gives up after 50 000 configurations, or when the stack would pass 1 000
+  symbols, with a `LimitError` (an unknown answer is never reported as
+  "no").
+- `for` loops and `name[expr]` states work as in other machines.
+
+## Grammars
+
+```text
+grammar Name over Alphabet {
+    Variable -> alternative | alternative | ...
+    ...
+}
+```
+
+- A **variable** is a name starting with a capital letter. A **terminal** is
+  one symbol of the alphabet. Symbols in an alternative are separated by
+  spaces: `a S b`. `eps` alone is the empty alternative.
+- The variable of the first rule is the start variable. A variable may have
+  several rules; they add up.
+- Checked before running: every variable used has rules, and every terminal
+  is in the alphabet.
+- A capital letter is always a variable in a grammar, even if the alphabet
+  contains it.
+
 ## Tracing
 
-`trace M on "0110"` runs `M` (a `Dfa` or `Nfa`) on the word and prints a
+`trace M on "0110"` runs `M` (a `Dfa`, `Nfa` or `Pda`) on the word and prints a
 table with one row per symbol, then the result and the reason for it:
 
 ```toc
@@ -122,6 +167,11 @@ Reason: Ended in non-accepting state even
 - A symbol outside the alphabet ends the trace with `Result: REJECTED` and a
   reason naming the symbol and its position. It is not an error: the program
   carries on.
+- For a `Pda` the columns are `Step  Move  State  Input  Stack`: the move
+  taken (`a, Z/AZ`), the state after it, the input still to read, and the
+  stack, top first. An accepted word shows a shortest accepting run; a
+  rejected one shows a run that read as much as possible. If the search gives
+  up, the result is `UNKNOWN`.
 - A blank line follows each trace.
 
 ## Types
@@ -135,14 +185,19 @@ Reason: Ended in non-accepting state even
 | `Dfa` | a complete deterministic machine | `dfa over B { ... }` |
 | `Nfa` | a nondeterministic machine | `nfa over B { ... }` |
 | `Regex` | a regular expression | `/(0\|1)*01/` |
+| `Pda` | a pushdown automaton | `pda over B { ... }` |
+| `Grammar` | a context-free grammar | `grammar over B { ... }` |
 | `Set[T]` | a set of `Int`, `Str` or `Bool` | `{1, 2, 3}`, `{"a", "ab"}`, `0..5` |
 
 Types are written only in function signatures; everywhere else they are worked
 out for you. All type errors are found before the program runs.
 
-A **language** is anything that describes a set of strings: a `Dfa`, an `Nfa`,
-a `Regex`, or a `Set[Str]` (a finite language). Wherever this page says
-"language", any of the four is accepted.
+A **regular language** is described by a `Dfa`, an `Nfa`, a `Regex`, or a
+`Set[Str]` (a finite language). Wherever this page says "language", any of the
+four is accepted. A `Pda` or a `Grammar` describes a **context-free language**,
+which may not be regular; they work with `accepts`, `trace` (PDA), `draw`
+(PDA) and the grammar built-ins below, but not with the operations for
+regular languages.
 
 In a string, `\"` and `\\` are the only escapes.
 
@@ -155,9 +210,9 @@ From loosest to tightest binding:
 | `or` | `Bool` | `Bool` |
 | `and` | `Bool` | `Bool` |
 | `not` | `Bool` | `Bool` |
-| `==` `!=` | two values of the same type (not machines or regexes) | `Bool` |
+| `==` `!=` | two values of the same type (not machines, regexes or grammars) | `Bool` |
 | `<` `<=` `>` `>=` | `Int` | `Bool` |
-| `accepts` | language, then `Str` | `Bool` |
+| `accepts` | language, `Pda` or `Grammar`, then `Str` | `Bool` |
 | `..` | `Int` | `Set[Int]`: `a..b` is `a` up to but not including `b` |
 | `+` `-` | `Int`; `+` also joins two `Str` | `Int` or `Str` |
 | `*` `%` | `Int` | `Int` |
@@ -234,9 +289,23 @@ Postfix operators bind tightest, then concatenation, then `|`.
 | Function | Returns | Meaning |
 |---|---|---|
 | `equivalent(a, b)` | `Bool` | Do `a` and `b` contain exactly the same strings? |
-| `is_empty(a)` | `Bool` | Does `a` contain no strings? |
-| `states(machine)` | `Int` | The number of states. |
+| `is_empty(a)` | `Bool` | Does `a` contain no strings? Also works on a `Grammar`. |
+| `states(machine)` | `Int` | The number of states of a `Dfa`, `Nfa` or `Pda`. |
 | `len(x)` | `Int` | Length of a `Str`, or size of a `Set` or `Alphabet`. |
+
+### Grammars and pushdown automata
+
+| Function | Returns | What it does |
+|---|---|---|
+| `to_cnf(g)` | `Grammar` | An equivalent grammar in Chomsky normal form: rules `A -> B C` and `A -> a`, plus `S0 -> eps` if needed. |
+| `to_pda(g)` | `Pda` | The three-state PDA that simulates leftmost derivations of `g`. |
+| `to_grammar(lang)` | `Grammar` | A right-linear grammar for a regular language, one variable per state of its minimal DFA. |
+| `derive(g, w)` | `Str` | A shortest leftmost derivation of `w`, one sentential form per line. A `ValueError` if `g` cannot derive `w`. |
+
+`g accepts w` uses the CYK algorithm on `to_cnf(g)`. `equivalent` refuses
+grammars and PDAs before running: equivalence of context-free languages is
+undecidable. Operations for regular languages (`minimize`, `union`,
+`complement`, ...) refuse them too.
 
 ### Alphabets in operations
 
@@ -255,12 +324,14 @@ running also show the chain of calls, most recent last.
 | Error | Cause |
 |---|---|
 | `SyntaxError` | The text is not a valid program. |
-| `NameError` | A name is unknown, defined twice, or used before its definition has run. |
+| `NameError` | A name is unknown, defined twice, or used before its definition has run; a grammar variable with no rules. |
 | `TypeError` | A value of the wrong type, a wrong number of arguments, a function that might not return, or `trace` on something that is not a `Dfa` or `Nfa`. |
-| `MachineError` | A machine breaks a rule: no start state, a DFA that is not total or not deterministic, an eps move in a DFA. |
+| `MachineError` | A machine breaks a rule: no start state, a DFA that is not total or not deterministic, an eps move in a DFA, a grammar with no rules. |
 | `AlphabetError` | A symbol outside the alphabet, or two machines over different alphabets. |
 | `MathError` | Modulo by zero, a result too large for an `Int`, or a range that is too large. |
 | `RecursionError` | More than 500 function calls in progress at once. |
+| `LimitError` | A search gave up: a PDA run (50 000 configurations or a stack of 1 000) or a derivation (200 000 sentential forms). |
+| `ValueError` | A value of the right type that cannot be used, such as a word a grammar cannot derive. |
 | `IOError` | `draw` could not write its file. |
 
 One example of each of the common ones:
@@ -357,7 +428,8 @@ optional, and `|` separates alternatives.
 program     := statement*
 
 statement   := 'alphabet' NAME '=' '{' (symbol (',' symbol)*)? '}'
-             | ('dfa' | 'nfa') NAME machine
+             | ('dfa' | 'nfa' | 'pda') NAME machine
+             | 'grammar' NAME grammar
              | 'let' NAME '=' expr
              | 'fn' NAME '(' (param (',' param)*)? ')' '->' type block
              | 'return' expr
@@ -370,17 +442,25 @@ statement   := 'alphabet' NAME '=' '{' (symbol (',' symbol)*)? '}'
 
 block       := '{' statement* '}'
 param       := NAME ':' type
-type        := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Regex'
-             | 'Set' '[' type ']'
+type        := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Pda'
+             | 'Regex' | 'Grammar' | 'Set' '[' type ']'
 
 machine     := 'over' NAME '{' item* '}'
 item        := 'start' state
              | 'accept' state (',' state)*
-             | state '--' label (',' label)* '-->' state
+             | state '--' action '-->' state
              | 'for' NAME 'in' expr '{' item* '}'
 state       := NAME ('[' expr ']')?
+action      := label (',' label)*                  (dfa, nfa)
+             | label ',' label '/' push             (pda)
+push        := 'eps' | letters and digits written together, top first
 label       := symbol | 'eps'
 symbol      := one letter or digit
+
+grammar     := 'over' NAME '{' rule* '}'
+rule        := VARIABLE '->' alternative ('|' alternative)*
+alternative := 'eps' | (VARIABLE | symbol)+
+VARIABLE    := a NAME starting with a capital letter
 
 expr        := or
 or          := and ('or' and)*
@@ -396,12 +476,13 @@ primary     := INT | STRING | REGEX | 'true' | 'false'
              | NAME '(' (expr (',' expr)*)? ')'
              | '(' expr ')'
              | '{' (expr (',' expr)*)? '}'
-             | ('dfa' | 'nfa') machine
+             | ('dfa' | 'nfa' | 'pda') machine
+             | 'grammar' grammar
 ```
 
 Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
-`dfa` `draw` `else` `eps` `false` `fn` `for` `if` `in` `let` `nfa` `not` `on`
-`or` `over` `print` `return` `start` `test` `trace` `true`.
+`dfa` `draw` `else` `eps` `false` `fn` `for` `grammar` `if` `in` `let` `nfa`
+`not` `on` `or` `over` `pda` `print` `return` `start` `test` `trace` `true`.
 
 ## The `toc` command
 

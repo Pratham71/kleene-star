@@ -16,8 +16,10 @@ pub struct Stmt {
 pub enum StmtKind {
     /// `alphabet B = {0, 1}`
     Alphabet { name: Name, symbols: Vec<(char, Span)> },
-    /// `dfa Name over B { ... }` or `nfa Name over B { ... }`
+    /// `dfa Name over B { ... }`, and the same for `nfa` and `pda`
     MachineDef { name: Name, machine: MachineExpr },
+    /// `grammar Name over B { S -> a S b | eps }`
+    GrammarDef { name: Name, grammar: GrammarExpr },
     /// `let x = value`
     Let { name: Name, value: Expr },
     /// `fn name(params) -> Type { ... }`
@@ -78,6 +80,8 @@ pub enum ExprKind {
     Set(Vec<Expr>),
     /// `dfa over B { ... }` used as a value.
     Machine(Box<MachineExpr>),
+    /// `grammar over B { ... }` used as a value.
+    Grammar(Box<GrammarExpr>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -125,10 +129,47 @@ impl BinOp {
     }
 }
 
-/// The body of a `dfa` or `nfa` definition.
+/// The kinds of machine written with arrow transitions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MachineKind {
+    Dfa,
+    Nfa,
+    Pda,
+}
+
+impl MachineKind {
+    /// The keyword that introduces this kind of machine.
+    pub fn keyword(self) -> &'static str {
+        match self {
+            MachineKind::Dfa => "dfa",
+            MachineKind::Nfa => "nfa",
+            MachineKind::Pda => "pda",
+        }
+    }
+
+    /// How the kind is named in messages: "DFA".
+    pub fn title(self) -> &'static str {
+        match self {
+            MachineKind::Dfa => "DFA",
+            MachineKind::Nfa => "NFA",
+            MachineKind::Pda => "PDA",
+        }
+    }
+
+    /// The type of a machine of this kind.
+    pub fn ty(self) -> Type {
+        match self {
+            MachineKind::Dfa => Type::Dfa,
+            MachineKind::Nfa => Type::Nfa,
+            MachineKind::Pda => Type::Pda,
+        }
+    }
+}
+
+/// The body of a `dfa`, `nfa` or `pda` definition.
 #[derive(Debug, Clone)]
 pub struct MachineExpr {
-    pub is_dfa: bool,
+    pub kind: MachineKind,
     /// The alphabet named after `over`.
     pub alphabet: Name,
     pub items: Vec<MachineItem>,
@@ -136,14 +177,17 @@ pub struct MachineExpr {
     pub header: Span,
 }
 
+// A transition is much bigger than `start q0`, but the syntax tree is built
+// once and holds few items, so boxing it would only add noise.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum MachineItem {
     /// `start q0`
     Start(StateRef),
     /// `accept q1, q2`
     Accept(Vec<StateRef>),
-    /// `q0 --a,b--> q1`
-    Transition { from: StateRef, labels: Vec<Label>, to: StateRef, span: Span },
+    /// `q0 --a,b--> q1`, or in a PDA `q0 --a, Z/AZ--> q1`
+    Transition { from: StateRef, action: Action, to: StateRef, span: Span },
     /// `for i in 0..n { ... }` generating more items
     For { var: Name, items: Expr, body: Vec<MachineItem> },
 }
@@ -163,6 +207,50 @@ pub struct Label {
     pub span: Span,
 }
 
+/// What a transition does, written between `--` and `-->`.
+#[derive(Debug, Clone)]
+pub enum Action {
+    /// DFA and NFA: the symbols it reads, `a,b` (or `eps`).
+    Symbols(Vec<Label>),
+    /// PDA: `read, pop/push`. `read` and `pop` may be `eps`; `push` is a
+    /// string of stack symbols, top first, empty for `eps`.
+    Stack { read: Label, pop: Label, push: Vec<char>, push_span: Span },
+}
+
+/// The body of a `grammar` definition.
+#[derive(Debug, Clone)]
+pub struct GrammarExpr {
+    /// The alphabet named after `over`; its symbols are the terminals.
+    pub alphabet: Name,
+    pub rules: Vec<RuleDef>,
+    /// The `grammar ... over B` header.
+    pub header: Span,
+}
+
+/// `S -> a S b | eps`: a variable and its alternatives.
+#[derive(Debug, Clone)]
+pub struct RuleDef {
+    pub head: Name,
+    /// Each alternative is a list of symbols; `eps` is an empty list.
+    pub alternatives: Vec<Vec<GSym>>,
+    pub span: Span,
+}
+
+/// One symbol on the right of `->`.
+#[derive(Debug, Clone)]
+pub struct GSym {
+    pub kind: GSymKind,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GSymKind {
+    /// A name starting with a capital letter.
+    Variable(String),
+    /// A symbol of the alphabet.
+    Terminal(char),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
     Int,
@@ -172,6 +260,8 @@ pub enum Type {
     Dfa,
     Nfa,
     Regex,
+    Grammar,
+    Pda,
     Set(Box<Type>),
     /// The type of `{}`, which fits any `Set[T]`.
     EmptySet,
@@ -187,6 +277,8 @@ impl std::fmt::Display for Type {
             Type::Dfa => write!(f, "Dfa"),
             Type::Nfa => write!(f, "Nfa"),
             Type::Regex => write!(f, "Regex"),
+            Type::Grammar => write!(f, "Grammar"),
+            Type::Pda => write!(f, "Pda"),
             Type::Set(inner) => write!(f, "Set[{inner}]"),
             Type::EmptySet => write!(f, "Set[?]"),
         }

@@ -1,0 +1,4 @@
+alphabet AB = {a, b}
+grammar G over AB {
+    S -> a T b | eps
+}

@@ -1,0 +1,9 @@
+# This PDA can push forever without reading, and never accepts, so the
+# search for an accepting run has to give up.
+alphabet AB = {a, b}
+pda Forever over AB {
+    start  p
+    accept q
+    p --eps, eps/A--> p
+}
+print Forever accepts "ab"

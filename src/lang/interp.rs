@@ -9,6 +9,9 @@ use super::machine::{self, Built, MachineSpec, Transition};
 use super::token::Span;
 use super::value::Value;
 use super::trace as show_trace;
+use super::machine::GrammarSpec;
+use crate::automata::grammar::{DeriveError, Grammar};
+use crate::automata::pda::{self, Outcome, Pda};
 use crate::automata::{convert, dot, fmt_alphabet, minimize, ops, trace, Dfa, Nfa};
 use std::collections::{BTreeSet, HashMap};
 use std::io::Write;
@@ -17,6 +20,8 @@ use std::rc::Rc;
 
 /// How deeply functions may call each other before we stop with an error.
 const MAX_DEPTH: usize = 500;
+/// How many sentential forms `derive` looks at before giving up.
+const DERIVE_LIMIT: usize = 200_000;
 /// The largest range `a..b` we are willing to build.
 const MAX_RANGE: i64 = 1_000_000;
 
@@ -163,6 +168,10 @@ impl Interp {
                 let value = self.machine(machine, Some(&name.text))?;
                 self.define(&name.text, value);
             }
+            StmtKind::GrammarDef { name, grammar } => {
+                let value = self.grammar(grammar, Some(&name.text))?;
+                self.define(&name.text, value);
+            }
             StmtKind::Let { name, value } => {
                 let value = self.eval(value)?;
                 self.define(&name.text, value);
@@ -229,6 +238,7 @@ impl Interp {
         let dot = match self.eval(expr)? {
             Value::Dfa(dfa) => dot::dfa_to_dot(&dfa),
             Value::Nfa(nfa) => dot::nfa_to_dot(&nfa),
+            Value::Pda(pda) => dot::pda_to_dot(&pda),
             other => dot::nfa_to_dot(&to_nfa(&other, &symbols_of(&other))),
         };
         // `draw d` writes d.dot; anything more complex gets a numbered name.
@@ -272,6 +282,7 @@ impl Interp {
         let shown = match &machine {
             Value::Dfa(dfa) => show_trace::render_dfa(dfa, &word, &trace::trace_dfa(dfa, &word), dash),
             Value::Nfa(nfa) => show_trace::render_nfa(nfa, &word, &trace::trace_nfa(nfa, &word), dash),
+            Value::Pda(pda) => show_trace::render_pda(pda, &word, &pda.search(&word, pda::STEP_LIMIT), dash),
             other => unreachable!("checker allowed tracing {other:?}"),
         };
         // A blank line after each trace keeps several traces apart.
@@ -286,7 +297,7 @@ impl Interp {
             unreachable!("checker ensures `over` names an alphabet")
         };
         let mut spec = MachineSpec {
-            is_dfa: m.is_dfa,
+            kind: m.kind,
             name: name.map(str::to_string),
             alphabet: alphabet.to_vec(),
             alphabet_name: m.alphabet.text.clone(),
@@ -299,7 +310,23 @@ impl Interp {
         Ok(match machine::build(&spec).map_err(|diag| self.located(diag))? {
             Built::Dfa(dfa) => Value::dfa(dfa),
             Built::Nfa(nfa) => Value::nfa(nfa),
+            Built::Pda(pda) => Value::Pda(Rc::new(pda)),
         })
+    }
+
+    fn grammar(&mut self, g: &GrammarExpr, name: Option<&str>) -> Run<Value> {
+        let Value::Alphabet(alphabet) = self.lookup(&g.alphabet.text, g.alphabet.span)? else {
+            unreachable!("checker ensures `over` names an alphabet")
+        };
+        let spec = GrammarSpec {
+            name: name.map(str::to_string),
+            alphabet: alphabet.to_vec(),
+            alphabet_name: g.alphabet.text.clone(),
+            header: g.header,
+            rules: &g.rules,
+        };
+        let grammar = machine::build_grammar(&spec).map_err(|diag| self.located(diag))?;
+        Ok(Value::Grammar(Rc::new(grammar)))
     }
 
     /// Collects the items of a machine body into `spec`, running any loops.
@@ -312,10 +339,10 @@ impl Interp {
                         spec.accepts.push((self.state_name(state)?, state.span));
                     }
                 }
-                MachineItem::Transition { from, labels, to, span } => {
+                MachineItem::Transition { from, action, to, span } => {
                     spec.transitions.push(Transition {
                         from: self.state_name(from)?,
-                        labels: labels.iter().map(|l| (l.symbol, l.span)).collect(),
+                        action: action.clone(),
                         to: self.state_name(to)?,
                         span: *span,
                     })
@@ -368,6 +395,7 @@ impl Interp {
             ExprKind::Name(name) => self.lookup(name, expr.span)?,
             ExprKind::Paren(inner) => self.eval(inner)?,
             ExprKind::Machine(m) => self.machine(m, None)?,
+            ExprKind::Grammar(g) => self.grammar(g, None)?,
             ExprKind::Set(items) => {
                 let mut set = BTreeSet::new();
                 for item in items {
@@ -458,6 +486,15 @@ impl Interp {
             Value::Dfa(dfa) => dfa.accepts(word).map_err(|c| (c, &dfa.alphabet)),
             Value::Nfa(nfa) => nfa.accepts(word).map_err(|c| (c, &nfa.alphabet)),
             Value::Set(words) => return Ok(words.contains(&Value::str(word))),
+            Value::Grammar(g) => g.accepts(word).map_err(|c| (c, &g.alphabet)),
+            Value::Pda(p) => {
+                return match p.search(word, pda::STEP_LIMIT).outcome {
+                    Outcome::Accepted => Ok(true),
+                    Outcome::Rejected => Ok(false),
+                    Outcome::Foreign { symbol, .. } => Err(self.foreign_word(symbol, &p.alphabet, word_span)),
+                    Outcome::GaveUp => Err(self.pda_gave_up(word_span)),
+                };
+            }
             // A regex has no fixed alphabet, so a foreign symbol just fails to match.
             regex => {
                 let mut alphabet = symbols_of(regex);
@@ -467,14 +504,28 @@ impl Interp {
                 return Ok(to_nfa(regex, &alphabet).accepts(word) == Ok(true));
             }
         };
-        result.map_err(|(c, alphabet)| {
-            self.error(
-                ErrorKind::Alphabet,
-                word_span,
-                format!("the word contains `{c}`, which is not in the machine's alphabet"),
-            )
-            .hint(format!("the machine is over {}", fmt_alphabet(alphabet)))
-        })
+        result.map_err(|(c, alphabet)| self.foreign_word(c, alphabet, word_span))
+    }
+
+    fn foreign_word(&self, c: char, alphabet: &[char], word_span: Span) -> Diag {
+        self.error(
+            ErrorKind::Alphabet,
+            word_span,
+            format!("the word contains `{c}`, which is not in the machine's alphabet"),
+        )
+        .hint(format!("the machine is over {}", fmt_alphabet(alphabet)))
+    }
+
+    fn pda_gave_up(&self, span: Span) -> Diag {
+        self.error(
+            ErrorKind::Limit,
+            span,
+            format!(
+                "gave up after looking at {} configurations of the PDA without finding an accepting run",
+                pda::STEP_LIMIT
+            ),
+        )
+        .hint("eps moves that push without reading can let a PDA run forever; the answer is unknown, not \"no\"")
     }
 
     /// Calls a user-defined function.
@@ -519,6 +570,14 @@ impl Interp {
             ("states", Value::Nfa(n)) => return Ok(Value::Int(n.states.len() as i64)),
             ("rename", Value::Dfa(d)) => return Ok(Value::dfa(d.renamed())),
             ("rename", Value::Nfa(n)) => return Ok(Value::nfa(n.renamed())),
+            ("states", Value::Pda(p)) => return Ok(Value::Int(p.states.len() as i64)),
+            ("is_empty", Value::Grammar(g)) => return Ok(Value::Bool(g.is_empty())),
+            ("to_cnf", Value::Grammar(g)) => return Ok(Value::Grammar(Rc::new(g.to_cnf()))),
+            ("to_pda", Value::Grammar(g)) => return Ok(Value::Pda(Rc::new(Pda::from_grammar(g)))),
+            ("derive", Value::Grammar(g)) => {
+                let Value::Str(word) = &args[1] else { unreachable!("checker ensures a Str") };
+                return self.derive(g, word, spans[1]);
+            }
             _ => {}
         }
 
@@ -550,8 +609,35 @@ impl Interp {
             "reverse" => Value::nfa(ops::reverse(&nfa(0))),
             "equivalent" => Value::Bool(ops::equivalent(&dfa(0), &dfa(1))),
             "is_empty" => Value::Bool(ops::is_empty(&dfa(0))),
+            "to_grammar" => Value::Grammar(Rc::new(Grammar::from_dfa(&minimize::minimize(&dfa(0))))),
             other => unreachable!("checker allowed unknown built-in {other}"),
         })
+    }
+
+    /// `derive(g, word)`: a leftmost derivation, one sentential form per line.
+    fn derive(&self, g: &Grammar, word: &str, span: Span) -> Run<Value> {
+        if let Some(c) = word.chars().find(|c| !g.alphabet.contains(c)) {
+            return Err(self.foreign_word(c, &g.alphabet, span));
+        }
+        match g.derive(word, DERIVE_LIMIT) {
+            Ok(steps) => {
+                let lines: Vec<String> = steps
+                    .iter()
+                    .enumerate()
+                    .map(|(i, form)| format!("{}{}", if i == 0 { "" } else { "=> " }, g.show(form)))
+                    .collect();
+                Ok(Value::str(&lines.join("\n")))
+            }
+            Err(DeriveError::NotInLanguage) => {
+                let shown = if word.is_empty() { "the empty string".to_string() } else { format!("\"{word}\"") };
+                Err(self
+                    .error(ErrorKind::Value, span, format!("the grammar cannot derive {shown}"))
+                    .hint("check first with `g accepts \"...\"`; only words in the language have a derivation"))
+            }
+            Err(DeriveError::TooManySteps(n)) => Err(self
+                .error(ErrorKind::Limit, span, format!("gave up looking for a derivation after {n} sentential forms"))
+                .hint("the word is in the language, but its derivation is too long to find this way")),
+        }
     }
 
     /// Picks the alphabet an operation works over.
