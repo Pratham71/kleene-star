@@ -4,9 +4,9 @@
 alphabet B = {0, 1}
 
 let even_zeros = /1*(01*01*)*/
-let ends_in_1  = /(0|1)*1/
+let ends_in_1 = /(0|1)*1/
 
-let both   = intersect(even_zeros, ends_in_1)
+let both = intersect(even_zeros, ends_in_1)
 let either = union(even_zeros, ends_in_1)
 
 test both accepts "001"

@@ -1,0 +1,20 @@
+# Machines written carelessly: the formatter lines up the arrows.
+alphabet B = {0, 1}
+dfa HasDouble1 over B {
+    start  none
+    accept both
+    none --0  --> none
+    none --1  --> one
+    one  --0  --> none  # back to the beginning
+    one  --1  --> both
+
+    both --0,1--> both
+}
+nfa EndsIn01 over B {
+    start  a
+    accept c
+    a --0,1--> a
+    a --0  --> b
+    b --1  --> c
+}
+print HasDouble1 accepts "0110", EndsIn01 accepts "01"

@@ -410,8 +410,32 @@ Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 | `toc run file.toc` | Runs a program. `toc file.toc` is the same. |
 | `toc run file.toc --out dir` | Runs it, writing drawings into `dir`. |
 | `toc check file.toc` | Reports errors without running. |
+| `toc fmt file.toc ...` | Rewrites files in the standard style. See [formatting](#formatting). |
+| `toc fmt --check file.toc ...` | Lists the files that are not formatted, changing nothing. |
 | `toc repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
 | `toc help`, `toc version` | Help and version. |
 
-The exit code is 0 on success, 1 if there was an error or a failed test, and 2
-if the command itself was wrong.
+The exit code is 0 on success, 1 if there was an error or a failed test (or,
+for `toc fmt --check`, a file that would change), and 2 if the command itself
+was wrong.
+
+## Formatting
+
+`toc fmt` rewrites a program in one standard style:
+
+| Rule | Example |
+|---|---|
+| Four spaces per level of `{ ... }`; one statement per line | |
+| Single spaces around operators and after commas | `let x = (a + 1) * 2`, `print a, b` |
+| No spaces around `..` | `for i in 0..n {` |
+| `start` and `accept` line up | `start  q0` / `accept q1` |
+| Transitions padded so `--` and `-->` line up | `a --0,1--> a` / `a --1  --> b` |
+| Blank lines: at most one in a row, none just inside `{` or `}` | |
+| Comments stay in place; trailing comments on neighbouring lines line up | |
+| Parentheses, numbers, strings and regexes are kept exactly as written | |
+
+Formatting is idempotent (formatting twice changes nothing more) and never
+changes meaning: `toc fmt` compares the tokens and comments before and after
+and refuses to write if they differ. The file must parse; type errors do not
+matter. Windows line endings are kept. A comment inside a statement that
+spans several lines moves to just after that statement.

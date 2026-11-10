@@ -6,10 +6,10 @@ alphabet B = {0, 1}
 dfa HasDouble1 over B {
     start  none
     accept both
-    none --0--> none
-    none --1--> one
-    one  --0--> none
-    one  --1--> both
+    none --0  --> none
+    none --1  --> one
+    one  --0  --> none
+    one  --1  --> both
     both --0,1--> both
 }
 

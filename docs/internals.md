@@ -27,7 +27,8 @@ would save almost nothing and would cost the interactive prompt.
 `src/lang/lexer.rs`, `src/lang/token.rs`
 
 The lexer walks through the characters once and groups them into **tokens**:
-`let`, a name, `=`, a number, and so on. It throws away spaces and comments.
+`let`, a name, `=`, a number, and so on. It throws away spaces and comments
+(except for the formatter, which asks `lex_with_comments` to keep the comments).
 
 Things worth noticing:
 
@@ -164,7 +165,41 @@ UTF-16 to it), but output piped into another program is decoded with the
 console's code page, so unless that is UTF-8 (65001) the session is switched
 to ASCII and prints `-` instead.
 
-## 8. Tying it together
+## 8. The formatter
+
+`src/lang/format.rs`
+
+`toc fmt` parses the program as usual and prints the syntax tree back out in
+the standard style. The tree was built for running programs, not for
+printing them, so a few things come from elsewhere:
+
+- **Comments.** The parser never sees them. `lex_with_comments` returns them
+  alongside the tokens, and the formatter writes out every comment that
+  starts before the next thing it prints. A comment on the same source line
+  as the code just printed stays at the end of that line.
+- **Parentheses.** The parser keeps `(expr)` as an `ExprKind::Paren` node.
+  The checker and interpreter just look through it; the formatter writes the
+  parentheses back, so the user's grouping is never changed.
+- **Literals.** Numbers, strings and regexes are copied from the source text
+  by their spans, so escapes and spacing inside a regex survive.
+- **Blank lines** are worked out from line numbers: if the next thing starts
+  more than one line after the last thing printed, the source had a blank
+  line there, and one is kept.
+- **Braces and `else`** are not in the tree. Their positions are looked up in
+  the token list, which is also how `else if` is told apart from
+  `else { if ... }`.
+
+Machine blocks are printed in two passes: first measure the widest source
+state and the widest label list among the transitions, then pad every
+transition to those widths so the arrows line up.
+
+The safety net: before returning, `format` lexes its own output and compares
+it with the input's tokens and comments. If they differ, that is a formatter
+bug, and the file is left alone with an error instead of being changed. The
+tests check, in addition, that every example formats to itself and that
+formatting never changes what a program prints.
+
+## 9. Tying it together
 
 `src/lib.rs`, `src/main.rs`
 
@@ -187,6 +222,9 @@ cargo test
 - **Golden tests** (`tests/golden/`) run a program and compare everything it
   prints with a saved `.out` file. Most of them are deliberately broken
   programs, so the wording and layout of every error message is pinned down.
+- **Formatting** (`tests/format.rs`): every `tests/format/*.toc` must format
+  to its `.out` file, every example must already be formatted, and
+  formatting must never change what a program prints.
 - **Examples and docs** (`tests/programs.rs`): every file in `examples/` must
   run cleanly, and every code sample in the documentation is run and compared
   with the output shown beneath it.
@@ -195,7 +233,7 @@ After changing an error message on purpose, regenerate the saved outputs and
 read the diff before keeping it:
 
 ```bash
-UPDATE_GOLDEN=1 cargo test --test golden
+UPDATE_GOLDEN=1 cargo test --test golden --test format
 ```
 
 ## Where to go next
@@ -204,7 +242,6 @@ Ideas that fit the current design, roughly in order of size:
 
 - `export`: write a DFA out as a standalone Rust function. This is where a
   compile step makes sense, since the result would run without TOC-Lang.
-- `toc fmt`: a formatter that lines up arrows.
 - Context-free grammars and pushdown automata.
 - Turing machines.
 

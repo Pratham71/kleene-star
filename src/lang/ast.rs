@@ -67,6 +67,9 @@ pub enum ExprKind {
     Regex(Regex),
     /// A variable.
     Name(String),
+    /// `(expr)`. The parentheses change nothing when running, but they are
+    /// kept so that `toc fmt` can write them back exactly as they were.
+    Paren(Box<Expr>),
     Unary(UnOp, Box<Expr>),
     Binary(BinOp, Box<Expr>, Box<Expr>),
     /// `name(args)`

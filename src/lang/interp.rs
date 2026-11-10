@@ -275,8 +275,7 @@ impl Interp {
             other => unreachable!("checker allowed tracing {other:?}"),
         };
         // A blank line after each trace keeps several traces apart.
-        let _ = writeln!(self.out, "{shown}
-");
+        let _ = writeln!(self.out, "{shown}\n");
         Ok(())
     }
 
@@ -367,6 +366,7 @@ impl Interp {
             ExprKind::Bool(b) => Value::Bool(*b),
             ExprKind::Regex(r) => Value::Regex(Rc::new(r.clone())),
             ExprKind::Name(name) => self.lookup(name, expr.span)?,
+            ExprKind::Paren(inner) => self.eval(inner)?,
             ExprKind::Machine(m) => self.machine(m, None)?,
             ExprKind::Set(items) => {
                 let mut set = BTreeSet::new();

@@ -371,6 +371,7 @@ impl Checker {
             ExprKind::Bool(_) => Ok(Type::Bool),
             ExprKind::Regex(_) => Ok(Type::Regex),
             ExprKind::Name(name) => Ok(self.lookup(name, expr.span)?.ty),
+            ExprKind::Paren(inner) => self.expr(inner),
             ExprKind::Machine(m) => self.machine(m, None),
             ExprKind::Set(items) => {
                 let Some(first) = items.first() else { return Ok(Type::EmptySet) };

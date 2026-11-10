@@ -58,7 +58,7 @@ My calls (open to change):
 | Types are inferred for `let`; written only on function signatures | Rust, Swift |
 | One way to do each thing; small keyword list | Go |
 | Notation matches the textbook (arrows, `eps`, `/regex/`, set braces) | Sipser, Hopcroft-Ullman |
-| One binary: `run`, `check`, `repl` (later `fmt`) | Go, Cargo |
+| One binary: `run`, `check`, `fmt`, `repl` | Go, Cargo |
 
 ## The language (v1)
 

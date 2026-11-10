@@ -87,6 +87,16 @@ impl Session {
     }
 }
 
+/// Rewrites a program in the canonical style, as `toc fmt` does. Windows
+/// line endings in `text` are kept. On failure returns the formatted error
+/// (a program must parse before it can be formatted).
+pub fn format_program(file: &str, text: &str) -> Result<String, String> {
+    let windows_endings = text.contains("\r\n");
+    let src = text.replace("\r\n", "\n");
+    let formatted = lang::format::format(&src).map_err(|diag| diag.render(file, &src))?;
+    Ok(if windows_endings { formatted.replace('\n', "\r\n") } else { formatted })
+}
+
 /// True if `text` has an opening `{` that is not closed yet, which is how
 /// the REPL knows to keep reading lines before running anything.
 pub fn is_incomplete(text: &str) -> bool {

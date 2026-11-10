@@ -10,6 +10,8 @@ TOC-Lang: a small language for Theory of Computation
 Usage:
   toc run <file.toc> [--out <dir>]   run a program
   toc check <file.toc>               look for errors without running
+  toc fmt <file.toc>...              rewrite files in the standard style
+  toc fmt --check <file.toc>...      only report files that need formatting
   toc repl                           try things out interactively
   toc <file.toc>                     same as `toc run`
   toc help                           show this message
@@ -32,6 +34,8 @@ fn main() -> ExitCode {
         ["run", file] => run_file(file, ".", false),
         ["run", file, "--out", dir] => run_file(file, dir, false),
         ["check", file] => run_file(file, ".", true),
+        ["fmt", "--check", files @ ..] if !files.is_empty() => fmt(files, true),
+        ["fmt", files @ ..] if !files.is_empty() => fmt(files, false),
         ["repl"] => toc::with_big_stack(repl),
         [file] if file.ends_with(".toc") => run_file(file, ".", false),
         _ => {
@@ -39,6 +43,44 @@ fn main() -> ExitCode {
             ExitCode::from(2)
         }
     }
+}
+
+/// `toc fmt`: formats each file in place, or with `check` only reports the
+/// ones that are not formatted yet. Exit code 1 means a file could not be
+/// formatted, or (with `check`) at least one file would change.
+fn fmt(files: &[&str], check: bool) -> ExitCode {
+    let mut status = ExitCode::SUCCESS;
+    for &file in files {
+        let shown_name = file.replace('\\', "/");
+        let text = match std::fs::read_to_string(file) {
+            Ok(text) => text,
+            Err(e) => {
+                eprintln!("toc: cannot read {file}: {e}");
+                return ExitCode::from(2);
+            }
+        };
+        let formatted = match toc::format_program(&shown_name, &text) {
+            Ok(formatted) => formatted,
+            Err(message) => {
+                eprintln!("{message}");
+                status = ExitCode::FAILURE;
+                continue;
+            }
+        };
+        if formatted == text {
+            continue;
+        }
+        if check {
+            println!("{shown_name}: would be reformatted");
+            status = ExitCode::FAILURE;
+        } else if let Err(e) = std::fs::write(file, &formatted) {
+            eprintln!("toc: cannot write {file}: {e}");
+            status = ExitCode::FAILURE;
+        } else {
+            println!("formatted {shown_name}");
+        }
+    }
+    status
 }
 
 /// Runs (or only checks) a file. Exit code 0 means no errors and no failed tests.

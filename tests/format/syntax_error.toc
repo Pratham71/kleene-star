@@ -1,0 +1,3 @@
+# A program has to parse before it can be formatted.
+let x = (1 + 2
+print x

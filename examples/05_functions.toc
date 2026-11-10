@@ -21,16 +21,16 @@ fn kth_from_end(k: Int) -> Nfa {
         start  s[0]
         accept s[k]
         s[0] --0,1--> s[0]
-        s[0] --1-->   s[1]
+        s[0] --1  --> s[1]
         for i in 1..k {
             s[i] --0,1--> s[i + 1]
         }
     }
 }
 
-test div_by(3) accepts "110"          # 6
-test not (div_by(3) accepts "111")    # 7
-test div_by(5) accepts "1010"         # 10
+test div_by(3) accepts "110"        # 6
+test not (div_by(3) accepts "111")  # 7
+test div_by(5) accepts "1010"       # 10
 
 # Divisible by 6 means divisible by 2 and by 3.
 test equivalent(div_by(6), intersect(div_by(2), div_by(3)))

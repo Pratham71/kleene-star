@@ -1,0 +1,9 @@
+# Leading blank lines go; comments stay where they are.
+let x = 1  # trailing comment
+# a comment on its own line
+
+# runs of blank lines become one
+if x == 1 {  # after the brace
+    print x  # inside
+}            # after the closing brace
+# the end

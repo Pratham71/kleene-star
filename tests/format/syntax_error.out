@@ -1,0 +1,4 @@
+Error in syntax_error.toc, line 3:
+    print x
+    ^^^^^
+SyntaxError: expected `)`, found `print`

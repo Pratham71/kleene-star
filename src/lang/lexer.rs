@@ -3,10 +3,35 @@
 use super::error::{Diag, ErrorKind};
 use super::token::{Span, Tok, Token};
 
+/// A `# ...` comment. The parser never sees comments; only the formatter
+/// (`toc fmt`) needs them, to put them back where they were.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Comment {
+    /// The comment including its `#`, without trailing spaces.
+    pub text: String,
+    pub span: Span,
+}
+
 /// Lexes `src` starting at byte `from`, which is on line `first_line`.
 /// (The REPL keeps all input in one growing string and lexes only the new
 /// part; a file is lexed with `from = 0, first_line = 1`.)
 pub fn lex(src: &str, from: usize, first_line: usize) -> Result<Vec<Token>, Diag> {
+    lex_into(src, from, first_line, &mut Vec::new())
+}
+
+/// Lexes a whole file and also returns its comments, in order.
+pub fn lex_with_comments(src: &str) -> Result<(Vec<Token>, Vec<Comment>), Diag> {
+    let mut comments = Vec::new();
+    let tokens = lex_into(src, 0, 1, &mut comments)?;
+    Ok((tokens, comments))
+}
+
+fn lex_into(
+    src: &str,
+    from: usize,
+    first_line: usize,
+    comments: &mut Vec<Comment>,
+) -> Result<Vec<Token>, Diag> {
     let mut tokens = Vec::new();
     let mut line = first_line;
     let mut i = from;
@@ -29,6 +54,8 @@ pub fn lex(src: &str, from: usize, first_line: usize) -> Result<Vec<Token>, Diag
         }
         if c == '#' {
             i += src[i..].find('\n').unwrap_or(src.len() - i);
+            let text = src[start..i].trim_end();
+            comments.push(Comment { text: text.to_string(), span: span(start + text.len()) });
             continue;
         }
 
@@ -220,6 +247,14 @@ mod tests {
                 Tok::Eof
             ]
         );
+    }
+
+    #[test]
+    fn keeps_comments_on_request() {
+        let (tokens, comments) = lex_with_comments("let x = 1  # one   \n# two\n").unwrap();
+        assert_eq!(tokens.len(), 5);
+        assert_eq!(comments[0].text, "# one");
+        assert_eq!(comments[1], Comment { text: "# two".into(), span: Span { start: 20, end: 25, line: 2 } });
     }
 
     #[test]

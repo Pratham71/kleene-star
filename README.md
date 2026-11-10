@@ -59,7 +59,8 @@ cargo run -- repl
 ```
 
 `toc run file.toc` runs a program, `toc check file.toc` only looks for errors,
-and `toc repl` gives you an interactive prompt. The exit code is 0 when there
+`toc fmt file.toc` tidies its layout, and `toc repl` gives you an interactive
+prompt. The exit code is 0 when there
 were no errors and no failed tests.
 
 ## Learning the language
@@ -70,6 +71,8 @@ were no errors and no failed tests.
 4. [Combining and comparing languages](docs/tutorial/04-closure.md)
 5. [Functions and machine families](docs/tutorial/05-functions.md)
 6. [Watching a machine run](docs/tutorial/06-trace.md)
+
+Appendix: [tools](docs/tutorial/tools.md), including `toc fmt`.
 
 Then keep [the reference](docs/reference.md) open: every statement, type,
 built-in function and error on one page.

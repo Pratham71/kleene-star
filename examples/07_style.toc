@@ -1,0 +1,32 @@
+# The standard style that `toc fmt` produces. This file is already
+# formatted: running `toc fmt examples/07_style.toc` changes nothing.
+
+alphabet B = {0, 1}
+
+# `start` and `accept` line up, and so do every `--` and every `-->`.
+nfa ThirdFromEnd over B {
+    start  a
+    accept d
+    a --0,1--> a
+    a --1  --> b
+    b --0,1--> c
+    c --0,1--> d
+}
+
+# Four spaces per level, one statement per line, spaces around operators.
+fn last_bits(n: Int) -> Set[Str] {
+    if n <= 0 {
+        return {""}
+    } else if n == 1 {
+        return {"0", "1"}
+    } else {
+        return {"00", "01", "10", "11"}
+    }
+}
+
+for w in last_bits(2) {
+    print w, ThirdFromEnd accepts "1" + w  # 1 is third from the end
+}
+
+# Parentheses are kept as written, even where they are not needed.
+test (ThirdFromEnd accepts "100") and not (ThirdFromEnd accepts "000")

@@ -607,7 +607,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let inner = self.expr()?;
                 self.expect(Tok::RParen, "`)`")?;
-                return Ok(Expr { kind: inner.kind, span: start.to(self.prev()) });
+                ExprKind::Paren(Box::new(inner))
             }
             Tok::LBrace => {
                 self.advance();
@@ -662,6 +662,7 @@ mod tests {
             ExprKind::Name(n) => n.clone(),
             ExprKind::Bool(b) => b.to_string(),
             ExprKind::Str(s) => format!("{s:?}"),
+            ExprKind::Paren(inner) => show(inner),
             ExprKind::Unary(UnOp::Neg, a) => format!("(-{})", show(a)),
             ExprKind::Unary(UnOp::Not, a) => format!("(not {})", show(a)),
             ExprKind::Binary(op, a, b) => format!("({} {} {})", show(a), op.symbol(), show(b)),
