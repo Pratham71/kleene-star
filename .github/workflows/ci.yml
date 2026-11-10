@@ -1,0 +1,42 @@
+# Runs the tests and clippy on Windows, Linux and macOS for every push and
+# pull request, so platform differences (line endings, paths, console
+# encoding) are caught before they reach main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15-intel rather than macos-latest: in November 2026 GitHub's
+        # arm64 macOS runners were too short of capacity to pick up jobs for
+        # this repository. Switch back to macos-latest once they recover.
+        os: [windows-latest, ubuntu-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test
+        run: cargo test --all-targets --no-fail-fast
+      - name: doc tests
+        run: cargo test --doc
+      - name: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: examples are formatted
+        shell: bash
+        run: cargo run --quiet -- fmt --check examples/*.toc

@@ -1,0 +1,8 @@
+# Store every text file with LF line endings, and check them out that way on
+# every platform too. The golden test files compare output byte for byte, so
+# a checkout that turned their line endings into CRLF would make them differ.
+* text=auto eol=lf
+
+# Windows-only scripts keep Windows line endings.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
