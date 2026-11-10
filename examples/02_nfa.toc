@@ -41,3 +41,7 @@ print plain
 test equivalent(plain, TwosOrThrees)
 test TwosOrThrees accepts "000000"
 test not (TwosOrThrees accepts "0")
+
+# Writes ThirdFromEnd.dot and TwosOrThrees.dot.
+draw ThirdFromEnd
+draw TwosOrThrees

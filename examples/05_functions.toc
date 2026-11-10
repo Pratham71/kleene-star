@@ -40,3 +40,7 @@ for k in 1..6 {
     let guess = kth_from_end(k)
     print "k =", k, " NFA:", states(guess), " min-DFA:", states(minimize(guess))
 }
+
+# Writes div3.dot.
+let div3 = div_by(3)
+draw div3

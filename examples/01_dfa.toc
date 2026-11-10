@@ -22,3 +22,6 @@ test not (HasDouble1 accepts "")
 for w in {"11", "1", "10101", "001100"} {
     print w, HasDouble1 accepts w
 }
+
+# Writes HasDouble1.dot, a state diagram you can open with Graphviz.
+draw HasDouble1

@@ -7,15 +7,15 @@ let n = to_nfa(r)
 # ...the subset construction makes it deterministic...
 let d = to_dfa(n)
 # ...and minimisation finds the smallest DFA.
-let m = rename(minimize(d))
+let smallest = rename(minimize(d))
 
 print "eps-NFA:", states(n), "states"
 print "DFA:    ", states(d), "states"
-print "min-DFA:", states(m), "states"
-print m
+print "min-DFA:", states(smallest), "states"
+print smallest
 
 # State elimination turns a DFA back into a regex.
-let back = to_regex(m)
+let back = to_regex(smallest)
 print back
 test equivalent(back, r)
 
@@ -24,3 +24,6 @@ print "reduced NFA:", states(reduce(n)), "states"
 
 test r accepts "babb"
 test not (r accepts "abba")
+
+# Writes smallest.dot.
+draw smallest

@@ -31,3 +31,6 @@ test equivalent(reverse(/001*/), /1*00/)
 let words = {"0", "01", "011"}
 test equivalent(words, /01?1?/)
 print rename(minimize(words))
+
+# Writes both.dot: even number of 0s and ending in 1.
+draw both
