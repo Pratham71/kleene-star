@@ -1,0 +1,2 @@
+let alphabet_size = 2
+print alphabet_sise + 1

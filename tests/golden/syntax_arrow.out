@@ -1,0 +1,5 @@
+Error in syntax_arrow.toc, line 4:
+    q0 -> q1
+       ^^
+SyntaxError: expected `--` to begin a transition, found `->`
+  hint: a transition is written `q0 --a--> q1`

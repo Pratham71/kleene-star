@@ -1,0 +1,42 @@
+# Chapter 5: functions build whole families of machines.
+
+alphabet B = {0, 1}
+
+# Binary numbers divisible by n: state q[i] means "the number so far is i mod n".
+# Reading a bit doubles the number and adds the bit.
+fn div_by(n: Int) -> Dfa {
+    return dfa over B {
+        start  q[0]
+        accept q[0]
+        for i in 0..n {
+            q[i] --0--> q[(2 * i) % n]
+            q[i] --1--> q[(2 * i + 1) % n]
+        }
+    }
+}
+
+# Strings whose k-th symbol from the end is 1.
+fn kth_from_end(k: Int) -> Nfa {
+    return nfa over B {
+        start  s[0]
+        accept s[k]
+        s[0] --0,1--> s[0]
+        s[0] --1-->   s[1]
+        for i in 1..k {
+            s[i] --0,1--> s[i + 1]
+        }
+    }
+}
+
+test div_by(3) accepts "110"          # 6
+test not (div_by(3) accepts "111")    # 7
+test div_by(5) accepts "1010"         # 10
+
+# Divisible by 6 means divisible by 2 and by 3.
+test equivalent(div_by(6), intersect(div_by(2), div_by(3)))
+
+# The famous blow-up: an NFA with k+1 states needs 2^k DFA states.
+for k in 1..6 {
+    let guess = kth_from_end(k)
+    print "k =", k, " NFA:", states(guess), " min-DFA:", states(minimize(guess))
+}

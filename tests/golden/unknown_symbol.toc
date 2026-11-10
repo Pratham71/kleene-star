@@ -1,0 +1,7 @@
+alphabet B = {0, 1}
+
+nfa M over B {
+    start a
+    accept b
+    a --0, 2--> b
+}

@@ -1,0 +1,16 @@
+[package]
+name = "toc"
+version = "0.1.0"
+edition = "2021"
+description = "TOC-Lang: a small language for Theory of Computation"
+
+[lib]
+name = "toc"
+path = "src/lib.rs"
+
+[[bin]]
+name = "toc"
+path = "src/main.rs"
+
+[dependencies]
+rustyline = "19.0.0"

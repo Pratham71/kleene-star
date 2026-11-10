@@ -1,0 +1,7 @@
+building the union
+Traceback (most recent call last):
+  alphabet_mismatch.toc, line 6, in <main>
+    let both = union(Zeros, As)
+                            ^^
+AlphabetError: this machine is over {a, b}, but {0, 1} is needed here
+  hint: languages can only be combined when they share an alphabet

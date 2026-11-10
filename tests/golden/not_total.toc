@@ -1,0 +1,9 @@
+alphabet B = {0, 1}
+
+dfa Broken over B {
+    start  q0
+    accept q1
+    q0 --0--> q1
+    q1 --0,1--> q1
+}
+print "never printed"

@@ -1,0 +1,5 @@
+Error in compare_machines.toc, line 1:
+    let same = /a*/ == /a*a*/
+               ^^^^^^^^^^^^^^
+TypeError: `==` cannot compare machines or regexes
+  hint: to ask whether two of them describe the same language, use `equivalent(a, b)`

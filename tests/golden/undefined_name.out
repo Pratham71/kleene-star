@@ -1,0 +1,5 @@
+Error in undefined_name.toc, line 2:
+    print alphabet_sise + 1
+          ^^^^^^^^^^^^^
+NameError: `alphabet_sise` is not defined
+  hint: did you mean `alphabet_size`?

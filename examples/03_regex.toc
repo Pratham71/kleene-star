@@ -1,0 +1,26 @@
+# Chapter 3: regular expressions and the round trip regex -> NFA -> DFA -> regex.
+
+let r = /(a|b)*abb/
+
+# Thompson's construction gives an eps-NFA with many states...
+let n = to_nfa(r)
+# ...the subset construction makes it deterministic...
+let d = to_dfa(n)
+# ...and minimisation finds the smallest DFA.
+let m = rename(minimize(d))
+
+print "eps-NFA:", states(n), "states"
+print "DFA:    ", states(d), "states"
+print "min-DFA:", states(m), "states"
+print m
+
+# State elimination turns a DFA back into a regex.
+let back = to_regex(m)
+print back
+test equivalent(back, r)
+
+# reduce() shrinks an NFA without making it deterministic.
+print "reduced NFA:", states(reduce(n)), "states"
+
+test r accepts "babb"
+test not (r accepts "abba")

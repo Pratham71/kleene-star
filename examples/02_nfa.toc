@@ -1,0 +1,43 @@
+# Chapter 2: nondeterminism, eps moves, and turning an NFA into a DFA.
+
+alphabet B = {0, 1}
+
+# "The third symbol from the end is 1": easy to guess, hard to track.
+nfa ThirdFromEnd over B {
+    start  a
+    accept d
+    a --0,1--> a
+    a --1-->   b
+    b --0,1--> c
+    c --0,1--> d
+}
+
+# An eps-NFA that guesses up front: is the length a multiple of 2, or of 3?
+alphabet Z = {0}
+nfa TwosOrThrees over Z {
+    start  s
+    accept two0, three0
+    s --eps--> two0
+    s --eps--> three0
+    two0   --0--> two1
+    two1   --0--> two0
+    three0 --0--> three1
+    three1 --0--> three2
+    three2 --0--> three0
+}
+
+print ThirdFromEnd
+test ThirdFromEnd accepts "0100"
+test not (ThirdFromEnd accepts "0010")
+
+# The subset construction: each DFA state is a set of NFA states.
+let d = to_dfa(ThirdFromEnd)
+print "NFA states:", states(ThirdFromEnd), " DFA states:", states(d)
+test equivalent(d, ThirdFromEnd)
+
+# Removing eps moves keeps the language.
+let plain = remove_eps(TwosOrThrees)
+print plain
+test equivalent(plain, TwosOrThrees)
+test TwosOrThrees accepts "000000"
+test not (TwosOrThrees accepts "0")

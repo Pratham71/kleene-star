@@ -1,0 +1,4 @@
+fn count_down(n: Int) -> Int {
+    return count_down(n - 1)
+}
+print count_down(10)

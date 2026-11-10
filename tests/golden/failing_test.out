@@ -1,0 +1,6 @@
+test failed: failing_test.toc, line 3
+    test r accepts "10"
+test failed: failing_test.toc, line 4
+    test equivalent(r, /(0|1)*1/)
+done
+tests: 1 passed, 2 failed

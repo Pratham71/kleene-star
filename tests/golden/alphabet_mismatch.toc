@@ -1,0 +1,6 @@
+alphabet B = {0, 1}
+alphabet L = {a, b}
+dfa Zeros over B { start s  accept s  s --0--> s  s --1--> t  t --0,1--> t }
+dfa As over L { start s  accept s  s --a--> s  s --b--> t  t --a,b--> t }
+print "building the union"
+let both = union(Zeros, As)

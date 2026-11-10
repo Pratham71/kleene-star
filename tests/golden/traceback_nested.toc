@@ -1,0 +1,20 @@
+alphabet B = {0, 1}
+
+# Binary numbers divisible by n. Breaks when n is 0.
+fn div_by(n: Int) -> Dfa {
+    return dfa over B {
+        start  q[0]
+        accept q[0]
+        for i in 0..n + 1 {
+            q[i] --0--> q[(2 * i) % n]
+            q[i] --1--> q[(2 * i + 1) % n]
+        }
+    }
+}
+
+fn smallest(n: Int) -> Dfa {
+    return minimize(div_by(n))
+}
+
+print states(smallest(3))
+test smallest(0) accepts "110"

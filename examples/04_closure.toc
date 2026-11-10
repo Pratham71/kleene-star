@@ -1,0 +1,33 @@
+# Chapter 4: closure properties. Regular languages stay regular under
+# union, intersection, complement, concatenation, star and reversal.
+
+alphabet B = {0, 1}
+
+let even_zeros = /1*(01*01*)*/
+let ends_in_1  = /(0|1)*1/
+
+let both   = intersect(even_zeros, ends_in_1)
+let either = union(even_zeros, ends_in_1)
+
+test both accepts "001"
+test not (both accepts "01")
+test either accepts "01"
+
+# De Morgan: the complement of a union is the intersection of the complements.
+let lhs = complement(either)
+let rhs = intersect(complement(to_dfa(even_zeros, B)), complement(to_dfa(ends_in_1, B)))
+test equivalent(lhs, rhs)
+
+# A language and its complement share nothing, and together cover everything.
+test is_empty(intersect(both, complement(both)))
+test equivalent(union(both, complement(both)), /(0|1)*/)
+
+# Concatenation, star and reversal.
+test equivalent(concat(/0*/, /1*/), /0*1*/)
+test equivalent(star(/01/), /(01)*/)
+test equivalent(reverse(/001*/), /1*00/)
+
+# Finite languages are sets of strings, and work everywhere a language does.
+let words = {"0", "01", "011"}
+test equivalent(words, /01?1?/)
+print rename(minimize(words))

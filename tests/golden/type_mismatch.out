@@ -1,0 +1,4 @@
+Error in type_mismatch.toc, line 5:
+    print double(word)
+                 ^^^^
+TypeError: argument 1 of `double` must be an Int, but this is a Str

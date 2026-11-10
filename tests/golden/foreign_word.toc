@@ -1,0 +1,7 @@
+alphabet B = {0, 1}
+dfa Zeros over B { start s  accept s  s --0--> s  s --1--> t  t --0,1--> t }
+fn check(word: Str) -> Bool {
+    return Zeros accepts word
+}
+print check("000")
+print check("0a0")

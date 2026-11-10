@@ -1,0 +1,24 @@
+# Chapter 1: deterministic finite automata.
+
+alphabet B = {0, 1}
+
+# Accepts binary strings containing the substring 11.
+dfa HasDouble1 over B {
+    start  none
+    accept both
+    none --0--> none
+    none --1--> one
+    one  --0--> none
+    one  --1--> both
+    both --0,1--> both
+}
+
+print HasDouble1
+
+test HasDouble1 accepts "0110"
+test not (HasDouble1 accepts "0101")
+test not (HasDouble1 accepts "")
+
+for w in {"11", "1", "10101", "001100"} {
+    print w, HasDouble1 accepts w
+}

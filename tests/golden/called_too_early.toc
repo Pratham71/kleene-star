@@ -1,0 +1,5 @@
+alphabet B = {0, 1}
+print size()
+fn size() -> Int {
+    return len(B)
+}
