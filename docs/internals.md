@@ -455,8 +455,8 @@ Ideas that fit the current design, roughly in order of size:
   says whether a newer release exists and prints the install command; doing
   the replacement safely means renaming the running `.exe` on Windows and
   knowing how this copy was installed (installer, script or `cargo install`).
-- Publishing: a licence, then the VS Code extension on the marketplace and
-  the crate on crates.io. Neither is done while the repository is private.
+- Publishing the VS Code extension on the marketplace and the crate on
+  crates.io.
 - The cross-platform "CI" workflow is switched off for now; the release
   workflow runs the tests on every platform it builds for.
 
@@ -470,8 +470,14 @@ built from `installer/kstar.iss` with Inno Setup and tested by
 `install.ps1` and `install.sh` are tested against the freshly built archives
 through `KSTAR_INSTALL_FROM`. Only a plain `vX.Y.Z` tag that matches the
 version in `Cargo.toml` publishes; any other tag is a dry run whose files stay
-as the run's artifacts. Apple Silicon builds after publishing and adds its
-archive to the release, so a shortage of arm64 runners cannot hold it up.
+as the run's artifacts. Apple Silicon is cross-compiled on the Intel macOS
+runner, so a shortage of arm64 runners cannot hold the release up; a
+separate job runs the tests on a real arm64 machine without the release
+waiting for it. Each archive and the installer carry the MIT `LICENSE`.
+
+Third-party actions are pinned to commit SHAs and every job asks only for
+the permissions it needs; Dependabot proposes updates to the pins, the Rust
+crates and the extension's npm packages.
 
 `build.rs` records the commit, build date and target that `kstar version`
 prints, and on Windows embeds the K* icon in the executables.

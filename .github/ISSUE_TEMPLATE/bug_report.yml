@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in kstar, kstar-lsp, the extension or the installers does not work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: program
+    attributes:
+      label: The smallest program or command that shows it
+      description: Cut it down as far as you can while it still goes wrong.
+      render: kstar
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Paste what kstar printed, including any error message.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Output of `kstar version`
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: how
+    attributes:
+      label: How you installed it
+      placeholder: Windows installer, install script, cargo install, the VS Code extension...

@@ -4,8 +4,8 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | sh
 #
-# While the repository is private, that URL needs signing in, so use the
-# GitHub CLI (after `gh auth login`) instead:
+# Or through the GitHub CLI, which also works for a private fork (after
+# `gh auth login`):
 #
 #   gh api repos/Pratham71/kleene-star/contents/install.sh -H "Accept: application/vnd.github.raw" | sh
 #
@@ -73,7 +73,7 @@ else
             wget -q "$base/$file" -O "$work/$file" || failed=1
         fi
         [ -z "${failed:-}" ] ||
-            fail "could not download $file. While $repo is private, install the GitHub CLI, run 'gh auth login' and try again"
+            fail "could not download $file. If $repo is private, install the GitHub CLI, run 'gh auth login' and try again"
     done
 fi
 

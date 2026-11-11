@@ -1,6 +1,6 @@
 # Kleene Star: a small, well-designed language for Theory of Computation
 
-> Status: version 0.2.0 (2026-11-11). Stages 0 to 9 below are built, and so is most of
+> Status: version 0.2.1 (2026-11-11), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
 > `export` is still to do. This is the design as agreed on 2026-11-10, with the layout,
@@ -139,27 +139,38 @@ source-line-and-caret format without a call chain, and stop the program before i
 ## Layout
 
 ```
-Cargo.toml
+Cargo.toml  build.rs           build.rs records the commit and date, and puts the icon in kstar.exe
 src/
-  lib.rs             Session: feeds text through the stages; shared by CLI, REPL and tests
-  main.rs            CLI: `kstar run file.kstar`, `kstar check file.kstar`, `kstar repl`
+  lib.rs             Session: feeds text through the stages; shared by CLI, REPL, tests and the LSP
+  main.rs            CLI: run, check, fmt, trace, new, explain, repl, version, update
+  repl.rs  update.rs the REPL; `kstar version` and `kstar update --check`
+  ide.rs             analysis for editors: problems, hover, definitions, completion, outline
+  bin/kstar-lsp.rs   the language server (tower-lsp-server)
   automata/          pure library, no knowledge of the language
     dfa.rs  nfa.rs  regex.rs  convert.rs  minimize.rs  ops.rs  dot.rs
+    grammar.rs  pda.rs  tm.rs  trace.rs
   lang/
-    token.rs  lexer.rs  ast.rs  parser.rs
-    check.rs  machine.rs         type checker; the rules for a valid DFA/NFA
+    token.rs  lexer.rs  ast.rs  parser.rs     with error recovery, so every error is reported
+    check.rs  machine.rs         type checker; the rules for a valid DFA/NFA/PDA/TM
+    lint.rs                      warnings
+    codes.rs                     error and warning codes, explained by docs/errors.md
     builtins.rs                  built-in function names and their types
-    value.rs  interp.rs          runtime values, evaluator, call stack
+    value.rs  interp.rs  trace.rs   runtime values, evaluator, call stack, step-by-step traces
+    format.rs  index.rs          the formatter; names and their places, for the editor
     error.rs                     error kinds, traceback and caret rendering
 examples/            *.kstar sample programs
 tests/
-  golden/            programs with their exact expected output, mostly error cases
-  golden.rs          runs them
+  golden/  format/   programs with their exact expected output
   programs.rs        runs every example and every code sample in the docs
+  properties.rs  robustness.rs  scale.rs  cli.rs  ide.rs
 docs/
-  tutorial/          follows a Theory of Computation course: DFA, NFA, eps-NFA, regex, closure properties
-  reference.md       grammar (EBNF), types, built-ins, error catalogue
-  internals.md       how the interpreter works, stage by stage
+  tutorial/          follows a Theory of Computation course, DFA to Turing machines, plus tools
+  reference.md       grammar (EBNF), types, built-ins, errors, the kstar command
+  errors.md          every error and warning code, with an example
+  internals.md       how the interpreter works, stage by stage, and how releases are made
+editors/vscode/      the VS Code extension
+installer/           the Windows installer (Inno Setup); install.ps1 and install.sh at the root
+.github/workflows/   release.yml builds and publishes releases; ci.yml is switched off for now
 ```
 
 `automata/` stays separate from `lang/` so the export stage and any future VM reuse it.

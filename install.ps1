@@ -3,8 +3,8 @@
 #
 #   powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex"
 #
-# While the repository is private, that URL needs signing in, so use the
-# GitHub CLI (after `gh auth login`) instead:
+# Or through the GitHub CLI, which also works for a private fork (after
+# `gh auth login`):
 #
 #   powershell -c "gh api repos/Pratham71/kleene-star/contents/install.ps1 -H 'Accept: application/vnd.github.raw' | Out-String | iex"
 #
@@ -61,7 +61,7 @@ function Install-KleeneStar {
                 Invoke-WebRequest -UseBasicParsing "$base/$asset" -OutFile (Join-Path $work $asset)
                 Invoke-WebRequest -UseBasicParsing "$base/$asset.sha256" -OutFile (Join-Path $work "$asset.sha256")
             } catch {
-                throw "Could not download $asset ($($_.Exception.Message)). While $repo is private, install the GitHub CLI, run 'gh auth login' and try again."
+                throw "Could not download $asset ($($_.Exception.Message)). If $repo is private, install the GitHub CLI, run 'gh auth login' and try again."
             }
         }
 

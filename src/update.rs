@@ -48,7 +48,7 @@ pub fn is_newer(candidate: &str, current: &str) -> bool {
 }
 
 /// The tag of the latest release, asked through the `gh` command (which
-/// handles signing in, needed while the repository is private) or, failing
+/// handles signing in, needed if the repository is private) or, failing
 /// that, `curl` with `GITHUB_TOKEN` if it is set.
 fn latest_tag() -> Result<String, String> {
     let repo = repository();
@@ -72,7 +72,7 @@ fn latest_tag() -> Result<String, String> {
         .map_err(|e| format!("could not run gh or curl: {e}"))?;
     if !output.status.success() {
         return Err(format!(
-            "could not ask GitHub about the latest release of {repo}. While the repository is private, \
+            "could not ask GitHub about the latest release of {repo}. If the repository is private, \
              sign in with `gh auth login` (or set GITHUB_TOKEN) and try again"
         ));
     }

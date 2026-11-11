@@ -1,24 +1,27 @@
 #!/usr/bin/env bash
 # Packages a release build for the release workflow:
 #
-#   .github/scripts/package.sh <target> <exe suffix>
+#   .github/scripts/package.sh <target> <exe suffix> [cross]
 #
-# puts kstar, kstar-lsp and the README into dist/kstar-<target>.zip (on
+# puts kstar, kstar-lsp, the README and the LICENSE into dist/kstar-<target>.zip (on
 # Windows) or .tar.gz, with a .sha256 file beside it, after checking that
-# the built kstar runs.
+# the built kstar runs (unless it was cross-compiled for another machine).
 set -euo pipefail
 
 target=$1
 exe=${2:-}
+cross=${3:-}
 name=kstar-$target
 release=target/$target/release
 
-"$release/kstar$exe" version
-"$release/kstar$exe" run examples/01_dfa.kstar >/dev/null
+if [ -z "$cross" ]; then
+    "$release/kstar$exe" version
+    "$release/kstar$exe" run examples/01_dfa.kstar >/dev/null
+fi
 
 rm -rf stage dist
 mkdir -p stage dist
-cp "$release/kstar$exe" "$release/kstar-lsp$exe" README.md stage/
+cp "$release/kstar$exe" "$release/kstar-lsp$exe" README.md LICENSE stage/
 
 if [ "$exe" = .exe ]; then
     archive=$name.zip

@@ -1,10 +1,13 @@
 [package]
 name = "kstar"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 # `cargo run` runs the language, not the language server.
 default-run = "kstar"
 description = "Kleene Star: a small language for Theory of Computation"
+license = "MIT"
+repository = "https://github.com/Pratham71/kleene-star"
+readme = "README.md"
 
 [lib]
 name = "kstar"

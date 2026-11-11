@@ -28,7 +28,7 @@ DisableProgramGroupPage=yes
 ; offers "for all users" too, and /CURRENTUSER or /ALLUSERS choose silently.
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=commandline dialog
-LicenseFile=LICENSE-NOTICE.txt
+LicenseFile=..\LICENSE
 OutputBaseFilename=kstar-setup-x64
 SetupIconFile=..\assets\kstar.ico
 UninstallDisplayIcon={app}\bin\kstar.exe
@@ -50,6 +50,7 @@ Source: "{#SourceDir}\kstar.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#SourceDir}\kstar-lsp.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "..\assets\kstar.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Kleene Star REPL"; Filename: "{app}\bin\kstar.exe"; Parameters: "repl"; IconFilename: "{app}\kstar.ico"; Comment: "Try Kleene Star interactively"

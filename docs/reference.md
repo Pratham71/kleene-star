@@ -360,6 +360,11 @@ code in brackets, like `NameError[E0200]`; `kstar explain E0200` explains
 it at length, and [the list of errors and warnings](errors.md) has every
 code with an example.
 
+The first two digits of a code give its kind: `E01xx` syntax, `E02xx`
+names, `E03xx` types, `E04xx` machines, `E05xx` alphabets, `E06xx` errors
+while running (maths, recursion, limits, values and files), and `W0xxx`
+warnings.
+
 `kstar run` and `kstar check` report every error in a file, not only the
 first: the parser skips to the next statement after a syntax error, and the
 checker carries on after each statement that fails. A name whose definition

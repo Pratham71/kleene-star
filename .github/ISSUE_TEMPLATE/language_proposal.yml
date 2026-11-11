@@ -1,0 +1,34 @@
+name: Language proposal
+description: Propose a new statement, built-in, machine type or other change to the language.
+labels: [language]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Kleene Star tries to stay small. Please open a proposal before writing code, so the design can be agreed first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What can't you express, or what is awkward today? An example from a Theory of Computation course helps.
+    validations:
+      required: true
+  - type: textarea
+    id: syntax
+    attributes:
+      label: The syntax you have in mind
+      description: A short program using it, and what it should print.
+      render: kstar
+    validations:
+      required: true
+  - type: textarea
+    id: fit
+    attributes:
+      label: How it fits
+      description: How does it relate to what already exists? What errors should it report? Are there alternatives?
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Help
+      options:
+        - label: I would like to implement this myself (library code first, then syntax, docs, an example and golden tests).

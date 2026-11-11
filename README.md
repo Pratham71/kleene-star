@@ -53,64 +53,95 @@ tests: 2 passed, 0 failed
 ## Installing
 
 Each [release](https://github.com/Pratham71/kleene-star/releases) has
-`kstar` and `kstar-lsp` for Windows, Linux and macOS, a Windows installer
-and the VS Code extension.
+`kstar` and its language server `kstar-lsp` for these platforms, plus a
+Windows installer and the VS Code extension:
 
-**Windows:** download and run `kstar-setup-x64.exe`. It installs for your
-user (no administrator rights), adds `kstar` to the PATH, gives `.kstar`
-files the K* icon, and uninstalls from Settings > Apps. Or, from PowerShell:
+| Platform | Download |
+|---|---|
+| Windows x64 | `kstar-setup-x64.exe` (installer) or `kstar-x86_64-pc-windows-msvc.zip` |
+| Linux x64 | `kstar-x86_64-unknown-linux-gnu.tar.gz` |
+| macOS, Intel | `kstar-x86_64-apple-darwin.tar.gz` |
+| macOS, Apple Silicon | `kstar-aarch64-apple-darwin.tar.gz` |
+| VS Code | `kleene-star-<version>.vsix` |
+
+Every file has a `.sha256` checksum beside it, and `SHA256SUMS` lists them all.
+
+### With the Windows installer
+
+Download and run `kstar-setup-x64.exe`. It installs for your user, so it
+needs no administrator rights. It adds `kstar` to the PATH (a ticked option),
+gives `.kstar` files the K* icon, and adds a Start Menu entry for the REPL.
+Uninstall it from Settings > Apps; that also removes the PATH entry and the
+file association.
+
+### With a script
+
+On Windows, in PowerShell:
 
 ```bash
 powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex"
 ```
 
-**Linux and macOS:**
+On Linux or macOS:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | sh
 ```
 
-The scripts download the right build, check its SHA-256 checksum, install
-it in your user folder (`%LOCALAPPDATA%\Programs\Kleene Star\bin` or
-`~/.kstar/bin`), add it to the PATH and say how to uninstall.
+The scripts pick the build for your system, check its SHA-256 checksum,
+install it in your user folder (`%LOCALAPPDATA%\Programs\Kleene Star\bin`
+or `~/.kstar/bin`), add that folder to the PATH and print how to
+uninstall. `KSTAR_VERSION=v0.2.1` installs a particular release.
 
-> **While the repository is private** the links above need you to be signed
-> in to GitHub, so they will not work as they are. Install the
-> [GitHub CLI](https://cli.github.com), run `gh auth login`, and use it to
-> fetch the script instead; the scripts then download through `gh` too:
->
-> ```bash
-> powershell -c "gh api repos/Pratham71/kleene-star/contents/install.ps1 -H 'Accept: application/vnd.github.raw' | Out-String | iex"
-> ```
->
-> ```bash
-> gh api repos/Pratham71/kleene-star/contents/install.sh -H "Accept: application/vnd.github.raw" | sh
-> ```
+### From source
+
+You need [Rust](https://rustup.rs). Then, in this folder:
+
+```bash
+cargo install --path .
+```
+
+That puts `kstar` and `kstar-lsp` in `~/.cargo/bin`. To try it without
+installing, use `cargo run -- <command>` instead of `kstar <command>`.
+
+### The editor extension
+
+```bash
+code --install-extension kleene-star-0.2.1.vsix
+```
+
+It finds `kstar-lsp` on the PATH or in any of the folders above, and gives
+you errors as you type, hover, go to definition, an outline, formatting
+and commands to run, check and trace. See [its README](editors/vscode/README.md).
 
 `kstar version` shows what is installed and `kstar update --check` whether
 there is a newer release.
 
-## Getting started
-
-To build from source you need [Rust](https://rustup.rs). Then, in this folder:
+## Quick start
 
 ```bash
-cargo build --release
+kstar new hello
 ```
 
 ```bash
-cargo run -- run examples/tour.kstar
+kstar run hello.kstar
 ```
 
 ```bash
-cargo run -- repl
+kstar repl
 ```
 
-`kstar run file.kstar` runs a program, `kstar check file.kstar` only looks
-for errors and warnings, `kstar fmt file.kstar` tidies its layout, and
+`kstar new` writes a small working program to start from. `kstar run`
+runs programs, `kstar check` only looks for errors and warnings, `kstar fmt`
+tidies their layout, `kstar trace` follows one machine on one word, and
 `kstar repl` gives you an interactive prompt. Each takes several files or
-folders; `kstar new name` starts a new program and `kstar help` lists the
-rest. The exit code is 0 when there were no errors and no failed tests.
+folders, `kstar explain E0404` explains an error code, and `kstar help`
+lists the rest. The exit code is 0 when there were no errors and no failed
+tests. The examples in [examples/](examples) are a good next step:
+
+```bash
+kstar run examples/tour.kstar
+```
 
 ## Learning the language
 
@@ -177,14 +208,37 @@ MathError: modulo by zero
 
 ```text
 src/automata/   the machines and algorithms, as a plain Rust library
-src/lang/       the language: lexer, parser, checker, interpreter
-src/main.rs     the `kstar` command
+src/lang/       the language: lexer, parser, checker, interpreter, formatter, lints
+src/ide.rs      analysis for editors, used by the language server
+src/main.rs     the `kstar` command; src/bin/kstar-lsp.rs is the language server
 examples/       programs to read and run
-tests/          golden tests for output and error messages
-docs/           tutorial, reference, internals, design
+tests/          golden, property, robustness, scale, CLI and IDE tests
+docs/           tutorial, reference, error catalogue, internals, design
 editors/vscode/ the VS Code extension
+installer/      the Windows installer; install.ps1 and install.sh are the scripts
 assets/         the logo; tools/logo renders the PNG and Windows icon from it
 ```
 
 Run the tests with `cargo test`. They include every example and every code
 sample in the documentation, so the docs cannot fall out of date unnoticed.
+
+## Contributing
+
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how
+to build and test, the house rules and how to propose a change, and
+everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
+To report a security problem, see [SECURITY.md](SECURITY.md).
+
+## How this project was built
+
+The code, tests and documentation were written with
+[Claude Code](https://claude.com/claude-code), an AI coding assistant. The
+language design and the decisions about it were made by a human, and a
+human reviewer was present at each step and approved each change.
+
+Until version 0.2 the project was called TOC-Lang, with `.toc` files and a
+`toc` command.
+
+## Licence
+
+[MIT](LICENSE).
