@@ -1,0 +1,273 @@
+# Builds and publishes a release when a version tag is pushed:
+#
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# Every platform runs the tests before its build is packaged. The release
+# gets, for each platform, an archive with kstar and kstar-lsp plus its
+# SHA-256 checksum, the Windows installer (tested by installing and
+# uninstalling it), the VS Code extension and a SHA256SUMS file.
+#
+# Only plain version tags (v1.2.3) publish a release. A tag with a suffix,
+# such as v0.2.0-rc.1, or running the workflow by hand, does everything
+# else and leaves the files as the run's artifacts, as a dry run.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            exe: .exe
+          - os: ubuntu-22.04 # an older glibc, so the binary runs on more Linux systems
+            target: x86_64-unknown-linux-gnu
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: cargo test
+        run: cargo test --all-targets --no-fail-fast
+      - name: build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: package
+        shell: bash
+        run: .github/scripts/package.sh "${{ matrix.target }}" "${{ matrix.exe }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  installer:
+    name: Windows installer
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-x86_64-pc-windows-msvc
+          path: files
+      - name: find or install Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (Test-Path $iscc) {
+            Write-Host "Inno Setup is already on this runner"
+          } else {
+            Write-Host "Inno Setup is not on this runner; installing it"
+            choco install innosetup --yes --no-progress
+            if (-not (Test-Path $iscc)) { throw "ISCC.exe is still missing after installing Inno Setup" }
+          }
+          "ISCC=$iscc" >> $env:GITHUB_ENV
+      - name: build kstar-setup-x64.exe
+        shell: pwsh
+        run: |
+          Expand-Archive files\kstar-x86_64-pc-windows-msvc.zip -DestinationPath programs
+          $version = (& programs\kstar.exe version | Select-Object -First 1) -replace '^kstar ', ''
+          & $env:ISCC "/DAppVersion=$version" "/DSourceDir=$PWD\programs" "/O$PWD\dist" installer\kstar.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+      - name: install, check and uninstall
+        shell: pwsh
+        run: installer\test-installer.ps1 -Setup dist\kstar-setup-x64.exe
+      - name: checksum
+        shell: bash
+        run: cd dist && sha256sum kstar-setup-x64.exe > kstar-setup-x64.exe.sha256
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-installer
+          path: dist/*
+          if-no-files-found: error
+
+  install-scripts:
+    name: install script (${{ matrix.os }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-${{ matrix.target }}
+          path: files
+      - name: install.ps1
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:KSTAR_INSTALL_FROM = "$PWD\files"
+          # The way the README runs it: the script's text piped into iex.
+          Get-Content install.ps1 -Raw | Invoke-Expression
+          $bin = Join-Path $env:LOCALAPPDATA "Programs\Kleene Star\bin"
+          & "$bin\kstar.exe" version
+          if ($LASTEXITCODE -ne 0) { throw "kstar version failed" }
+          $path = [Environment]::GetEnvironmentVariable("Path", "User")
+          if (-not (($path -split ";") -contains $bin)) { throw "$bin is not on the user's PATH: $path" }
+          # A wrong checksum must stop the install.
+          Copy-Item -Recurse files bad
+          Set-Content bad\kstar-x86_64-pc-windows-msvc.zip.sha256 ("0" * 64)
+          $env:KSTAR_INSTALL_FROM = "$PWD\bad"
+          $failed = $false
+          try { Get-Content install.ps1 -Raw | Invoke-Expression } catch { $failed = $true; Write-Host "Refused as expected: $_" }
+          if (-not $failed) { throw "install.ps1 accepted a wrong checksum" }
+      - name: install.sh
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if command -v shellcheck >/dev/null; then shellcheck install.sh; fi
+          KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
+          "$HOME/.kstar/bin/kstar" version
+          grep -F '.kstar/bin' "$HOME/.profile"
+          # Running it again must not add the PATH line twice.
+          KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
+          test "$(grep -cF '.kstar/bin' "$HOME/.profile")" = 1
+          # A wrong checksum must stop the install.
+          cp -R files bad
+          printf '%064d  x\n' 0 > bad/kstar-${{ matrix.target }}.tar.gz.sha256
+          if KSTAR_INSTALL_FROM="$PWD/bad" sh install.sh; then echo "install.sh accepted a wrong checksum"; exit 1; fi
+
+  vscode:
+    name: VS Code extension
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # The extension's tests use the debug kstar and kstar-lsp.
+      - run: cargo build
+      - run: npm ci
+        working-directory: editors/vscode
+      - run: npm test
+        working-directory: editors/vscode
+      - name: package the .vsix
+        working-directory: editors/vscode
+        run: |
+          version=$(node -p "require('./package.json').version")
+          mkdir -p ../../dist
+          npx vsce package --skip-license -o "../../dist/kleene-star-$version.vsix"
+          cd ../../dist && sha256sum "kleene-star-$version.vsix" > "kleene-star-$version.vsix.sha256"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-vsix
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: publish
+    needs: [build, installer, install-scripts, vscode]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: build-*
+          path: dist
+          merge-multiple: true
+      - name: SHA256SUMS
+        run: |
+          cd dist
+          cat *.sha256 | sed 's/ \*/  /' | sort -k 2 > SHA256SUMS
+          cat SHA256SUMS
+      - name: decide whether to publish
+        id: publish
+        run: |
+          tag=${GITHUB_REF#refs/tags/}
+          if [[ "$GITHUB_REF" == refs/tags/v* && "$tag" != *-* ]]; then
+            version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
+            if [ "v$version" != "$tag" ]; then
+              echo "::error::the tag $tag does not match the version in Cargo.toml ($version)"
+              exit 1
+            fi
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not a plain version tag ($GITHUB_REF): a dry run, nothing is published."
+          fi
+      - uses: actions/upload-artifact@v7
+        if: steps.publish.outputs.tag == ''
+        with:
+          name: dry-run-release
+          path: dist/*
+      - name: publish the release
+        if: steps.publish.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.publish.outputs.tag }}
+        run: |
+          cat > notes.md <<EOF
+          ## Installing
+
+          - **Windows:** download and run \`kstar-setup-x64.exe\`, or use \`install.ps1\` (see the README).
+          - **Linux and macOS:** use \`install.sh\` (see the README), or unpack the archive for your system and put \`kstar\` and \`kstar-lsp\` on your PATH.
+          - **VS Code:** \`code --install-extension kleene-star-${TAG#v}.vsix\`
+
+          Check a download with \`sha256sum -c SHA256SUMS --ignore-missing\`.
+          The Apple Silicon (arm64) macOS build, if this release has one, is added by a separate job after publishing.
+          EOF
+          gh release create "$TAG" dist/* --title "Kleene Star ${TAG#v}" --notes-file notes.md --generate-notes --verify-tag
+
+  # Apple Silicon runs on its own, after the release, because GitHub's arm64
+  # macOS runners have at times been too short of capacity to pick up jobs
+  # at all, and waiting for one must not hold back the release. When it
+  # finishes it adds its archive to the release.
+  macos-arm64:
+    name: build (aarch64-apple-darwin)
+    needs: release
+    runs-on: macos-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test
+        run: cargo test --all-targets --no-fail-fast
+      - name: build
+        run: cargo build --release --locked --target aarch64-apple-darwin
+      - name: package
+        run: .github/scripts/package.sh aarch64-apple-darwin ""
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-aarch64-apple-darwin
+          path: dist/*
+      - name: add to the release
+        if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF#refs/tags/}" dist/*

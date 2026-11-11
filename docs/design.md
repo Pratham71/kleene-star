@@ -1,7 +1,10 @@
 # Kleene Star: a small, well-designed language for Theory of Computation
 
-> Status: stages 0 to 9 below are built. This is the design as agreed on 2026-11-10,
-> with the layout, error format and test sections updated to match the code.
+> Status: version 0.2.0 (2026-11-11). Stages 0 to 9 below are built, and so is most of
+> the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
+> a VS Code extension, and release builds with installers for Windows, Linux and macOS.
+> `export` is still to do. This is the design as agreed on 2026-11-10, with the layout,
+> error format and test sections updated to match the code.
 
 ## Context
 
@@ -185,7 +188,8 @@ short walkthrough of what was built and why.
 9. **DFA -> regex** (state elimination); finish tutorial and reference.
 
 Later, each as its own design: `export` to Rust source, `kstar fmt`, context-free grammars and
-PDAs, Turing machines.
+PDAs, Turing machines. All but `export` are built, along with the language server
+(`kstar-lsp`), the VS Code extension and the release workflow (version 0.2.0).
 
 ## Verification
 

@@ -565,7 +565,9 @@ Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 | `kstar explain <code>` | Explains an error or warning code; `--list` lists them all. |
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
 | `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |
-| `kstar version` | The version. |
+| `kstar version` | The version, the commit it was built from, the build date and the target platform. |
+| `kstar update --check` | Asks GitHub whether a newer release exists (through the `gh` command, or `curl` with `GITHUB_TOKEN`). |
+| `kstar update` | The same, and if there is one, prints the command that installs it. It does not replace itself. |
 
 `--color auto|always|never` works with `run`, `check` and `repl`. By default
 errors, warnings and test results are coloured only when the output is a

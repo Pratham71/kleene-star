@@ -50,9 +50,49 @@ tests: 2 passed, 0 failed
   the alphabet, or a type mix-up is reported before the program runs, with the
   exact place underlined and a hint.
 
+## Installing
+
+Each [release](https://github.com/Pratham71/kleene-star/releases) has
+`kstar` and `kstar-lsp` for Windows, Linux and macOS, a Windows installer
+and the VS Code extension.
+
+**Windows:** download and run `kstar-setup-x64.exe`. It installs for your
+user (no administrator rights), adds `kstar` to the PATH, gives `.kstar`
+files the K* icon, and uninstalls from Settings > Apps. Or, from PowerShell:
+
+```bash
+powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex"
+```
+
+**Linux and macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | sh
+```
+
+The scripts download the right build, check its SHA-256 checksum, install
+it in your user folder (`%LOCALAPPDATA%\Programs\Kleene Star\bin` or
+`~/.kstar/bin`), add it to the PATH and say how to uninstall.
+
+> **While the repository is private** the links above need you to be signed
+> in to GitHub, so they will not work as they are. Install the
+> [GitHub CLI](https://cli.github.com), run `gh auth login`, and use it to
+> fetch the script instead; the scripts then download through `gh` too:
+>
+> ```bash
+> powershell -c "gh api repos/Pratham71/kleene-star/contents/install.ps1 -H 'Accept: application/vnd.github.raw' | Out-String | iex"
+> ```
+>
+> ```bash
+> gh api repos/Pratham71/kleene-star/contents/install.sh -H "Accept: application/vnd.github.raw" | sh
+> ```
+
+`kstar version` shows what is installed and `kstar update --check` whether
+there is a newer release.
+
 ## Getting started
 
-You need [Rust](https://rustup.rs). Then, in this folder:
+To build from source you need [Rust](https://rustup.rs). Then, in this folder:
 
 ```bash
 cargo build --release

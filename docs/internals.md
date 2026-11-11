@@ -451,6 +451,33 @@ Ideas that fit the current design, roughly in order of size:
 
 - `export`: write a DFA out as a standalone Rust function. This is where a
   compile step makes sense, since the result would run without Kleene Star.
+- `kstar update` that replaces the installed program itself. Today it only
+  says whether a newer release exists and prints the install command; doing
+  the replacement safely means renaming the running `.exe` on Windows and
+  knowing how this copy was installed (installer, script or `cargo install`).
+- Publishing: a licence, then the VS Code extension on the marketplace and
+  the crate on crates.io. Neither is done while the repository is private.
+- The cross-platform "CI" workflow is switched off for now; the release
+  workflow runs the tests on every platform it builds for.
+
+## Releases
+
+`.github/workflows/release.yml` runs when a `v*` tag is pushed. Each platform
+runs `cargo test`, then builds `kstar` and `kstar-lsp` in release mode and
+packages them with `.github/scripts/package.sh`. The Windows installer is
+built from `installer/kstar.iss` with Inno Setup and tested by
+`installer/test-installer.ps1` (install, check, uninstall, check again);
+`install.ps1` and `install.sh` are tested against the freshly built archives
+through `KSTAR_INSTALL_FROM`. Only a plain `vX.Y.Z` tag that matches the
+version in `Cargo.toml` publishes; any other tag is a dry run whose files stay
+as the run's artifacts. Apple Silicon builds after publishing and adds its
+archive to the release, so a shortage of arm64 runners cannot hold it up.
+
+`build.rs` records the commit, build date and target that `kstar version`
+prints, and on Windows embeds the K* icon in the executables.
+
+To release: bump the version in `Cargo.toml` and
+`editors/vscode/package.json`, merge, then `git tag vX.Y.Z` and push the tag.
 
 New machine types belong in `src/automata/` as plain Rust first, with tests,
 and get syntax in `src/lang/` second.

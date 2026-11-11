@@ -1,6 +1,6 @@
 [package]
 name = "kstar"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 # `cargo run` runs the language, not the language server.
 default-run = "kstar"
@@ -23,3 +23,7 @@ path = "src/bin/kstar-lsp.rs"
 rustyline = "19.0.0"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-std"] }
 tower-lsp-server = "0.23"
+
+# Puts the icon into kstar.exe; see build.rs.
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"

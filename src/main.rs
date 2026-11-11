@@ -1,6 +1,7 @@
 //! The `kstar` command-line tool.
 
 mod repl;
+mod update;
 
 use kstar::lang::codes;
 use kstar::lang::error::Paint;
@@ -23,7 +24,8 @@ Commands:
   trace <file> <M> <w>  run a file quietly, then trace machine M on word w
   explain <code>        explain an error code, such as E0200
   repl                  try things out interactively
-  version               show the version
+  version               show the version, commit, build date and target
+  update [--check]      see whether a newer release exists
   help [command]        show this message, or the help for a command
 
 `kstar file.kstar` is short for `kstar run file.kstar`.
@@ -104,9 +106,10 @@ fn main() -> ExitCode {
     match command {
         "help" | "--help" | "-h" => help(rest.first().copied()),
         "version" | "--version" | "-V" => {
-            println!("kstar {}", env!("CARGO_PKG_VERSION"));
+            println!("{}", update::version());
             ExitCode::SUCCESS
         }
+        "update" => update::update(rest),
         "run" => run_command(rest, false),
         "check" => run_command(rest, true),
         "fmt" => {
@@ -140,7 +143,7 @@ fn main() -> ExitCode {
         file if file.ends_with(".kstar") => run_command(&args, false),
         other => {
             let mut message = format!("unknown command `{other}`");
-            let commands = ["run", "check", "fmt", "new", "trace", "explain", "repl", "version", "help"];
+            let commands = ["run", "check", "fmt", "new", "trace", "explain", "repl", "version", "update", "help"];
             if let Some(close) = kstar::lang::error::did_you_mean(other, commands.into_iter()) {
                 message.push_str(&format!("; did you mean `{close}`?"));
             }
