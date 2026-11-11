@@ -1,5 +1,5 @@
 Error in syntax_arrow.kstar, line 4:
     q0 -> q1
        ^^
-SyntaxError: expected `--` to begin a transition, found `->`
+SyntaxError[E0100]: expected `--` to begin a transition, found `->`
   hint: a transition is written `q0 --a--> q1`

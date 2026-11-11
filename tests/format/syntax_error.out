@@ -1,4 +1,4 @@
 Error in syntax_error.kstar, line 3:
     print x
     ^^^^^
-SyntaxError: expected `)`, found `print`
+SyntaxError[E0100]: expected `)`, found `print`

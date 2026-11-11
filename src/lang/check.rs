@@ -7,11 +7,12 @@
 
 use super::ast::*;
 use super::builtins::{self, article, is_context_free, is_lang};
+use super::codes;
 use super::error::{did_you_mean, Diag, ErrorKind};
 use super::index::{Body, Call, Def, DefKind, Index};
 use super::machine::{self, GrammarSpec, MachineSpec, Transition};
 use super::token::Span;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone)]
 struct Var {
@@ -44,9 +45,21 @@ pub struct Checker {
     block_end: usize,
     /// Every definition, use and type found, for editor tools.
     pub index: Index,
+    /// The errors found so far. Checking goes on after an error, one
+    /// statement at a time, so that a single run reports them all.
+    errors: Vec<Diag>,
+    /// Names whose definition had an error. Using one is not reported
+    /// again: the real mistake is in the definition.
+    broken: HashSet<String>,
+    /// Warnings about machines, found while checking them.
+    machine_warnings: Vec<Diag>,
 }
 
 type Check<T> = Result<T, Diag>;
+
+/// The code of an error that only follows from an earlier one, such as using
+/// a name whose definition failed. Such errors are dropped, not reported.
+const CONSEQUENCE: &str = "consequence";
 
 fn type_error(span: Span, message: impl Into<String>) -> Diag {
     Diag::new(ErrorKind::Type, span, message)
@@ -61,20 +74,70 @@ impl Checker {
             repl,
             block_end: usize::MAX,
             index: Index::default(),
+            errors: Vec::new(),
+            broken: HashSet::new(),
+            machine_warnings: Vec::new(),
         }
     }
 
-    /// Checks a whole program (or, in the REPL, one more piece of it).
+    /// Checks a whole program (or, in the REPL, one more piece of it) and
+    /// returns the first error, if any.
     pub fn check(&mut self, program: &[Stmt]) -> Check<()> {
-        // Functions are declared first so they can call each other in any order.
+        match self.check_all(program).into_iter().next() {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    }
+
+    /// Checks a whole program and returns every error found, in the order
+    /// they appear in the source.
+    pub fn check_all(&mut self, program: &[Stmt]) -> Vec<Diag> {
+        self.declare_functions(program);
+        self.statements(program);
+        let mut errors: Vec<Diag> = std::mem::take(&mut self.errors);
+        errors.retain(|e| e.code != CONSEQUENCE);
+        errors.sort_by_key(|e| e.span.start);
+        errors.dedup_by(|a, b| a.span == b.span && a.message == b.message);
+        errors
+    }
+
+    /// The warnings for a program that `check_all` found no errors in.
+    pub fn warnings(&mut self, program: &[Stmt]) -> Vec<Diag> {
+        let mut warnings = std::mem::take(&mut self.machine_warnings);
+        warnings.extend(super::lint::program(program, &self.index, self.repl));
+        warnings.sort_by_key(|w| w.span.start);
+        warnings
+    }
+
+    /// The type of an expression, as the REPL's `:type` shows it.
+    pub fn type_of(&mut self, expr: &Expr) -> Check<Type> {
+        let result = self.expr(expr);
+        self.errors.clear();
+        result
+    }
+
+    /// Every name defined at the top level so far, values and functions.
+    pub fn global_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = self.scopes[0].keys().chain(self.funcs.keys()).cloned().collect();
+        names.sort();
+        names
+    }
+
+    /// Functions are declared first so they can call each other in any order.
+    fn declare_functions(&mut self, program: &[Stmt]) {
         for stmt in program {
             if let StmtKind::Fn(f) = &stmt.kind {
                 if builtins::NAMES.contains(&f.name.text.as_str()) {
-                    return Err(Diag::new(
-                        ErrorKind::Name,
-                        f.name.span,
-                        format!("`{}` is a built-in function and cannot be redefined", f.name.text),
-                    ));
+                    self.errors.push(
+                        Diag::new(
+                            ErrorKind::Name,
+                            f.name.span,
+                            format!("`{}` is a built-in function and cannot be redefined", f.name.text),
+                        )
+                        .code(codes::BUILTIN_REDEFINED)
+                        .hint(format!("choose another name, such as `my_{}`", f.name.text)),
+                    );
+                    continue;
                 }
                 let params: Vec<String> = f.params.iter().map(|(n, ty)| format!("{}: {ty}", n.text)).collect();
                 let def = self.index.add_def(Def {
@@ -91,15 +154,18 @@ impl Checker {
                     def,
                 };
                 if self.funcs.insert(f.name.text.clone(), signature).is_some() && !self.repl {
-                    return Err(Diag::new(
-                        ErrorKind::Name,
-                        f.name.span,
-                        format!("function `{}` is already defined", f.name.text),
-                    ));
+                    self.errors.push(
+                        Diag::new(
+                            ErrorKind::Name,
+                            f.name.span,
+                            format!("function `{}` is already defined", f.name.text),
+                        )
+                        .code(codes::ALREADY_DEFINED)
+                        .hint("two functions cannot share a name; rename one of them"),
+                    );
                 }
             }
         }
-        self.statements(program)
     }
 
     // ---- names ----
@@ -121,6 +187,7 @@ impl Checker {
                 name.span,
                 format!("`{}` is already defined", name.text),
             )
+            .code(codes::ALREADY_DEFINED)
             .hint("values cannot be changed once defined; choose a new name"));
         }
         let def = self.index.add_def(Def {
@@ -152,6 +219,9 @@ impl Checker {
             self.index.add_ref(span, var.def);
             return Ok(var);
         }
+        if self.broken.contains(name) {
+            return Err(Diag::new(ErrorKind::Name, span, "").code(CONSEQUENCE));
+        }
         let mut err = Diag::new(ErrorKind::Name, span, format!("`{name}` is not defined"));
         if self.funcs.contains_key(name) || builtins::NAMES.contains(&name) {
             err = err.hint(format!("`{name}` is a function; call it as `{name}(...)`"));
@@ -177,8 +247,20 @@ impl Checker {
 
     // ---- statements ----
 
-    fn statements(&mut self, stmts: &[Stmt]) -> Check<()> {
-        stmts.iter().try_for_each(|stmt| self.statement(stmt))
+    /// Checks each statement, recording errors and carrying on. When a
+    /// definition fails, its name is remembered as broken, so its uses do
+    /// not cause a second, misleading error.
+    fn statements(&mut self, stmts: &[Stmt]) {
+        for stmt in stmts {
+            if let Err(error) = self.statement(stmt) {
+                if let Some(name) = defined_name(stmt) {
+                    if !self.scopes.last().unwrap().contains_key(name) {
+                        self.broken.insert(name.to_string());
+                    }
+                }
+                self.errors.push(error);
+            }
+        }
     }
 
     fn statement(&mut self, stmt: &Stmt) -> Check<()> {
@@ -191,7 +273,9 @@ impl Checker {
                             ErrorKind::Alphabet,
                             span,
                             format!("symbol `{c}` is listed twice"),
-                        ));
+                        )
+                        .code(codes::DUPLICATE_SYMBOL)
+                        .hint("an alphabet is a set: list each symbol once"));
                     }
                     seen.push(c);
                 }
@@ -225,7 +309,9 @@ impl Checker {
                         ErrorKind::Syntax,
                         stmt.span,
                         "`return` can only be used inside a function",
-                    ));
+                    )
+                    .code(codes::RETURN_OUTSIDE)
+                    .hint("at the top level, use `print` to show a value"));
                 };
                 let actual = self.expr(value)?;
                 if !fits(&expected, &actual) {
@@ -241,18 +327,28 @@ impl Checker {
                 Ok(())
             }
             StmtKind::If { cond, then, otherwise } => {
-                self.expect(cond, &Type::Bool, "the condition of `if`")?;
-                self.scoped(stmt.span.end, |c| c.statements(then))?;
-                match otherwise {
-                    Some(block) => self.scoped(stmt.span.end, |c| c.statements(block)),
-                    None => Ok(()),
+                // A bad condition is reported, and the blocks are still checked.
+                if let Err(error) = self.expect(cond, &Type::Bool, "the condition of `if`") {
+                    self.errors.push(error);
                 }
+                self.scoped(stmt.span.end, |c| {
+                    c.statements(then);
+                    Ok(())
+                })?;
+                if let Some(block) = otherwise {
+                    self.scoped(stmt.span.end, |c| {
+                        c.statements(block);
+                        Ok(())
+                    })?;
+                }
+                Ok(())
             }
             StmtKind::For { var, items, body } => {
                 let element = self.element_type(items)?;
                 self.scoped(stmt.span.end, |c| {
                     c.define_value(var, element, DefKind::LoopVariable, None)?;
-                    c.statements(body)
+                    c.statements(body);
+                    Ok(())
                 })
             }
             StmtKind::Print(values) => values.iter().try_for_each(|v| self.expr(v).map(drop)),
@@ -312,7 +408,7 @@ impl Checker {
             .params
             .iter()
             .try_for_each(|(name, ty)| self.define_value(name, ty.clone(), DefKind::Parameter, None))
-            .and_then(|()| self.statements(&f.body));
+            .map(|()| self.statements(&f.body));
         self.ret = None;
         self.block_end = outer_end;
         self.scopes = outer;
@@ -322,6 +418,7 @@ impl Checker {
                 f.name.span,
                 format!("function `{}` can reach its end without returning a value", f.name.text),
             )
+            .code(codes::MISSING_RETURN)
             .hint(format!("every path must end in `return`; it should return {}", article(&f.ret))));
         }
         Ok(())
@@ -336,7 +433,7 @@ impl Checker {
         let literal = self.scoped(m.body.end, |c| c.machine_items(&m.items))?;
         // A machine written out in full can be validated right now. One built
         // with loops or `q[i]` has to wait until it runs.
-        if let (true, Some(symbols)) = (literal, alphabet) {
+        if let (true, Some(symbols), false) = (literal, alphabet, m.incomplete) {
             let mut spec = MachineSpec {
                 kind: m.kind,
                 name: name.map(str::to_string),
@@ -363,12 +460,15 @@ impl Checker {
                             action: action.clone(),
                             to: to.name.clone(),
                             span: *span,
+                            from_span: from.span,
+                            to_span: to.span,
                         })
                     }
                     MachineItem::For { .. } => unreachable!("not literal"),
                 }
             }
             machine::build(&spec)?;
+            self.machine_warnings.extend(super::lint::machine(&spec));
         }
         Ok(m.kind.ty())
     }
@@ -578,7 +678,9 @@ impl Checker {
                     return Err(type_error(
                         first.span,
                         format!("a set can hold Int, Str or Bool values, not {}", article(&element)),
-                    ));
+                    )
+                    .code(codes::BAD_SET)
+                    .hint("machines and regexes cannot go in a set; to combine languages use `union(a, b)`"));
                 }
                 for item in &items[1..] {
                     let ty = self.expr(item)?;
@@ -590,7 +692,8 @@ impl Checker {
                                 article(&element),
                                 article(&ty)
                             ),
-                        ));
+                        )
+                        .code(codes::BAD_SET));
                     }
                 }
                 Ok(Type::Set(Box::new(element)))
@@ -620,11 +723,16 @@ impl Checker {
                     article(&r)
                 ),
             )
+            .code(codes::OPERATOR_TYPES)
         };
         match op {
             BinOp::Add => match (&l, &r) {
                 (Type::Int, Type::Int) => Ok(Type::Int),
                 (Type::Str, Type::Str) => Ok(Type::Str),
+                (Type::Str, Type::Int) | (Type::Int, Type::Str) => Err(mismatch("two Ints or two Strs")
+                    .hint("an Int is not turned into a Str by itself; `print` can show both: `print \"n =\", n`")),
+                _ if is_lang(&l) && is_lang(&r) => Err(mismatch("two Ints or two Strs")
+                    .hint("for the union of two languages use `union(a, b)`; for concatenation `concat(a, b)`")),
                 _ => Err(mismatch("two Ints or two Strs")),
             },
             BinOp::Sub | BinOp::Mul | BinOp::Mod => match (&l, &r) {
@@ -649,6 +757,7 @@ impl Checker {
                         span,
                         format!("`{}` cannot compare machines or regexes", op.symbol()),
                     )
+                    .code(codes::NOT_COMPARABLE)
                     .hint("to ask whether two of them describe the same language, use `equivalent(a, b)`"));
                 }
                 if fits(&l, &r) || fits(&r, &l) {
@@ -665,13 +774,16 @@ impl Checker {
                             "the left side of `accepts` must be a language (Dfa, Nfa, Pda, Tm, Regex, Grammar or Set[Str]), but this is {}",
                             article(&l)
                         ),
-                    ));
+                    )
+                    .code(codes::OPERATOR_TYPES)
+                    .hint("write the machine first and the word second: `M accepts \"0101\"`"));
                 }
                 if r != Type::Str {
                     return Err(type_error(
                         right.span,
                         format!("the right side of `accepts` must be a Str, but this is {}", article(&r)),
                     )
+                    .code(codes::OPERATOR_TYPES)
                     .hint("write the word in quotes: `m accepts \"0101\"`"));
                 }
                 Ok(Type::Bool)
@@ -684,24 +796,16 @@ impl Checker {
         if let Some(signature) = self.funcs.get(&name.text) {
             self.index.add_ref(name.span, signature.def);
         }
-        let types = args.iter().map(|arg| self.expr(arg)).collect::<Check<Vec<Type>>>()?;
-
-        if builtins::NAMES.contains(&name.text.as_str()) {
-            return builtins::result_type(&name.text, &types).map_err(|e| {
-                let err = type_error(e.arg.map_or(span, |i| args[i].span), e.message);
-                match e.hint {
-                    Some(hint) => err.hint(hint),
-                    None => err,
-                }
-            });
-        }
-
-        let Some(signature) = self.funcs.get(&name.text) else {
+        // An unknown function is reported before anything wrong with its
+        // arguments: it is the bigger mistake.
+        let builtin = builtins::NAMES.contains(&name.text.as_str());
+        if !builtin && !self.funcs.contains_key(&name.text) {
             let mut err = Diag::new(
                 ErrorKind::Name,
                 name.span,
                 format!("there is no function called `{}`", name.text),
-            );
+            )
+            .code(codes::UNKNOWN_FUNCTION);
             let known = builtins::NAMES.iter().copied().chain(self.funcs.keys().map(String::as_str));
             if self.scopes.iter().any(|scope| scope.contains_key(&name.text)) {
                 err = err.hint(format!("`{}` is a value, not a function", name.text));
@@ -709,7 +813,20 @@ impl Checker {
                 err = err.hint(format!("did you mean `{close}`?"));
             }
             return Err(err);
-        };
+        }
+        let types = args.iter().map(|arg| self.expr(arg)).collect::<Check<Vec<Type>>>()?;
+
+        if builtin {
+            return builtins::result_type(&name.text, &types).map_err(|e| {
+                let err = type_error(e.arg.map_or(span, |i| args[i].span), e.message).code(e.code);
+                match e.hint {
+                    Some(hint) => err.hint(hint),
+                    None => err,
+                }
+            });
+        }
+
+        let signature = &self.funcs[&name.text];
         if types.len() != signature.params.len() {
             let n = signature.params.len();
             return Err(type_error(
@@ -721,7 +838,8 @@ impl Checker {
                     types.len(),
                     if types.len() == 1 { "was" } else { "were" }
                 ),
-            ));
+            )
+            .code(codes::ARGUMENT_COUNT));
         }
         for (i, (wanted, actual)) in signature.params.iter().zip(&types).enumerate() {
             if !fits(wanted, actual) {
@@ -738,6 +856,17 @@ impl Checker {
             }
         }
         Ok(signature.ret.clone())
+    }
+}
+
+/// The name a definition statement defines, if it is one.
+fn defined_name(stmt: &Stmt) -> Option<&str> {
+    match &stmt.kind {
+        StmtKind::Alphabet { name, .. }
+        | StmtKind::MachineDef { name, .. }
+        | StmtKind::GrammarDef { name, .. }
+        | StmtKind::Let { name, .. } => Some(&name.text),
+        _ => None,
     }
 }
 
@@ -884,5 +1013,43 @@ mod tests {
         assert!(error("fn f() -> Int { return y }\nif true { let y = 1  print f() }").contains("`y` is not defined"));
         // Functions may call functions defined later.
         check("fn a() -> Int { return b() }\nfn b() -> Int { return 1 }").unwrap();
+    }
+
+    fn all_errors(src: &str) -> Vec<String> {
+        let program = Parser::new(lex(src, 0, 1).unwrap(), src, false).program().unwrap();
+        Checker::new(false).check_all(&program).into_iter().map(|d| d.message).collect()
+    }
+
+    #[test]
+    fn reports_every_error() {
+        let found = all_errors("let a = 1 + true\nlet b = len(5)\nprint nope()\nlet c = 1");
+        assert_eq!(found.len(), 3, "{found:?}");
+        assert!(found[2].contains("no function called `nope`"));
+    }
+
+    #[test]
+    fn a_broken_definition_is_reported_once() {
+        // `m` and `d` fail; their uses do not add more errors.
+        let src = format!("{B}let m = minimize(1)\nprint m\ndfa D over B {{ start q }}\nprint D accepts \"0\"");
+        let found = all_errors(&src);
+        assert_eq!(found.len(), 2, "{found:?}");
+    }
+
+    #[test]
+    fn keeps_checking_inside_blocks() {
+        let found = all_errors("fn f(n: Int) -> Int {\n  let a = n + \"x\"\n  return true\n}\nif 1 { print 1 + true }");
+        assert_eq!(found.len(), 4, "{found:?}");
+    }
+
+    #[test]
+    fn errors_have_codes() {
+        let code = |src: &str| check(src).unwrap_err().code;
+        assert_eq!(code("print x"), codes::UNDEFINED);
+        assert_eq!(code("let x = 1\nlet x = 2"), codes::ALREADY_DEFINED);
+        assert_eq!(code("print mininize(1)"), codes::UNKNOWN_FUNCTION);
+        assert_eq!(code("print 1 + true"), codes::OPERATOR_TYPES);
+        assert_eq!(code("print len(1, 2)"), codes::ARGUMENT_COUNT);
+        assert_eq!(code("return 1"), codes::RETURN_OUTSIDE);
+        assert_eq!(code(&format!("{B}dfa M over B {{ start a  a --0--> a }}")), codes::NOT_TOTAL);
     }
 }

@@ -23,7 +23,8 @@ impl Write for Capture {
 }
 
 pub struct Outcome {
-    /// Everything printed, then the test summary, then the error if any.
+    /// The warnings, everything printed, then the test summary, then the
+    /// errors if any.
     pub output: String,
     /// True if the program ran to the end and no `test` failed.
     pub ok: bool,
@@ -35,7 +36,10 @@ pub fn run_program(shown_name: &str, text: &str) -> Outcome {
         let capture = Capture::default();
         let mut session = Session::new(&shown_name, Box::new(capture.clone()), scratch_dir(), false);
         let result = session.run(&text);
-        let mut output = String::from_utf8(capture.0.borrow().clone()).unwrap();
+        // Warnings come first, as on the command line, where they are shown
+        // before the program runs.
+        let mut output: String = session.take_warnings().iter().map(|w| format!("{w}\n\n")).collect();
+        output.push_str(&String::from_utf8(capture.0.borrow().clone()).unwrap());
         let (passed, failed) = session.tests();
         if passed + failed > 0 {
             output.push_str(&format!("tests: {passed} passed, {failed} failed\n"));

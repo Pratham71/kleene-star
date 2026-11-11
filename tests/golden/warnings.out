@@ -1,0 +1,31 @@
+Warning in warnings.kstar, line 11:
+    unused_state --0,1--> q0
+    ^^^^^^^^^^^^
+Warning[W0100]: state `unused_state` can never be reached from the start state `q0`
+  hint: add a transition into it, or remove it; it does not change the language
+
+Warning in warnings.kstar, line 18:
+    a --1--> c
+             ^
+Warning[W0101]: no accepting state can be reached from state `c`
+  hint: every path through this state is rejected; an NFA does not need a dead state, so this one can go
+
+Warning in warnings.kstar, line 22:
+    let spare = 1
+        ^^^^^
+Warning[W0200]: value `spare` is never used
+  hint: remove it, or start its name with `_` (`_spare`) to keep it quietly
+
+Warning in warnings.kstar, line 24:
+    fn helper(n: Int) -> Int {
+       ^^^^^^
+Warning[W0201]: function `helper` is never used
+  hint: remove it, or start its name with `_` (`_helper`) to keep it quietly
+
+Warning in warnings.kstar, line 30:
+    test 1 + 1 == 2
+         ^^^^^^^^^^
+Warning[W0300]: this test always gives the same answer: it uses no names, calls or regexes
+  hint: a test should check something that could go wrong, like `test M accepts "0110"`
+
+tests: 3 passed, 0 failed

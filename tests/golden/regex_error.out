@@ -1,4 +1,5 @@
 Error in regex_error.kstar, line 1:
     let r = /(0|1)*(01/
                    ^
-SyntaxError: in regex: this `(` is never closed
+SyntaxError[E0105]: in regex: this `(` is never closed
+  hint: a regex is made of symbols, `|` for or, `*` for repeat, and `( )` for grouping, as in /(0|1)*01/

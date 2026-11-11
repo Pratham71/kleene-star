@@ -1,0 +1,31 @@
+Error in syntax_recovery.kstar, line 4:
+    alphabet B = {0, 1};
+                       ^
+SyntaxError[E0104]: unexpected `;`
+  hint: Kleene Star has no semicolons; just end the line
+
+Error in syntax_recovery.kstar, line 5:
+    let total = 2 +
+                  ^
+SyntaxError[E0100]: expected a value after `+`, but the next line starts with `let`
+  hint: finish the expression on this line
+
+Error in syntax_recovery.kstar, line 6:
+    let r = /(0|1/
+             ^
+SyntaxError[E0105]: in regex: this `(` is never closed
+  hint: a regex is made of symbols, `|` for or, `*` for repeat, and `( )` for grouping, as in /(0|1)*01/
+
+Error in syntax_recovery.kstar, line 7:
+    print "unclosed
+          ^^^^^^^^^
+SyntaxError[E0101]: this string is never closed
+  hint: add a closing `"` on the same line; a string cannot span lines
+
+Error in syntax_recovery.kstar, line 11:
+    a --0-> a
+         ^^
+SyntaxError[E0100]: expected `-->` to finish the transition, found `->`
+  hint: a transition is written `q0 --a--> q1`; several symbols as `q0 --a,b--> q1`
+
+5 errors found

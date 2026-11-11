@@ -2,5 +2,5 @@ Traceback (most recent call last):
   pda_gives_up.kstar, line 9, in <main>
     print Forever accepts "ab"
                           ^^^^
-LimitError: gave up after looking at 50000 configurations of the PDA without finding an accepting run
+LimitError[E0605]: gave up after looking at 50000 configurations of the PDA without finding an accepting run
   hint: eps moves that push without reading can let a PDA run forever; the answer is unknown, not "no"

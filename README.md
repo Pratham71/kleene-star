@@ -66,10 +66,11 @@ cargo run -- run examples/tour.kstar
 cargo run -- repl
 ```
 
-`kstar run file.kstar` runs a program, `kstar check file.kstar` only looks for errors,
-`kstar fmt file.kstar` tidies its layout, and `kstar repl` gives you an interactive
-prompt. The exit code is 0 when there
-were no errors and no failed tests.
+`kstar run file.kstar` runs a program, `kstar check file.kstar` only looks
+for errors and warnings, `kstar fmt file.kstar` tidies its layout, and
+`kstar repl` gives you an interactive prompt. Each takes several files or
+folders; `kstar new name` starts a new program and `kstar help` lists the
+rest. The exit code is 0 when there were no errors and no failed tests.
 
 ## Learning the language
 
@@ -94,7 +95,9 @@ If you want to know how the interpreter itself works, read
 
 ## When something goes wrong
 
-Errors point at the problem and usually suggest a fix:
+Errors point at the problem and usually suggest a fix. Every error in the
+file is reported at once, each with a code that `kstar explain` describes
+in full ([all codes](docs/errors.md)):
 
 ```kstar-error
 alphabet B = {0, 1}
@@ -111,7 +114,7 @@ dfa Broken over B {
 Error in demo.kstar, line 3:
     dfa Broken over B {
     ^^^^^^^^^^^^^^^^^
-MachineError: DFA `Broken` is not total: no transition from `q0` on `1`
+MachineError[E0404]: DFA `Broken` is not total: no transition from `q0` on `1`
   hint: a DFA needs a transition from every state on every symbol; add the missing ones (often to a dead state), or use `nfa`
 ```
 

@@ -1,5 +1,5 @@
 Error in reject_in_dfa.kstar, line 4:
     reject s
     ^^^^^^
-SyntaxError: only a Turing machine has `reject` states, and this is a `dfa`
+SyntaxError[E0111]: only a Turing machine has `reject` states, and this is a `dfa`
   hint: a finite automaton rejects every word that does not end in an accepting state

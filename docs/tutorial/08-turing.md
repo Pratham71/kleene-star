@@ -183,7 +183,7 @@ Traceback (most recent call last):
   demo.kstar, line 9, in <main>
     print Forever accepts "01"
                           ^^^^
-LimitError: the Turing machine is still running after 100000 steps
+LimitError[E0604]: the Turing machine is still running after 100000 steps
   hint: it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so Kleene Star stops here instead of waiting forever
 ```
 

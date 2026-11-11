@@ -1,0 +1,19 @@
+# One run reports every error, in order, not only the first.
+alphabet B = {0, 1}
+
+dfa M over B {
+    start q0
+    accept q1
+    q0 --0,1--> q1
+    q1 --2--> q1
+}
+
+let n = "three" + 3
+print minimise(M)
+test len(B) == "2"
+
+fn half(n: Int) -> Int {
+    if n > 1 {
+        return n
+    }
+}

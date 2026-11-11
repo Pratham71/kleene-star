@@ -7,5 +7,5 @@ Traceback (most recent call last):
   traceback_nested.kstar, line 9, in div_by
     q[i] --0--> q[(2 * i) % n]
                   ^^^^^^^^^^^
-MathError: modulo by zero
+MathError[E0601]: modulo by zero
   hint: the right-hand side of `%` is 0 here

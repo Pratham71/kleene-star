@@ -1,5 +1,5 @@
 Error in tm_bad_move.kstar, line 4:
     s --0/1--> s
            ^^^
-SyntaxError: expected `,` and a direction (L, R or S), found `-->`
+SyntaxError[E0100]: expected `,` and a direction (L, R or S), found `-->`
   hint: a Turing machine move is written `q0 --0/1,R--> q1`: read `0`, write `1`, move right (L, R, or S to stay); `_` is the blank

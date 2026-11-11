@@ -32,16 +32,18 @@ impl Backend {
             let mut documents = self.documents.lock().expect("no thread panicked holding the lock");
             let analysis = Analysis::with_fallback(&text, documents.get(&uri));
             let diagnostics = analysis
-                .problem
+                .problems
                 .iter()
                 .map(|problem| {
                     let mut message = problem.message.clone();
                     if let Some(hint) = &problem.hint {
                         message.push_str(&format!("\nhint: {hint}"));
                     }
+                    let severity = if problem.warning { DiagnosticSeverity::WARNING } else { DiagnosticSeverity::ERROR };
                     Diagnostic {
                         range: range(&analysis.src, problem.span),
-                        severity: Some(DiagnosticSeverity::ERROR),
+                        severity: Some(severity),
+                        code: Some(NumberOrString::String(problem.code.into())),
                         source: Some("kstar".into()),
                         message,
                         ..Default::default()

@@ -1,9 +1,12 @@
 //! Errors, and how they are shown.
 //!
 //! Every problem the language can report is a `Diag` (diagnostic): a kind, a
-//! message, the place in the source, an optional hint, and for errors that
-//! happen while running, the chain of calls that led there.
+//! stable code like `E0200`, a message, the place in the source, an optional
+//! hint, and for errors that happen while running, the chain of calls that
+//! led there. A diagnostic is either an error, which stops the program, or a
+//! warning, which does not.
 
+use super::codes;
 use super::token::Span;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,6 +32,8 @@ pub enum ErrorKind {
     Value,
     /// A file could not be written.
     Io,
+    /// Not an error: something that is allowed but probably a mistake.
+    Warning,
 }
 
 impl ErrorKind {
@@ -44,6 +49,24 @@ impl ErrorKind {
             ErrorKind::Limit => "LimitError",
             ErrorKind::Value => "ValueError",
             ErrorKind::Io => "IOError",
+            ErrorKind::Warning => "Warning",
+        }
+    }
+
+    /// The code an error of this kind gets when no more specific one fits.
+    pub fn default_code(self) -> &'static str {
+        match self {
+            ErrorKind::Syntax => codes::SYNTAX,
+            ErrorKind::Name => codes::UNDEFINED,
+            ErrorKind::Type => codes::TYPE_MISMATCH,
+            ErrorKind::Machine => codes::BAD_MACHINE,
+            ErrorKind::Alphabet => codes::NOT_IN_ALPHABET,
+            ErrorKind::Math => codes::OVERFLOW,
+            ErrorKind::Recursion => codes::RECURSION,
+            ErrorKind::Limit => codes::GAVE_UP,
+            ErrorKind::Value => codes::NO_DERIVATION,
+            ErrorKind::Io => codes::IO,
+            ErrorKind::Warning => codes::UNUSED,
         }
     }
 }
@@ -58,6 +81,9 @@ pub struct TraceFrame {
 #[derive(Debug, Clone)]
 pub struct Diag {
     pub kind: ErrorKind,
+    /// A stable code, `E....` for errors and `W....` for warnings, which
+    /// `kstar explain` describes at length.
+    pub code: &'static str,
     pub message: String,
     pub span: Span,
     pub hint: Option<String>,
@@ -67,7 +93,26 @@ pub struct Diag {
 
 impl Diag {
     pub fn new(kind: ErrorKind, span: Span, message: impl Into<String>) -> Diag {
-        Diag { kind, message: message.into(), span, hint: None, trace: Vec::new() }
+        Diag { kind, code: kind.default_code(), message: message.into(), span, hint: None, trace: Vec::new() }
+    }
+
+    /// A warning: reported, but the program still runs.
+    pub fn warning(code: &'static str, span: Span, message: impl Into<String>) -> Diag {
+        Diag::new(ErrorKind::Warning, span, message).code(code)
+    }
+
+    pub fn code(mut self, code: &'static str) -> Diag {
+        self.code = code;
+        self
+    }
+
+    pub fn is_warning(&self) -> bool {
+        self.kind == ErrorKind::Warning
+    }
+
+    /// The last line of the report: `TypeError[E0300]: ...`.
+    pub fn headline(&self) -> String {
+        format!("{}[{}]: {}", self.kind.name(), self.code, self.message)
     }
 
     pub fn hint(mut self, hint: impl Into<String>) -> Diag {
@@ -99,12 +144,23 @@ impl Diag {
     /// MathError: modulo by zero
     /// ```
     pub fn render(&self, file: &str, src: &str) -> String {
+        self.render_styled(file, src, false)
+    }
+
+    /// Like `render`, with terminal colours when `color` is true: errors in
+    /// red, warnings in yellow, hints in cyan.
+    pub fn render_styled(&self, file: &str, src: &str, color: bool) -> String {
+        let paint = Paint(color);
+        let accent = if self.is_warning() { YELLOW } else { RED };
         let mut out = String::new();
         if self.trace.is_empty() {
-            out.push_str(&format!("Error in {file}, line {}:\n", self.span.line));
-            out.push_str(&excerpt(src, self.span, "    ", true));
+            let what = if self.is_warning() { "Warning" } else { "Error" };
+            out.push_str(&paint.bold(&format!("{what} in {file}, line {}:", self.span.line)));
+            out.push('\n');
+            out.push_str(&excerpt(src, self.span, "    ", Some((paint, accent))));
         } else {
-            out.push_str("Traceback (most recent call last):\n");
+            out.push_str(&paint.bold("Traceback (most recent call last):"));
+            out.push('\n');
             // Runaway recursion makes hundreds of frames; show the first and
             // last few and say how many were left out.
             const SHOWN: usize = 5;
@@ -112,30 +168,61 @@ impl Diag {
             for (i, frame) in self.trace.iter().enumerate() {
                 if total > 2 * SHOWN + 1 && i >= SHOWN && i < total - SHOWN {
                     if i == SHOWN {
-                        out.push_str(&format!("  ... {} more calls ...
-", total - 2 * SHOWN));
+                        out.push_str(&format!("  ... {} more calls ...\n", total - 2 * SHOWN));
                     }
                     continue;
                 }
-                out.push_str(&format!(
-                    "  {file}, line {}, in {}
-",
-                    frame.span.line, frame.func
-                ));
-                out.push_str(&excerpt(src, frame.span, "    ", i + 1 == total));
+                out.push_str(&format!("  {file}, line {}, in {}\n", frame.span.line, frame.func));
+                let carets = (i + 1 == total).then_some((paint, accent));
+                out.push_str(&excerpt(src, frame.span, "    ", carets));
             }
         }
-        out.push_str(&format!("{}: {}", self.kind.name(), self.message));
+        out.push_str(&paint.paint(accent, &self.headline()));
         if let Some(hint) = &self.hint {
-            out.push_str(&format!("\n  hint: {hint}"));
+            out.push_str(&format!("\n  {} {hint}", paint.paint(CYAN, "hint:")));
         }
         out
     }
 }
 
+const RED: &str = "1;31";
+const YELLOW: &str = "1;33";
+const CYAN: &str = "36";
+const GREEN: &str = "1;32";
+
+/// Wraps text in ANSI colour codes, or leaves it alone when colour is off.
+#[derive(Debug, Clone, Copy)]
+pub struct Paint(pub bool);
+
+impl Paint {
+    fn paint(self, style: &str, text: &str) -> String {
+        if self.0 {
+            format!("\x1b[{style}m{text}\x1b[0m")
+        } else {
+            text.to_string()
+        }
+    }
+
+    pub fn bold(self, text: &str) -> String {
+        self.paint("1", text)
+    }
+
+    pub fn red(self, text: &str) -> String {
+        self.paint(RED, text)
+    }
+
+    pub fn green(self, text: &str) -> String {
+        self.paint(GREEN, text)
+    }
+
+    pub fn yellow(self, text: &str) -> String {
+        self.paint(YELLOW, text)
+    }
+}
+
 /// The source line containing `span`, indented, optionally with a row of
-/// carets underneath marking exactly which part is meant.
-fn excerpt(src: &str, span: Span, indent: &str, carets: bool) -> String {
+/// carets underneath (in the given colour) marking exactly which part is meant.
+fn excerpt(src: &str, span: Span, indent: &str, carets: Option<(Paint, &str)>) -> String {
     let start = span.start.min(src.len());
     let line_start = src[..start].rfind('\n').map_or(0, |i| i + 1);
     let line_end = src[start..].find('\n').map_or(src.len(), |i| start + i);
@@ -144,11 +231,11 @@ fn excerpt(src: &str, span: Span, indent: &str, carets: bool) -> String {
     let skipped = line.len() - shown.len();
 
     let mut out = format!("{indent}{shown}\n");
-    if carets {
+    if let Some((paint, style)) = carets {
         let before = src[line_start..start].chars().count().saturating_sub(skipped);
         let end = span.end.clamp(start, line_start + line.len().max(start - line_start));
         let width = src[start..end].chars().count().max(1);
-        out.push_str(&format!("{indent}{}{}\n", " ".repeat(before), "^".repeat(width)));
+        out.push_str(&format!("{indent}{}{}\n", " ".repeat(before), paint.paint(style, &"^".repeat(width))));
     }
     out
 }
@@ -199,7 +286,7 @@ mod tests {
             .hint("define it first");
         assert_eq!(
             d.render("x.kstar", src),
-            "Error in x.kstar, line 2:\n    let b = oops + 1\n            ^^^^\nNameError: unknown\n  hint: define it first"
+            "Error in x.kstar, line 2:\n    let b = oops + 1\n            ^^^^\nNameError[E0200]: unknown\n  hint: define it first"
         );
     }
 }

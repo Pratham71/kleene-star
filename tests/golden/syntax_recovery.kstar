@@ -1,0 +1,13 @@
+# After a syntax error the parser skips to the next statement, so later
+# mistakes are reported too. Names a broken statement would have defined
+# are not reported as undefined.
+alphabet B = {0, 1};
+let total = 2 +
+let r = /(0|1/
+print "unclosed
+let x = r
+nfa N over B {
+    start a
+    a --0-> a
+    a --1--> a
+}

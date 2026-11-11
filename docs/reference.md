@@ -355,7 +355,15 @@ language is undecidable.
 ## Errors
 
 Errors found before running show the place and the problem. Errors while
-running also show the chain of calls, most recent last.
+running also show the chain of calls, most recent last. Every error has a
+code in brackets, like `NameError[E0200]`; `kstar explain E0200` explains
+it at length, and [the list of errors and warnings](errors.md) has every
+code with an example.
+
+`kstar run` and `kstar check` report every error in a file, not only the
+first: the parser skips to the next statement after a syntax error, and the
+checker carries on after each statement that fails. A name whose definition
+failed is not reported again where it is used.
 
 | Error | Cause |
 |---|---|
@@ -381,7 +389,7 @@ let total = 2
 Error in demo.kstar, line 2:
     let total = 2
         ^^^^^
-NameError: `total` is already defined
+NameError[E0201]: `total` is already defined
   hint: values cannot be changed once defined; choose a new name
 ```
 
@@ -393,7 +401,7 @@ print len(42)
 Error in demo.kstar, line 1:
     print len(42)
               ^^
-TypeError: argument 1 of `len` must be a Str, Set or Alphabet, but this is an Int
+TypeError[E0300]: argument 1 of `len` must be a Str, Set or Alphabet, but this is an Int
 ```
 
 ```kstar-error
@@ -408,7 +416,7 @@ nfa M over B {
 Error in demo.kstar, line 4:
     a --x--> a
         ^
-AlphabetError: symbol `x` is not in alphabet `B`
+AlphabetError[E0500]: symbol `x` is not in alphabet `B`
   hint: B = {0, 1}
 ```
 
@@ -426,7 +434,7 @@ dfa M over B {
 Error in demo.kstar, line 5:
     a --0--> b
     ^^^^^^^^^^
-MachineError: state `a` already goes to `a` on `0`
+MachineError[E0405]: state `a` already goes to `a` on `0`
   hint: a DFA has one transition per state and symbol; use `nfa` if you want a choice
 ```
 
@@ -444,7 +452,7 @@ trace Any accepts "01"
 Error in demo.kstar, line 7:
     trace Any accepts "01"
               ^^^^^^^
-SyntaxError: expected `on` after the machine to trace, found `accepts`
+SyntaxError[E0100]: expected `on` after the machine to trace, found `accepts`
   hint: write `trace M on "0110"`
 ```
 
@@ -519,6 +527,22 @@ primary     := INT | STRING | REGEX | 'true' | 'false'
              | 'grammar' grammar
 ```
 
+### Warnings
+
+Warnings are reported before a program runs, but do not stop it, and are
+only looked for when there are no errors:
+
+| Code | Warning |
+|---|---|
+| `W0100` | A state no path from the start state reaches. |
+| `W0101` | In a DFA or NFA, a state from which no accepting state can be reached (except a DFA's dead state that loops to itself). |
+| `W0200` | A `let` value that is never used. |
+| `W0201` | A function that is never called. |
+| `W0300` | A `test` that uses no names, calls or regexes, so its answer never changes. |
+
+A name starting with `_` is never reported as unused, and a machine that
+can never accept is not warned about at all.
+
 Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 `dfa` `draw` `else` `eps` `false` `fn` `for` `grammar` `if` `in` `let` `nfa`
 `not` `on` `or` `over` `pda` `print` `reject` `return` `start` `test` `tm`
@@ -528,17 +552,44 @@ Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 
 | Command | What it does |
 |---|---|
-| `kstar run file.kstar` | Runs a program. `kstar file.kstar` is the same. |
-| `kstar run file.kstar --out dir` | Runs it, writing drawings into `dir`. |
-| `kstar check file.kstar` | Reports errors without running. |
-| `kstar fmt file.kstar ...` | Rewrites files in the standard style. See [formatting](#formatting). |
-| `kstar fmt --check file.kstar ...` | Lists the files that are not formatted, changing nothing. |
+| `kstar run <files>...` | Runs programs. A folder means every `.kstar` file in it. `kstar file.kstar` is short for `kstar run file.kstar`. |
+| `kstar run --out dir ...` | Writes drawings into `dir`. |
+| `kstar run --watch ...` | Runs again whenever a file changes; Ctrl-C stops. |
+| `kstar run --trace-calls ...` | Prints a line for every function call (with its arguments) and return (with its result). |
+| `kstar check <files>...` | Reports every error and warning without running. |
+| `kstar fmt <files>...` | Rewrites files (or every file in a folder) in the standard style. See [formatting](#formatting). |
+| `kstar fmt --check <files>...` | Lists the files that are not formatted, changing nothing. |
+| `kstar fmt -` | Formats standard input to standard output, for editors and scripts. |
+| `kstar new <name>` | Writes `<name>.kstar`, a small working program to start from. Never overwrites. |
+| `kstar explain <code>` | Explains an error or warning code; `--list` lists them all. |
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
-| `kstar help`, `kstar version` | Help and version. |
+| `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |
+| `kstar version` | The version. |
+
+`--color auto|always|never` works with `run`, `check` and `repl`. By default
+errors, warnings and test results are coloured only when the output is a
+terminal and the `NO_COLOR` environment variable is not set.
+
+With several files, `kstar run` and `kstar check` name each file before its
+output and end with a count of the files that passed and failed.
 
 The exit code is 0 on success, 1 if there was an error or a failed test (or,
 for `kstar fmt --check`, a file that would change), and 2 if the command itself
-was wrong.
+was wrong. Warnings do not change the exit code.
+
+In the REPL, these commands are available besides statements and expressions:
+
+| Command | What it does |
+|---|---|
+| `:type <expr>` | Shows the type of an expression without running it. |
+| `:trace M <word>` | Short for `trace M on "<word>"`. |
+| `:load <file>` | Runs a file in the REPL, so its definitions can be used. |
+| `:reset` | Forgets everything defined so far. |
+| `:help`, `:quit` | Help, and leave (Ctrl-D also leaves). |
+
+Tab completes keywords, built-in functions and the names defined so far.
+Earlier entries are kept in `~/.kstar_history`, so the up arrow reaches
+entries from previous sessions too.
 
 ## Formatting
 

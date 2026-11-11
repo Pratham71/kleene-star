@@ -136,7 +136,7 @@ trace /(0|1)*01/ on "101"
 Error in demo.kstar, line 1:
     trace /(0|1)*01/ on "101"
           ^^^^^^^^^^
-TypeError: `trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is a Regex
+TypeError[E0300]: `trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is a Regex
   hint: a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on "01"`
 ```
 

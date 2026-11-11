@@ -1,5 +1,5 @@
 Error in tm_blank_in_alphabet.kstar, line 2:
     tm M over B {
     ^^^^^^^^^^^
-MachineError: TM `M` is over an alphabet containing `_`, which is the blank
+MachineError[E0406]: TM `M` is over an alphabet containing `_`, which is the blank
   hint: the input cannot contain blanks; leave `_` out of the alphabet

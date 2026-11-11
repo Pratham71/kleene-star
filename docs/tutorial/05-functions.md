@@ -206,7 +206,7 @@ Traceback (most recent call last):
   demo.kstar, line 8, in div_by
     q[i] --0--> q[(2 * i) % n]
                   ^^^^^^^^^^^
-MathError: modulo by zero
+MathError[E0601]: modulo by zero
   hint: the right-hand side of `%` is 0 here
 ```
 

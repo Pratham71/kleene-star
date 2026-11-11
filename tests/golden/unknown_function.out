@@ -1,5 +1,5 @@
 Error in unknown_function.kstar, line 1:
     let d = minimise(/(a|b)*abb/)
             ^^^^^^^^
-NameError: there is no function called `minimise`
+NameError[E0202]: there is no function called `minimise`
   hint: did you mean `minimize`?

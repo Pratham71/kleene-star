@@ -3,6 +3,65 @@
 The `kstar` command does more than run programs. This page covers the tools
 that help you write them.
 
+## Finding mistakes
+
+`kstar check file.kstar` reports every error in a file at once, each with a
+code such as `E0302`. `kstar explain E0302` explains that error at length
+with an example, and [errors and warnings](../errors.md) lists them all.
+
+Warnings point at things that are allowed but probably mistakes: a state
+that can never be reached, a value that is never used, a `test` that always
+gives the same answer. They do not stop the program.
+
+```kstar
+alphabet B = {0, 1}
+let spare = 3
+dfa M over B {
+    start q0
+    accept q0
+    q0 --0,1--> q0
+    lost --0,1--> q0
+}
+test M accepts "01"
+```
+
+```text
+Warning in demo.kstar, line 2:
+    let spare = 3
+        ^^^^^
+Warning[W0200]: value `spare` is never used
+  hint: remove it, or start its name with `_` (`_spare`) to keep it quietly
+
+Warning in demo.kstar, line 7:
+    lost --0,1--> q0
+    ^^^^
+Warning[W0100]: state `lost` can never be reached from the start state `q0`
+  hint: add a transition into it, or remove it; it does not change the language
+
+tests: 1 passed, 0 failed
+```
+
+`kstar run --watch file.kstar` runs a file again every time you save it, and
+`kstar run --trace-calls file.kstar` prints each function call with its
+arguments and each return with its result, indented by depth. For a
+factorial function called as `print fact(3)`:
+
+```text
+-> fact(n=3)   line 7
+  -> fact(n=2)   line 5
+    -> fact(n=1)   line 5
+    <- fact returned 1
+  <- fact returned 2
+<- fact returned 6
+6
+```
+
+`kstar new name` writes `name.kstar`, a small working program to change.
+
+In the REPL, `:type expr` shows a type without running anything,
+`:load file.kstar` brings in a file's definitions, `:trace M 0101` steps
+through a machine, and Tab completes names.
+
 ## Editor support with `kstar-lsp`
 
 `kstar-lsp` is a language server: editors start it to get errors as you type,
@@ -10,7 +69,8 @@ hover information (types, signatures, built-in documentation, which states
 are start or accepting), go to definition, find all references, completion
 (keywords, built-ins, names in scope, and the states and symbols of the
 machine you are in), and signature help. It uses the same lexer, parser and
-checker as `kstar`, so it reports exactly the errors `kstar check` would.
+checker as `kstar`, so it reports exactly the errors and warnings
+`kstar check` would.
 
 For VS Code, see [`editors/vscode`](../../editors/vscode/README.md).
 

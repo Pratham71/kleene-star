@@ -1,5 +1,5 @@
 Error in equivalent_context_free.kstar, line 11:
     print equivalent(G, H)
                      ^
-TypeError: `equivalent` cannot compare context-free languages, and this is a Grammar
+TypeError[E0306]: `equivalent` cannot compare context-free languages, and this is a Grammar
   hint: whether two grammars or PDAs describe the same language is undecidable: no algorithm can answer it for every pair. Compare them on sample words with `accepts` instead

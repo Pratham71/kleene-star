@@ -11,21 +11,24 @@ use crate::lang::check::Checker;
 use crate::lang::error::Diag;
 use crate::lang::index::{DefKind, Index};
 use crate::lang::lexer::lex;
-use crate::lang::parser::Parser;
 use crate::lang::token::{Span, Tok};
 
-/// The first error in a program.
+/// An error or a warning in a program.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Problem {
     pub span: Span,
-    /// `TypeError: ...`, the way the command line shows it.
+    /// `TypeError[E0300]: ...`, the way the command line shows it.
     pub message: String,
     pub hint: Option<String>,
+    /// The code alone, like `E0300`.
+    pub code: &'static str,
+    /// A warning rather than an error.
+    pub warning: bool,
 }
 
 impl From<Diag> for Problem {
     fn from(diag: Diag) -> Problem {
-        Problem { span: diag.span, message: format!("{}: {}", diag.kind.name(), diag.message), hint: diag.hint }
+        Problem { span: diag.span, message: diag.headline(), code: diag.code, warning: diag.is_warning(), hint: diag.hint }
     }
 }
 
@@ -59,7 +62,8 @@ pub struct SignatureHelp {
 /// Everything known about one version of a file.
 pub struct Analysis {
     pub src: String,
-    pub problem: Option<Problem>,
+    /// Every error, then (only if there are no errors) every warning.
+    pub problems: Vec<Problem>,
     pub index: Index,
     /// True when the text did not parse and `index` was carried over from an
     /// earlier version. Its names are still useful for completion, but its
@@ -68,20 +72,20 @@ pub struct Analysis {
 }
 
 impl Analysis {
-    /// Lexes, parses and checks `src`. The checker stops at the first error,
-    /// but whatever it learned before that is kept in the index.
+    /// Lexes, parses and checks `src`, exactly as `kstar check` does. The
+    /// index holds whatever the checker learned, even from a program with
+    /// errors.
     pub fn new(src: &str) -> Analysis {
         let src = src.replace("\r\n", "\n");
-        let parsed = lex(&src, 0, 1).and_then(|tokens| Parser::new(tokens, &src, false).program());
-        let program = match parsed {
-            Ok(program) => program,
-            Err(diag) => {
-                return Analysis { problem: Some(diag.into()), index: Index::default(), stale: false, src };
-            }
-        };
         let mut checker = Checker::new(false);
-        let problem = checker.check(&program).err().map(Problem::from);
-        Analysis { src, problem, index: checker.index, stale: false }
+        let checked = crate::lang::check_source(&src, 0, 1, false, &mut checker);
+        let problems = checked.errors.into_iter().chain(checked.warnings).map(Problem::from).collect();
+        Analysis { src, problems, index: checker.index, stale: false }
+    }
+
+    /// The errors alone, without the warnings.
+    pub fn errors(&self) -> impl Iterator<Item = &Problem> {
+        self.problems.iter().filter(|p| !p.warning)
     }
 
     /// Like `new`, but if the text does not parse, keeps the names from
@@ -361,16 +365,16 @@ print Even accepts \"00\", count
 
     #[test]
     fn a_good_program_has_no_problem() {
-        assert_eq!(Analysis::new(PROGRAM).problem, None);
+        assert_eq!(Analysis::new(PROGRAM).problems, vec![]);
     }
 
     #[test]
     fn reports_the_first_error_with_its_span_and_hint() {
         let src = "let x = 1\nprint y\n";
-        let problem = Analysis::new(src).problem.unwrap();
-        assert_eq!(problem.message, "NameError: `y` is not defined");
+        let problem = Analysis::new(src).problems[0].clone();
+        assert_eq!(problem.message, "NameError[E0200]: `y` is not defined");
         assert_eq!(text(src, problem.span), "y");
-        let problem = Analysis::new("let x = 1;").problem.unwrap();
+        let problem = Analysis::new("let x = 1;\nprint x").problems[0].clone();
         assert!(problem.message.starts_with("SyntaxError"));
         assert!(problem.hint.unwrap().contains("semicolons"));
     }
@@ -457,8 +461,10 @@ print Even accepts \"00\", count
         let good = Analysis::new(PROGRAM);
         let typing = format!("{PROGRAM}let y = twi");
         let broken = Analysis::with_fallback(&format!("{typing}("), Some(&good));
-        assert!(broken.problem.is_some());
-        assert!(broken.stale);
+        assert!(broken.errors().next().is_some());
+        // The statements before the broken line still parse and are checked,
+        // so the names come from this version of the text.
+        assert!(!broken.stale);
         let labels: Vec<String> = broken.completions(typing.len()).into_iter().map(|c| c.label).collect();
         assert!(labels.contains(&"twice".to_string()));
         assert!(labels.contains(&"count".to_string()));

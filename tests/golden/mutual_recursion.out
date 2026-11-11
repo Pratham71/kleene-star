@@ -22,5 +22,5 @@ Traceback (most recent call last):
   mutual_recursion.kstar, line 4, in is_even
     return is_odd(n - 1)
            ^^^^^^^^^^^^^
-RecursionError: more than 500 calls are in progress at once
+RecursionError[E0603]: more than 500 calls are in progress at once
   hint: does `is_odd` call itself without ever reaching a base case?

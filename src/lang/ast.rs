@@ -181,6 +181,9 @@ pub struct MachineExpr {
     pub header: Span,
     /// From `{` to `}`.
     pub body: Span,
+    /// Some items had syntax errors and were left out, so the machine is
+    /// not checked further: its other errors would be misleading.
+    pub incomplete: bool,
 }
 
 // A transition is much bigger than `start q0`, but the syntax tree is built

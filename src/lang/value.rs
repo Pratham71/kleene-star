@@ -37,6 +37,30 @@ impl Value {
     pub fn nfa(nfa: Nfa) -> Value {
         Value::Nfa(Rc::new(nfa))
     }
+
+    /// A one-line description, for `--trace-calls`: small values in full,
+    /// machines and grammars summarised.
+    pub fn brief(&self) -> String {
+        let states = |n: usize| format!("{n} state{}", if n == 1 { "" } else { "s" });
+        match self {
+            Value::Str(s) => format!("{s:?}"),
+            Value::Dfa(d) => format!("<Dfa with {}>", states(d.states.len())),
+            Value::Nfa(n) => format!("<Nfa with {}>", states(n.states.len())),
+            Value::Pda(p) => format!("<Pda with {}>", states(p.states.len())),
+            Value::Tm(m) => format!("<Tm with {}>", states(m.states.len())),
+            Value::Grammar(g) => {
+                format!("<Grammar with {} rule{}>", g.rules.len(), if g.rules.len() == 1 { "" } else { "s" })
+            }
+            other => {
+                let text = other.to_string();
+                if text.chars().count() > 60 {
+                    format!("{}...", text.chars().take(57).collect::<String>())
+                } else {
+                    text
+                }
+            }
+        }
+    }
 }
 
 impl fmt::Display for Value {

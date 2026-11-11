@@ -1,0 +1,30 @@
+# Warnings do not stop the program; they are shown first, then it runs.
+alphabet B = {0, 1}
+
+dfa M over B {
+    start q0
+    accept q1
+    q0 --0--> q1
+    q0 --1--> dead
+    q1 --0,1--> q1
+    dead --0,1--> dead
+    unused_state --0,1--> q0
+}
+
+nfa N over B {
+    start a
+    accept b
+    a --0--> b
+    a --1--> c
+    c --0--> c
+}
+
+let spare = 1
+let _kept = 2
+fn helper(n: Int) -> Int {
+    return n
+}
+
+test M accepts "01"
+test N accepts "0"
+test 1 + 1 == 2

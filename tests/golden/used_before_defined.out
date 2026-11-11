@@ -1,4 +1,4 @@
 Error in used_before_defined.kstar, line 2:
     return len(B)
                ^
-NameError: `B` is not defined
+NameError[E0200]: `B` is not defined

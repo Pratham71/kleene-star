@@ -5,5 +5,5 @@ Traceback (most recent call last):
   foreign_word.kstar, line 4, in check
     return Zeros accepts word
                          ^^^^
-AlphabetError: the word contains `a`, which is not in the machine's alphabet
+AlphabetError[E0501]: the word contains `a`, which is not in the machine's alphabet
   hint: the machine is over {0, 1}

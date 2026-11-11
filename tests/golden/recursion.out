@@ -21,5 +21,5 @@ Traceback (most recent call last):
   recursion.kstar, line 2, in count_down
     return count_down(n - 1)
            ^^^^^^^^^^^^^^^^^
-RecursionError: more than 500 calls are in progress at once
+RecursionError[E0603]: more than 500 calls are in progress at once
   hint: does `count_down` call itself without ever reaching a base case?

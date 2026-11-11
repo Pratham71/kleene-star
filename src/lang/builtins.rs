@@ -4,6 +4,7 @@
 //! `interp.rs` holds the code that runs each one.
 
 use super::ast::Type;
+use super::codes;
 
 pub const NAMES: &[&str] = &[
     "to_dfa",
@@ -68,12 +69,16 @@ pub fn is_context_free(ty: &Type) -> bool {
 /// is about one argument), a message, and perhaps a hint.
 pub struct CallError {
     pub arg: Option<usize>,
+    pub code: &'static str,
     pub message: String,
     pub hint: Option<String>,
 }
 
+/// A problem with argument `arg`, or with the number of arguments if `arg`
+/// is `None`.
 fn error(arg: Option<usize>, message: String) -> CallError {
-    CallError { arg, message, hint: None }
+    let code = if arg.is_some() { codes::TYPE_MISMATCH } else { codes::ARGUMENT_COUNT };
+    CallError { arg, code, message, hint: None }
 }
 
 /// The type a call to built-in `name` returns for these argument types.
@@ -83,6 +88,7 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
         if let Some(i) = args.iter().position(|ty| *ty == Type::Tm) {
             return Err(CallError {
                 arg: Some(i),
+                code: codes::UNDECIDABLE,
                 message: "`equivalent` cannot compare Turing machines".into(),
                 hint: Some(
                     "whether two Turing machines accept the same language is undecidable (by Rice's theorem, no program can decide any such question about every machine). Compare them on sample words with `accepts` instead"
@@ -93,6 +99,7 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
         if let Some(i) = args.iter().position(is_context_free) {
             return Err(CallError {
                 arg: Some(i),
+                code: codes::UNDECIDABLE,
                 message: format!(
                     "`equivalent` cannot compare context-free languages, and this is {}",
                     article(&args[i])

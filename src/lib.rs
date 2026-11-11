@@ -11,12 +11,15 @@ pub mod lang;
 
 use lang::ast::Stmt;
 use lang::check::Checker;
-use lang::error::Diag;
+use lang::error::{Diag, Paint};
 use lang::interp::Interp;
 use lang::lexer::lex;
 use lang::parser::Parser;
 use std::io::Write;
 use std::path::PathBuf;
+
+/// At most this many errors are shown for one run; the rest are counted.
+const MAX_ERRORS_SHOWN: usize = 20;
 
 /// One program being run: a file, or a whole REPL conversation.
 ///
@@ -28,6 +31,9 @@ pub struct Session {
     checker: Checker,
     interp: Interp,
     repl: bool,
+    color: bool,
+    /// Warnings from the last `check`, rendered, waiting to be shown.
+    warnings: Vec<String>,
 }
 
 impl Session {
@@ -40,7 +46,20 @@ impl Session {
             checker: Checker::new(repl),
             interp: Interp::new(out, out_dir),
             repl,
+            color: false,
+            warnings: Vec::new(),
         }
+    }
+
+    /// Shows errors and warnings in colour (for a terminal).
+    pub fn color(&mut self, enabled: bool) {
+        self.color = enabled;
+    }
+
+    /// Makes every function call and return print a line, with its
+    /// arguments and result.
+    pub fn trace_calls(&mut self, enabled: bool) {
+        self.interp.trace_calls = enabled;
     }
 
     /// Lets `draw` also produce SVG files when Graphviz is installed.
@@ -54,15 +73,17 @@ impl Session {
         self.interp.ascii = enabled;
     }
 
-    /// Checks and runs `text`. On failure returns the formatted error.
+    /// Checks and runs `text`. On failure returns the formatted errors.
+    /// Warnings are kept for `take_warnings`.
     pub fn run(&mut self, text: &str) -> Result<(), String> {
         let program = self.check(text)?;
         self.interp
             .run(&program, &self.file, &self.src)
-            .map_err(|diag| diag.render(&self.file, &self.src))
+            .map_err(|diag| diag.render_styled(&self.file, &self.src, self.color))
     }
 
-    /// Lexes, parses and checks `text` without running it.
+    /// Lexes, parses and checks `text` without running it. On failure
+    /// returns every error found, formatted.
     pub fn check(&mut self, text: &str) -> Result<Vec<Stmt>, String> {
         let from = self.src.len();
         let first_line = self.src.matches('\n').count() + 1;
@@ -71,16 +92,64 @@ impl Session {
 
         // Check on a copy, so a rejected entry leaves no trace behind.
         let mut checker = self.checker.clone();
-        let result: Result<Vec<Stmt>, Diag> = lex(&self.src, from, first_line)
-            .and_then(|tokens| Parser::new(tokens, &self.src, self.repl).program())
-            .and_then(|program| checker.check(&program).map(|()| program));
-        match result {
-            Ok(program) => {
-                self.checker = checker;
-                Ok(program)
-            }
-            Err(diag) => Err(diag.render(&self.file, &self.src)),
+        let checked = lang::check_source(&self.src, from, first_line, self.repl, &mut checker);
+        self.warnings = checked.warnings.iter().map(|w| w.render_styled(&self.file, &self.src, self.color)).collect();
+        if checked.errors.is_empty() {
+            self.checker = checker;
+            Ok(checked.program)
+        } else {
+            Err(self.render_errors(&checked.errors))
         }
+    }
+
+    /// The errors, one after another with a blank line between, and a
+    /// count at the end when there is more than one.
+    fn render_errors(&self, errors: &[Diag]) -> String {
+        let shown: Vec<String> = errors
+            .iter()
+            .take(MAX_ERRORS_SHOWN)
+            .map(|e| e.render_styled(&self.file, &self.src, self.color))
+            .collect();
+        let mut out = shown.join("\n\n");
+        if errors.len() > 1 {
+            let more = errors.len().saturating_sub(MAX_ERRORS_SHOWN);
+            let count = format!("{} errors found", errors.len());
+            out.push_str("\n\n");
+            out.push_str(&Paint(self.color).red(&count));
+            if more > 0 {
+                out.push_str(&format!(" (the last {more} are not shown)"));
+            }
+        }
+        out
+    }
+
+    /// The warnings found by the last `check` or `run`, formatted, leaving
+    /// none behind.
+    pub fn take_warnings(&mut self) -> Vec<String> {
+        std::mem::take(&mut self.warnings)
+    }
+
+    /// The type of the expression `text`, for the REPL's `:type`; nothing
+    /// is defined or run.
+    pub fn type_of(&mut self, text: &str) -> Result<String, String> {
+        let mut src = self.src.clone();
+        let from = src.len();
+        let first_line = src.matches('\n').count() + 1;
+        src.push_str(text);
+        src.push('\n');
+        let mut checker = self.checker.clone();
+        let result = lex(&src, from, first_line).and_then(|tokens| {
+            let mut parser = Parser::new(tokens, &src, true);
+            let expr = parser.expr()?;
+            parser.finish()?;
+            checker.type_of(&expr)
+        });
+        result.map(|ty| ty.to_string()).map_err(|diag| diag.render_styled("<repl>", &src, self.color))
+    }
+
+    /// Every name defined at the top level so far, for completion.
+    pub fn names(&self) -> Vec<String> {
+        self.checker.global_names()
     }
 
     /// How many `test` statements passed and failed so far.
@@ -118,4 +187,30 @@ pub fn with_big_stack<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'stat
         .expect("could not start the interpreter thread")
         .join()
         .expect("the interpreter thread panicked")
+}
+
+/// The program `kstar new` writes: a short, working example to change.
+/// `name` titles it and `file` is the path to run it by.
+pub fn starter_program(name: &str, file: &str) -> String {
+    format!(
+        r#"# {name}: a Kleene Star program. Run it with:  kstar run {file}
+
+alphabet B = {{0, 1}}
+
+# The words that end in 1.
+dfa EndsIn1 over B {{
+    start  q0
+    accept q1
+    q0 --0--> q0
+    q0 --1--> q1
+    q1 --0--> q0
+    q1 --1--> q1
+}}
+
+print EndsIn1
+test EndsIn1 accepts "0101"
+test not (EndsIn1 accepts "10")
+test equivalent(EndsIn1, /(0|1)*1/)
+"#
+    )
 }

@@ -1,5 +1,5 @@
 Error in trace_not_a_machine.kstar, line 2:
     trace /(0|1)*/ on "01"
           ^^^^^^^^
-TypeError: `trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is a Regex
+TypeError[E0300]: `trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is a Regex
   hint: a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on "01"`

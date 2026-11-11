@@ -7,6 +7,7 @@
 //! way with `GrammarSpec` and `build_grammar`.
 
 use super::ast::{Action, GSymKind, MachineKind, RuleDef};
+use super::codes;
 use super::error::{Diag, ErrorKind};
 use super::token::Span;
 use crate::automata::grammar::{Grammar, Rule, Sym};
@@ -20,6 +21,9 @@ pub struct Transition {
     pub action: Action,
     pub to: String,
     pub span: Span,
+    /// Where the two state names are written.
+    pub from_span: Span,
+    pub to_span: Span,
 }
 
 pub struct MachineSpec {
@@ -61,6 +65,7 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
     // Exactly one start state.
     let Some((start, _)) = spec.starts.first() else {
         return Err(machine_error(spec.header, format!("{title} has no start state"))
+            .code(codes::NO_START)
             .hint("add a line such as `start q0`"));
     };
     if let Some((other, span)) = spec.starts.iter().find(|(name, _)| name != start) {
@@ -68,6 +73,7 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
             *span,
             format!("{title} already has the start state `{start}`, so `{other}` cannot be one too"),
         )
+        .code(codes::TWO_STARTS)
         .hint("a machine has exactly one start state; an NFA can branch from it with eps moves"));
     }
 
@@ -95,6 +101,7 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
                         }
                     } else if spec.kind == MachineKind::Dfa {
                         return Err(machine_error(label.span, "a DFA cannot have eps transitions".into())
+                            .code(codes::EPS_IN_DFA)
                             .hint("eps moves need nondeterminism; declare the machine with `nfa` instead"));
                     }
                     edges.push((from, label.symbol, to, t));
@@ -125,6 +132,7 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
                             t.span,
                             format!("state `{}` already has a move when reading `{r}`", states[from]),
                         )
+                        .code(codes::NOT_DETERMINISTIC)
                         .hint("a Turing machine here is deterministic: one move per state and symbol"));
                     }
                     continue;
@@ -143,10 +151,13 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
                     spec.header,
                     format!("{title} is over an alphabet containing `_`, which is the blank"),
                 )
+                .code(codes::BLANK_IN_ALPHABET)
                 .hint("the input cannot contain blanks; leave `_` out of the alphabet"));
             }
             if let Some((name, span)) = spec.rejects.iter().find(|(name, _)| spec.accepts.iter().any(|(a, _)| a == name)) {
-                return Err(machine_error(*span, format!("state `{name}` cannot both accept and reject")));
+                return Err(machine_error(*span, format!("state `{name}` cannot both accept and reject"))
+                    .code(codes::ACCEPT_AND_REJECT)
+                    .hint("a Turing machine halts in an accepting or a rejecting state; pick one for this state"));
             }
             return Ok(Built::Tm(Tm {
                 alphabet: spec.alphabet.clone(),
@@ -196,6 +207,7 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
                         states[from], states[existing]
                     ),
                 )
+                .code(codes::NOT_DETERMINISTIC)
                 .hint("a DFA has one transition per state and symbol; use `nfa` if you want a choice"));
             }
             _ => delta[from][column] = Some(to),
@@ -216,6 +228,7 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
             spec.header,
             format!("{title} is not total: no transition from {shown}{more}"),
         )
+        .code(codes::NOT_TOTAL)
         .hint("a DFA needs a transition from every state on every symbol; add the missing ones (often to a dead state), or use `nfa`"));
     }
     Ok(Built::Dfa(Dfa {
@@ -242,6 +255,7 @@ pub fn build_grammar(spec: &GrammarSpec) -> Result<Grammar, Diag> {
     if spec.rules.is_empty() {
         let title = spec.name.as_ref().map_or("this grammar".to_string(), |n| format!("grammar `{n}`"));
         return Err(Diag::new(ErrorKind::Machine, spec.header, format!("{title} has no rules"))
+            .code(codes::NO_RULES)
             .hint("add a rule such as `S -> a S b | eps`; the first rule's variable is the start variable"));
     }
     // Variables in order of their first rule, so the start variable is 0.
@@ -278,6 +292,7 @@ pub fn build_grammar(spec: &GrammarSpec) -> Result<Grammar, Diag> {
                                 sym.span,
                                 format!("variable `{name}` has no rules"),
                             )
+                            .code(codes::VARIABLE_WITHOUT_RULES)
                             .hint(hint));
                         }
                     },

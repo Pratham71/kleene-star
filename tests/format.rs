@@ -66,12 +66,26 @@ fn formatting_is_idempotent_and_keeps_output() {
         let text = std::fs::read_to_string(&program).unwrap().replace("\r\n", "\n");
         let Ok(once) = format(&name, &text) else { continue }; // syntax errors
         assert_eq!(format(&name, &once).unwrap(), once, "{name}: not idempotent");
-        // Line numbers may move, so only compare programs that run cleanly.
+        // Line numbers may move, so only compare programs that run cleanly,
+        // and only count their warnings, which quote line numbers.
         let before = run_program(&name, &text);
         if before.ok {
-            assert_eq!(before.output, run_program(&name, &once).output, "{name}: output changed");
+            let after = run_program(&name, &once);
+            let (warnings, output) = split_warnings(&before.output);
+            assert_eq!((warnings, output), split_warnings(&after.output), "{name}: output changed");
         }
     }
+}
+
+/// The number of warnings at the start of `output`, and the rest of it.
+fn split_warnings(output: &str) -> (usize, &str) {
+    let mut rest = output;
+    let mut warnings = 0;
+    while rest.starts_with("Warning in ") {
+        rest = rest.split_once("\n\n").map_or("", |(_, after)| after);
+        warnings += 1;
+    }
+    (warnings, rest)
 }
 
 #[test]

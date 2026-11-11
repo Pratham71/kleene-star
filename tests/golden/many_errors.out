@@ -1,0 +1,30 @@
+Error in many_errors.kstar, line 8:
+    q1 --2--> q1
+         ^
+AlphabetError[E0500]: symbol `2` is not in alphabet `B`
+  hint: B = {0, 1}
+
+Error in many_errors.kstar, line 11:
+    let n = "three" + 3
+            ^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is a Str and the right side is an Int
+  hint: an Int is not turned into a Str by itself; `print` can show both: `print "n =", n`
+
+Error in many_errors.kstar, line 12:
+    print minimise(M)
+          ^^^^^^^^
+NameError[E0202]: there is no function called `minimise`
+  hint: did you mean `minimize`?
+
+Error in many_errors.kstar, line 13:
+    test len(B) == "2"
+         ^^^^^^^^^^^^^
+TypeError[E0302]: `==` needs two values of the same type, but the left side is an Int and the right side is a Str
+
+Error in many_errors.kstar, line 15:
+    fn half(n: Int) -> Int {
+       ^^^^
+TypeError[E0304]: function `half` can reach its end without returning a value
+  hint: every path must end in `return`; it should return an Int
+
+5 errors found

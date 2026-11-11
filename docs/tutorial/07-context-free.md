@@ -51,7 +51,7 @@ grammar G over AB {
 Error in demo.kstar, line 3:
     S -> aSb | eps
          ^^^
-SyntaxError: `aSb` is not one symbol
+SyntaxError[E0108]: `aSb` is not one symbol
   hint: write terminals one at a time with spaces between: `a S b`; variables start with a capital letter
 ```
 
@@ -94,7 +94,7 @@ Traceback (most recent call last):
   demo.kstar, line 5, in <main>
     print derive(Equal, "abb")
                         ^^^^^
-ValueError: the grammar cannot derive "abb"
+ValueError[E0606]: the grammar cannot derive "abb"
   hint: check first with `g accepts "..."`; only words in the language have a derivation
 ```
 
@@ -229,7 +229,7 @@ Traceback (most recent call last):
   demo.kstar, line 7, in <main>
     print Forever accepts "ab"
                           ^^^^
-LimitError: gave up after looking at 50000 configurations of the PDA without finding an accepting run
+LimitError[E0605]: gave up after looking at 50000 configurations of the PDA without finding an accepting run
   hint: eps moves that push without reading can let a PDA run forever; the answer is unknown, not "no"
 ```
 
@@ -355,7 +355,7 @@ print equivalent(G, H)
 Error in demo.kstar, line 9:
     print equivalent(G, H)
                      ^
-TypeError: `equivalent` cannot compare context-free languages, and this is a Grammar
+TypeError[E0306]: `equivalent` cannot compare context-free languages, and this is a Grammar
   hint: whether two grammars or PDAs describe the same language is undecidable: no algorithm can answer it for every pair. Compare them on sample words with `accepts` instead
 ```
 

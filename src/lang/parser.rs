@@ -6,6 +6,7 @@
 //! the rule it implements.
 
 use super::ast::*;
+use super::codes;
 use super::error::{Diag, ErrorKind};
 use super::token::{Span, Tok, Token};
 use crate::automata::regex;
@@ -19,22 +20,110 @@ pub struct Parser<'a> {
     repl: bool,
     /// How many `{ ... }` blocks we are inside; functions must be at depth 0.
     depth: usize,
+    /// Errors inside a machine that were recovered from: the parser skipped
+    /// the bad line and went on with the next one.
+    recovered: Vec<Diag>,
 }
 
 type Parse<T> = Result<T, Diag>;
 
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token>, src: &'a str, repl: bool) -> Parser<'a> {
-        Parser { tokens, pos: 0, src, repl, depth: 0 }
+        Parser { tokens, pos: 0, src, repl, depth: 0, recovered: Vec::new() }
     }
 
     // program := statement*
+    //
+    // Stops at the first error. `program_recovering` carries on instead.
     pub fn program(&mut self) -> Parse<Vec<Stmt>> {
-        let mut stmts = Vec::new();
-        while *self.peek() != Tok::Eof {
-            stmts.push(self.statement()?);
+        let (stmts, mut errors) = self.program_recovering();
+        if errors.is_empty() {
+            Ok(stmts)
+        } else {
+            Err(errors.swap_remove(0))
         }
-        Ok(stmts)
+    }
+
+    /// Parses the whole program, carrying on after a syntax error so that
+    /// one run reports all of them. Returns the statements that parsed and
+    /// the errors, in order.
+    ///
+    /// After an error the parser skips ahead to the next line that starts a
+    /// statement, and starts again from there. Only the first error in each
+    /// statement is reported: anything later in the same statement is likely
+    /// to be a consequence of the first.
+    pub fn program_recovering(&mut self) -> (Vec<Stmt>, Vec<Diag>) {
+        let mut stmts = Vec::new();
+        let mut errors = Vec::new();
+        while *self.peek() != Tok::Eof {
+            let start = self.pos;
+            match self.statement() {
+                Ok(stmt) => stmts.push(stmt),
+                Err(error) => {
+                    errors.push(error);
+                    self.depth = 0;
+                    self.skip_to_next_statement(start);
+                }
+            }
+        }
+        errors.append(&mut self.recovered);
+        errors.sort_by_key(|e| e.span.start);
+        (stmts, errors)
+    }
+
+    /// After a statement that began at token `start` failed, moves to the
+    /// first token that plausibly begins the next statement: one that starts
+    /// a line, is a keyword that begins statements, and is not inside a
+    /// `{ ... }` that the failed statement opened. If a brace was left open,
+    /// a statement written at the very start of a line (no indent) also
+    /// counts, so one missing `}` does not hide the rest of the file.
+    fn skip_to_next_statement(&mut self, start: usize) {
+        let mut depth: i64 = 0;
+        for i in start..self.tokens.len() {
+            let token = &self.tokens[i];
+            if i > start && self.starts_line(i) {
+                let begins = matches!(
+                    token.tok,
+                    Tok::Alphabet | Tok::Dfa | Tok::Nfa | Tok::Pda | Tok::Tm | Tok::Grammar | Tok::Let | Tok::Fn
+                        | Tok::Print | Tok::Test | Tok::Draw | Tok::Trace | Tok::If | Tok::For | Tok::Return
+                );
+                let unindented = self.column(i) == 0;
+                if i >= self.pos && i > start && begins && (depth <= 0 || unindented) || token.tok == Tok::Eof {
+                    self.pos = i;
+                    return;
+                }
+            }
+            match token.tok {
+                Tok::LBrace => depth += 1,
+                Tok::RBrace => depth -= 1,
+                Tok::Eof => {
+                    self.pos = i;
+                    return;
+                }
+                _ => {}
+            }
+        }
+        self.pos = self.tokens.len() - 1;
+    }
+
+    /// Fails unless every token has been used, for callers that parse a
+    /// single expression.
+    pub fn finish(&self) -> Parse<()> {
+        match self.peek() {
+            Tok::Eof => Ok(()),
+            other => Err(self.error(format!("expected the end of the expression, found {}", other.describe()))),
+        }
+    }
+
+    /// True if token `i` is the first on its line.
+    fn starts_line(&self, i: usize) -> bool {
+        i == 0 || self.tokens[i - 1].span.line < self.tokens[i].span.line
+    }
+
+    /// How far into its line token `i` starts, in bytes.
+    fn column(&self, i: usize) -> usize {
+        let start = self.tokens[i].span.start.min(self.src.len());
+        start - self.src[..start].rfind('\n').map_or(0, |n| n + 1)
     }
 
     // ---- token helpers ----
@@ -91,7 +180,7 @@ impl<'a> Parser<'a> {
             other => {
                 let mut err = self.error(format!("expected {what}, found {}", other.describe()));
                 if Tok::keyword(self.text(self.span())).is_some() {
-                    err = err.hint(format!(
+                    err = err.code(codes::KEYWORD_AS_NAME).hint(format!(
                         "`{}` is a keyword and cannot be used as a name",
                         self.text(self.span())
                     ));
@@ -118,7 +207,7 @@ impl<'a> Parser<'a> {
                 let kind = machine_kind(&self.advance().tok);
                 let word = kind.keyword();
                 if *self.peek() == Tok::Over {
-                    return Err(self.error(format!("a `{word}` statement needs a name")).hint(
+                    return Err(self.error(format!("a `{word}` statement needs a name")).code(codes::NEEDS_NAME).hint(
                         format!("write `{word} Name over B {{ ... }}`, or `let m = {word} over B {{ ... }}`"),
                     ));
                 }
@@ -130,7 +219,7 @@ impl<'a> Parser<'a> {
                 // grammar-def := 'grammar' NAME grammar-body
                 self.advance();
                 if *self.peek() == Tok::Over {
-                    return Err(self.error("a `grammar` statement needs a name").hint(
+                    return Err(self.error("a `grammar` statement needs a name").code(codes::NEEDS_NAME).hint(
                         "write `grammar G over B { ... }`, or `let g = grammar over B { ... }`",
                     ));
                 }
@@ -178,7 +267,7 @@ impl<'a> Parser<'a> {
             }
             Tok::Trace => self.trace()?,
             Tok::Ident(_) if *self.peek_next() == Tok::Assign => {
-                return Err(self.error("assignment needs `let`").hint(
+                return Err(self.error("assignment needs `let`").code(codes::NEEDS_LET).hint(
                     "write `let x = ...`; values cannot be changed once defined, so pick a new name",
                 ));
             }
@@ -205,6 +294,7 @@ impl<'a> Parser<'a> {
                 Some(c) => symbols.push((c, span)),
                 None => {
                     return Err(Diag::new(ErrorKind::Syntax, span, "`eps` is not a symbol")
+                        .code(codes::BAD_EPS)
                         .hint("eps is the empty string; it cannot be in an alphabet"));
                 }
             }
@@ -239,7 +329,10 @@ impl<'a> Parser<'a> {
     // fn := 'fn' NAME '(' (NAME ':' type (',' NAME ':' type)*)? ')' '->' type block
     fn function(&mut self) -> Parse<StmtKind> {
         if self.depth > 0 {
-            return Err(self.error("functions can only be defined at the top level"));
+            return Err(self
+                .error("functions can only be defined at the top level")
+                .code(codes::NESTED_FUNCTION)
+                .hint("move this `fn` out of the block; a function can be called from anywhere in the file"));
         }
         self.advance();
         let name = self.name("a function name")?;
@@ -294,12 +387,17 @@ impl<'a> Parser<'a> {
                 Type::Set(Box::new(inner))
             }
             other => {
-                return Err(Diag::new(
-                    ErrorKind::Type,
-                    name.span,
-                    format!("unknown type `{other}`"),
-                )
-                .hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Tm, Regex, Grammar, Set[T]"));
+                let err = Diag::new(ErrorKind::Type, name.span, format!("unknown type `{other}`"))
+                    .code(codes::UNKNOWN_TYPE);
+                let known = ["Int", "Bool", "Str", "Alphabet", "Dfa", "Nfa", "Pda", "Tm", "Regex", "Grammar", "Set"];
+                let lower = other.to_ascii_lowercase();
+                if let Some(t) = known.iter().find(|t| t.to_ascii_lowercase() == lower) {
+                    return Err(err.hint(format!("types start with a capital letter: `{t}`")));
+                }
+                if let Some(close) = super::error::did_you_mean(other, known.into_iter()) {
+                    return Err(err.hint(format!("did you mean `{close}`?")));
+                }
+                return Err(err.hint("types are: Int, Bool, Str, Alphabet, Dfa, Nfa, Pda, Tm, Regex, Grammar, Set[T]"));
             }
         })
     }
@@ -330,7 +428,7 @@ impl<'a> Parser<'a> {
         let mut stmts = Vec::new();
         while *self.peek() != Tok::RBrace {
             if *self.peek() == Tok::Eof {
-                return Err(Diag::new(ErrorKind::Syntax, open, "this `{` is never closed"));
+                return Err(unclosed(open));
             }
             stmts.push(self.statement()?);
         }
@@ -347,9 +445,11 @@ impl<'a> Parser<'a> {
         let alphabet = self.name("the name of an alphabet")?;
         let header = start.to(self.prev());
         let open = self.span();
+        let errors_before = self.recovered.len();
         let items = self.machine_items(kind)?;
         let body = open.to(self.prev());
-        Ok(MachineExpr { kind, alphabet, items, header, body })
+        let incomplete = self.recovered.len() > errors_before;
+        Ok(MachineExpr { kind, alphabet, items, header, body, incomplete })
     }
 
     fn machine_items(&mut self, kind: MachineKind) -> Parse<Vec<MachineItem>> {
@@ -357,12 +457,44 @@ impl<'a> Parser<'a> {
         let mut items = Vec::new();
         while *self.peek() != Tok::RBrace {
             if *self.peek() == Tok::Eof {
-                return Err(Diag::new(ErrorKind::Syntax, open, "this `{` is never closed"));
+                return Err(unclosed(open));
             }
-            items.push(self.machine_item(kind)?);
+            let start = self.pos;
+            match self.machine_item(kind) {
+                Ok(item) => items.push(item),
+                // Items are one per line, so a bad one can be skipped and the
+                // rest of the machine still checked for mistakes.
+                Err(error) => {
+                    self.recovered.push(error);
+                    self.skip_to_next_item(start);
+                }
+            }
         }
         self.advance();
         Ok(items)
+    }
+
+    /// After a machine item that began at token `start` failed, moves to
+    /// the next line, or to the `}` that ends the machine.
+    fn skip_to_next_item(&mut self, start: usize) {
+        let mut depth: i64 = 0;
+        let mut i = start;
+        loop {
+            let tok = &self.tokens[i].tok;
+            let past_error = i > self.pos || (i == self.pos && i > start);
+            if *tok == Tok::Eof || (depth == 0 && *tok == Tok::RBrace && i > start)
+                || (past_error && depth == 0 && self.starts_line(i))
+            {
+                self.pos = i;
+                return;
+            }
+            match tok {
+                Tok::LBrace => depth += 1,
+                Tok::RBrace => depth -= 1,
+                _ => {}
+            }
+            i += 1;
+        }
     }
 
     // item := 'start' state
@@ -388,6 +520,7 @@ impl<'a> Parser<'a> {
                 if kind != MachineKind::Tm {
                     return Err(self
                         .error(format!("only a Turing machine has `reject` states, and this is {} `{}`", if kind == MachineKind::Nfa { "an" } else { "a" }, kind.keyword()))
+                        .code(codes::WRONG_MACHINE_KIND)
                         .hint("a finite automaton rejects every word that does not end in an accepting state"));
                 }
                 self.advance();
@@ -482,6 +615,7 @@ impl<'a> Parser<'a> {
                 let push_span = push_span.to(end);
                 if push.contains(&'_') {
                     return Err(Diag::new(ErrorKind::Syntax, push_span, "`_` cannot be a stack symbol")
+                        .code(codes::BAD_SYMBOL)
                         .hint("stack symbols are letters and digits"));
                 }
                 Ok(Action::Stack { read, pop, push, push_span })
@@ -527,6 +661,7 @@ impl<'a> Parser<'a> {
         if *self.peek() == Tok::Eps {
             return Err(self
                 .error("a Turing machine always reads and writes a symbol, so `eps` cannot be used here")
+                .code(codes::BAD_EPS)
                 .hint("write `_` for the blank cell"));
         }
         self.label().map_err(|e| e.hint(hint))
@@ -548,7 +683,7 @@ impl<'a> Parser<'a> {
         let mut rules = Vec::new();
         while *self.peek() != Tok::RBrace {
             if *self.peek() == Tok::Eof {
-                return Err(Diag::new(ErrorKind::Syntax, open, "this `{` is never closed"));
+                return Err(unclosed(open));
             }
             rules.push(self.rule()?);
         }
@@ -566,6 +701,7 @@ impl<'a> Parser<'a> {
                 head.span,
                 format!("`{}` cannot have rules: variables start with a capital letter", head.text),
             )
+            .code(codes::BAD_SYMBOL)
             .hint(rule_hint));
         }
         if *self.peek() != Tok::Arrow {
@@ -592,7 +728,7 @@ impl<'a> Parser<'a> {
         if *self.peek() == Tok::Eps {
             let eps = self.advance().span;
             if !self.alternative_ends() {
-                return Err(Diag::new(ErrorKind::Syntax, eps, "`eps` must stand alone").hint(eps_hint));
+                return Err(Diag::new(ErrorKind::Syntax, eps, "`eps` must stand alone").code(codes::BAD_EPS).hint(eps_hint));
             }
             return Ok(Vec::new());
         }
@@ -607,12 +743,12 @@ impl<'a> Parser<'a> {
                 }
                 Tok::Ident(_) | Tok::Int(_) => {
                     let spaced: Vec<String> = text.chars().map(String::from).collect();
-                    return Err(self.error(format!("`{text}` is not one symbol")).hint(format!(
+                    return Err(self.error(format!("`{text}` is not one symbol")).code(codes::BAD_SYMBOL).hint(format!(
                         "write terminals one at a time with spaces between: `{}`; variables start with a capital letter",
                         spaced.join(" ")
                     )));
                 }
-                Tok::Eps => return Err(self.error("`eps` must stand alone").hint(eps_hint)),
+                Tok::Eps => return Err(self.error("`eps` must stand alone").code(codes::BAD_EPS).hint(eps_hint)),
                 other => {
                     return Err(self
                         .error(format!("expected a symbol or a variable, found {}", other.describe()))
@@ -808,6 +944,8 @@ impl<'a> Parser<'a> {
                     let at = start.start + 1 + offset; // +1 skips the opening slash
                     let span = Span { start: at, end: at + 1, line: start.line };
                     Diag::new(ErrorKind::Syntax, span, format!("in regex: {message}"))
+                        .code(codes::BAD_REGEX)
+                        .hint("a regex is made of symbols, `|` for or, `*` for repeat, and `( )` for grouping, as in /(0|1)*01/")
                 })?;
                 ExprKind::Regex(parsed)
             }
@@ -864,7 +1002,26 @@ impl<'a> Parser<'a> {
                 ExprKind::Grammar(Box::new(self.grammar_body(start)?))
             }
             other => {
-                return Err(self.error(format!("expected a value, found {}", other.describe())));
+                // `let x = 2 +` followed by a new statement: the mistake is
+                // the unfinished line, so point there.
+                if self.pos > 0 && self.span().line > self.prev().line {
+                    let after = self.text(self.prev());
+                    let next = match other {
+                        Tok::Eof => "the file ends here".to_string(),
+                        _ => format!("the next line starts with {}", other.describe()),
+                    };
+                    return Err(Diag::new(
+                        ErrorKind::Syntax,
+                        self.prev(),
+                        format!("expected a value after `{after}`, but {next}"),
+                    )
+                    .hint("finish the expression on this line"));
+                }
+                let mut err = self.error(format!("expected a value, found {}", other.describe()));
+                if other == Tok::Assign {
+                    err = err.hint("to compare two values, write `==`");
+                }
+                return Err(err);
             }
         };
         Ok(Expr { kind, span: start.to(self.prev()) })
@@ -872,6 +1029,13 @@ impl<'a> Parser<'a> {
 }
 
 /// The kind of machine a `dfa`, `nfa`, `pda` or `tm` keyword introduces.
+/// The error for a `{` with no matching `}`.
+fn unclosed(open: Span) -> Diag {
+    Diag::new(ErrorKind::Syntax, open, "this `{` is never closed")
+        .code(codes::UNCLOSED)
+        .hint("add the missing `}`; the block that starts here runs to the end of the file")
+}
+
 fn machine_kind(tok: &Tok) -> MachineKind {
     match tok {
         Tok::Dfa => MachineKind::Dfa,
@@ -1041,5 +1205,48 @@ mod tests {
         let stmts = Parser::new(lex(src, 0, 1).unwrap(), src, true).program().unwrap();
         assert!(matches!(stmts[0].kind, StmtKind::Print(_)));
         assert!(parse(src).is_err());
+    }
+
+    fn errors(src: &str) -> Vec<(usize, String)> {
+        let (_, errors) = Parser::new(lex(src, 0, 1).unwrap(), src, false).program_recovering();
+        errors.into_iter().map(|e| (e.span.line, e.message)).collect()
+    }
+
+    #[test]
+    fn recovers_at_the_next_statement() {
+        let found = errors("let a = 1 +\nlet b = = 2\nprint a\nlet c = )\n");
+        let lines: Vec<usize> = found.iter().map(|(line, _)| *line).collect();
+        assert_eq!(lines, [1, 2, 4], "{found:?}");
+        assert!(found[0].1.contains("after `+`"), "{found:?}");
+    }
+
+    #[test]
+    fn recovers_inside_a_machine_and_after_a_missing_brace() {
+        let src = "dfa M over B {\n  start q0\n  q0 -> q1\n  q1 --0-> q1\n  accept q1\n}\nfn f( -> Int {\nlet ok = 1\nlet bad = )\n";
+        let lines: Vec<usize> = errors(src).iter().map(|(line, _)| *line).collect();
+        assert_eq!(lines, [3, 4, 7, 9]);
+        // The good items of the machine are kept, and it is marked incomplete.
+        let (program, _) = Parser::new(lex(src, 0, 1).unwrap(), src, false).program_recovering();
+        let StmtKind::MachineDef { machine, .. } = &program[0].kind else { panic!("not a machine") };
+        assert_eq!(machine.items.len(), 2);
+        assert!(machine.incomplete);
+    }
+
+    #[test]
+    fn an_unclosed_block_does_not_hide_later_definitions() {
+        let src = "fn f() -> Int {\n    return 1\n\nlet x = )\nfn g() -> Int { return ) }\n";
+        let found = errors(src);
+        assert!(found.iter().any(|(line, _)| *line == 5), "{found:?}");
+    }
+
+    #[test]
+    fn errors_have_codes() {
+        let code = |src: &str| parse(src).unwrap_err().code;
+        assert_eq!(code("x = 1"), codes::NEEDS_LET);
+        assert_eq!(code("let if = 1"), codes::KEYWORD_AS_NAME);
+        assert_eq!(code("let r = /(ab/"), codes::BAD_REGEX);
+        assert_eq!(code("fn f(n: int) -> Int { return n }"), codes::UNKNOWN_TYPE);
+        assert_eq!(code("print"), codes::SYNTAX);
+        assert_eq!(code("if true {"), codes::UNCLOSED);
     }
 }

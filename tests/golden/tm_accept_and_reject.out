@@ -1,4 +1,5 @@
 Error in tm_accept_and_reject.kstar, line 5:
     reject s
            ^
-MachineError: state `s` cannot both accept and reject
+MachineError[E0407]: state `s` cannot both accept and reject
+  hint: a Turing machine halts in an accepting or a rejecting state; pick one for this state

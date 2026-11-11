@@ -118,6 +118,52 @@ Suggestions such as "did you mean `minimize`?" come from comparing the unknown
 name with every known name by edit distance: the number of single-character
 changes needed to turn one into the other.
 
+### Codes
+
+Every `Diag` also carries a code from `src/lang/codes.rs`. Each kind of error
+has a default code, and the places that report a more specific mistake set
+their own. The long explanations are the sections of `docs/errors.md`,
+compiled into the binary with `include_str!`, so `kstar explain` and the
+documentation can never disagree. Tests check that every code has a
+section, and that each section's example really produces its code.
+
+### Reporting every error
+
+A compiler that stops at the first error makes you fix one thing, run again,
+fix the next. Each stage of Kleene Star carries on instead, which is called
+*error recovery*:
+
+- The **lexer** records an error and skips the bad character, or turns an
+  unclosed string into a string anyway, so the parser sees sensible tokens.
+- The **parser** gives up on the statement it was in, skips forward to a
+  token that starts a line and starts a statement (`let`, `dfa`, `print`, ...),
+  and carries on. It counts braces while skipping so it does not stop inside
+  a `{ ... }` that the broken statement opened; a statement at the very start
+  of a line ends the skipping anyway, so one missing `}` does not hide the
+  rest of the file. Inside a machine it recovers line by line, and marks the
+  machine *incomplete* so that it is not checked for totality and so on:
+  with a line missing, those errors would be wrong.
+- The **checker** checks one statement at a time. When a statement fails,
+  its error is recorded, and if it was a definition the name is marked
+  *broken*. Using a broken name later produces an error that is silently
+  dropped: the real mistake has already been reported.
+
+After a syntax error, the checker also drops "not defined" errors, since the
+definition may be in a statement that did not parse. `lang::check_source`
+runs the three stages and sorts what they found by position.
+
+### Warnings
+
+`src/lang/lint.rs`
+
+Warnings are found only when there are no errors. The checker passes each
+machine that is written out in full to `lint::machine`, which computes the
+states reachable from the start state and the states from which an
+accepting state can be reached (the same search, run backwards over the
+transitions), and warns about the rest. Unused names come from the index
+(section 10): a definition with no references is unused. A constant `test`
+is one whose expression contains nothing but literals.
+
 ## 6. The automata library
 
 `src/automata/`
@@ -302,7 +348,8 @@ formatting never changes what a program prints.
 `src/lib.rs`, `src/main.rs`
 
 A `Session` owns one checker and one interpreter and feeds text through the
-stages. A file is one piece of text. The interactive prompt feeds one entry at
+stages. Warnings are rendered and kept for the caller to show; errors are
+rendered, joined, and counted. A file is one piece of text. The interactive prompt feeds one entry at
 a time into the same session, which is why names defined earlier are still
 there. All the text is kept in one growing string so that an error can quote a
 line typed several entries ago.
@@ -325,7 +372,11 @@ cargo test
   formatting must never change what a program prints.
 - **Examples and docs** (`tests/programs.rs`): every file in `examples/` must
   run cleanly, and every code sample in the documentation is run and compared
-  with the output shown beneath it.
+  with the output shown beneath it. `UPDATE_DOCS=1 cargo test --test programs`
+  rewrites those outputs after a deliberate change.
+- **The command line** (`tests/cli.rs`) runs the real `kstar` binary in a
+  scratch folder: several files, folders, `fmt -`, `new`, `explain`, colour,
+  `--trace-calls`, and exit codes.
 
 After changing an error message on purpose, regenerate the saved outputs and
 read the diff before keeping it:

@@ -1,5 +1,6 @@
 //! The lexer: turns source text into a list of tokens.
 
+use super::codes;
 use super::error::{Diag, ErrorKind};
 use super::token::{Span, Tok, Token};
 
@@ -14,16 +15,36 @@ pub struct Comment {
 
 /// Lexes `src` starting at byte `from`, which is on line `first_line`.
 /// (The REPL keeps all input in one growing string and lexes only the new
-/// part; a file is lexed with `from = 0, first_line = 1`.)
+/// part; a file is lexed with `from = 0, first_line = 1`.) Stops at the
+/// first error.
 pub fn lex(src: &str, from: usize, first_line: usize) -> Result<Vec<Token>, Diag> {
-    lex_into(src, from, first_line, &mut Vec::new())
+    let (tokens, mut errors) = lex_all(src, from, first_line);
+    if errors.is_empty() {
+        Ok(tokens)
+    } else {
+        Err(errors.swap_remove(0))
+    }
+}
+
+/// Like `lex`, but carries on after an error, so that one run can report
+/// every problem. Where the text could not be read, the tokens contain a
+/// stand-in (an unclosed string still becomes a string), so the parser sees
+/// a sensible program and does not report the same mistake again.
+pub fn lex_all(src: &str, from: usize, first_line: usize) -> (Vec<Token>, Vec<Diag>) {
+    let mut errors = Vec::new();
+    let tokens = lex_into(src, from, first_line, &mut Vec::new(), &mut errors);
+    (tokens, errors)
 }
 
 /// Lexes a whole file and also returns its comments, in order.
 pub fn lex_with_comments(src: &str) -> Result<(Vec<Token>, Vec<Comment>), Diag> {
     let mut comments = Vec::new();
-    let tokens = lex_into(src, 0, 1, &mut comments)?;
-    Ok((tokens, comments))
+    let mut errors = Vec::new();
+    let tokens = lex_into(src, 0, 1, &mut comments, &mut errors);
+    match errors.into_iter().next() {
+        Some(error) => Err(error),
+        None => Ok((tokens, comments)),
+    }
 }
 
 fn lex_into(
@@ -31,7 +52,8 @@ fn lex_into(
     from: usize,
     first_line: usize,
     comments: &mut Vec<Comment>,
-) -> Result<Vec<Token>, Diag> {
+    errors: &mut Vec<Diag>,
+) -> Vec<Token> {
     let mut tokens = Vec::new();
     let mut line = first_line;
     let mut i = from;
@@ -40,7 +62,9 @@ fn lex_into(
     while let Some(c) = rest(i).next() {
         let start = i;
         let span = move |end: usize| Span { start, end, line };
-        let error = move |end: usize, message: String| Diag::new(ErrorKind::Syntax, span(end), message);
+        let error = move |end: usize, message: String| {
+            Diag::new(ErrorKind::Syntax, span(end), message).code(codes::BAD_CHARACTER)
+        };
 
         // Whitespace and comments
         if c == '\n' {
@@ -64,9 +88,12 @@ fn lex_into(
             while rest(i).next().is_some_and(|c| c.is_ascii_digit()) {
                 i += 1;
             }
-            let value = src[start..i]
-                .parse::<i64>()
-                .map_err(|_| error(i, "this number is too large".into()))?;
+            let value = src[start..i].parse::<i64>().unwrap_or_else(|_| {
+                errors.push(error(i, "this number is too large".into()).hint(
+                    "Ints are 64-bit, so the largest is 9223372036854775807",
+                ));
+                0
+            });
             tokens.push(Token { tok: Tok::Int(value), span: span(i) });
             continue;
         }
@@ -89,8 +116,12 @@ fn lex_into(
             loop {
                 match rest(i).next() {
                     None | Some('\n') => {
-                        return Err(error(i, "this string is never closed".into())
-                            .hint("add a closing `\"` on the same line"));
+                        errors.push(
+                            error(i, "this string is never closed".into())
+                                .code(codes::UNCLOSED)
+                                .hint("add a closing `\"` on the same line; a string cannot span lines"),
+                        );
+                        break;
                     }
                     Some('"') => {
                         i += 1;
@@ -101,13 +132,14 @@ fn lex_into(
                             text.push(e);
                             i += 2;
                         }
-                        _ => {
-                            return Err(Diag::new(
-                                ErrorKind::Syntax,
-                                Span { start: i, end: i + 1, line },
-                                "unknown escape in string",
-                            )
-                            .hint("only `\\\"` and `\\\\` are escapes"));
+                        other => {
+                            let end = i + 1 + other.map_or(0, char::len_utf8);
+                            errors.push(
+                                Diag::new(ErrorKind::Syntax, Span { start: i, end, line }, "unknown escape in string")
+                                    .code(codes::BAD_CHARACTER)
+                                    .hint("only `\\\"` (a quote) and `\\\\` (a backslash) are escapes"),
+                            );
+                            i += 1;
                         }
                     },
                     Some(c) => {
@@ -138,8 +170,12 @@ fn lex_into(
             loop {
                 match rest(i).next() {
                     None | Some('\n') => {
-                        return Err(error(i, "this regex is never closed".into())
-                            .hint("a regex is written between slashes: /(0|1)*/"));
+                        errors.push(
+                            error(i, "this regex is never closed".into())
+                                .code(codes::UNCLOSED)
+                                .hint("a regex is written between slashes, on one line: /(0|1)*/"),
+                        );
+                        break;
                     }
                     Some('/') => break,
                     Some('\\') => i += 1 + rest(i + 1).next().map_or(0, |c| c.len_utf8()),
@@ -147,7 +183,9 @@ fn lex_into(
                 }
             }
             let text = src[body..i].to_string();
-            i += 1;
+            if src[i..].starts_with('/') {
+                i += 1;
+            }
             tokens.push(Token { tok: Tok::Regex(text), span: span(i) });
             continue;
         }
@@ -184,14 +222,26 @@ fn lex_into(
                     '%' => (Tok::Percent, 1),
                     '|' => (Tok::Bar, 1),
                     ';' => {
-                        return Err(error(i + 1, "unexpected `;`".into())
-                            .hint("Kleene Star has no semicolons; just end the line"));
+                        errors.push(
+                            error(i + 1, "unexpected `;`".into())
+                                .hint("Kleene Star has no semicolons; just end the line"),
+                        );
+                        i += 1;
+                        continue;
                     }
                     other => {
-                        return Err(error(
-                            i + other.len_utf8(),
-                            format!("unexpected character `{other}`"),
-                        ));
+                        let mut err = error(i + other.len_utf8(), format!("unexpected character `{other}`"));
+                        err = match other {
+                            '/' => err,
+                            '!' => err.hint("for \"not\" write `not`; for \"not equal\" write `!=`"),
+                            '&' => err.hint("for \"and\" write `and`"),
+                            '\'' => err.hint("strings use double quotes: \"abc\""),
+                            '.' => err.hint("a range is written `0..n`"),
+                            _ => err,
+                        };
+                        errors.push(err);
+                        i += other.len_utf8();
+                        continue;
                     }
                 },
             }
@@ -201,7 +251,7 @@ fn lex_into(
     }
 
     tokens.push(Token { tok: Tok::Eof, span: Span { start: src.len(), end: src.len(), line } });
-    Ok(tokens)
+    tokens
 }
 
 #[cfg(test)]
@@ -301,5 +351,17 @@ mod tests {
         assert!(lex("/abc", 0, 1).is_err());
         assert!(lex("let x = 1;", 0, 1).unwrap_err().hint.is_some());
         assert!(lex("@", 0, 1).is_err());
+    }
+
+    #[test]
+    fn carries_on_after_errors() {
+        let (tokens, errors) = lex_all("let x = 1;\nlet s = \"open\nlet y = @ 2\n", 0, 1);
+        let messages: Vec<&str> = errors.iter().map(|e| e.message.as_str()).collect();
+        assert_eq!(messages, ["unexpected `;`", "this string is never closed", "unexpected character `@`"]);
+        // The unclosed string still becomes a string, and lexing goes on.
+        assert!(tokens.iter().any(|t| t.tok == Tok::Str("open".into())));
+        assert!(tokens.iter().any(|t| t.tok == Tok::Ident("y".into())));
+        assert_eq!(errors[0].code, crate::lang::codes::BAD_CHARACTER);
+        assert_eq!(errors[1].code, crate::lang::codes::UNCLOSED);
     }
 }

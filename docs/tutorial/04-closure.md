@@ -79,7 +79,7 @@ let same = /a*/ == /a*a*/
 Error in demo.kstar, line 1:
     let same = /a*/ == /a*a*/
                ^^^^^^^^^^^^^^
-TypeError: `==` cannot compare machines or regexes
+TypeError[E0307]: `==` cannot compare machines or regexes
   hint: to ask whether two of them describe the same language, use `equivalent(a, b)`
 ```
 
@@ -131,16 +131,16 @@ alphabet L = {a, b}
 dfa Zeros over B { start s  accept s  s --0--> s  s --1--> t  t --0,1--> t }
 dfa As over L { start s  accept s  s --a--> s  s --b--> t  t --a,b--> t }
 
-let both = union(Zeros, As)
+print union(Zeros, As)
 ```
 
 ```text
 Traceback (most recent call last):
   demo.kstar, line 6, in <main>
-    let both = union(Zeros, As)
-                            ^^
-AlphabetError: this machine is over {a, b}, but {0, 1} is needed here
-  hint: languages can only be combined when they share an alphabet
+    print union(Zeros, As)
+                       ^^
+AlphabetError[E0502]: this machine is over {a, b}, but {0, 1} is needed here
+  hint: languages can only be combined when they share an alphabet; build both machines `over` the same one
 ```
 
 Next: [functions and machine families](05-functions.md).

@@ -87,6 +87,7 @@ fn same_program(before: &str, after: &str) -> Result<(), Diag> {
         Span { start: 0, end: 0, line: 1 },
         "formatting would change this program, so it was left alone",
     )
+    .code(super::codes::FORMAT_UNSAFE)
     .hint("this is a bug in `kstar fmt`; please report it with the file that caused it"))
 }
 

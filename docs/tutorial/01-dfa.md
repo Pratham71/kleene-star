@@ -141,7 +141,7 @@ dfa Broken over B {
 Error in demo.kstar, line 3:
     dfa Broken over B {
     ^^^^^^^^^^^^^^^^^
-MachineError: DFA `Broken` is not total: no transition from `q0` on `1`
+MachineError[E0404]: DFA `Broken` is not total: no transition from `q0` on `1`
   hint: a DFA needs a transition from every state on every symbol; add the missing ones (often to a dead state), or use `nfa`
 ```
 

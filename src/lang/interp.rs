@@ -4,6 +4,7 @@
 //! an explicit list of frames, which is also what a traceback is printed from.
 
 use super::ast::*;
+use super::codes;
 use super::error::{Diag, ErrorKind, TraceFrame};
 use super::machine::{self, Built, MachineSpec, Transition};
 use super::token::Span;
@@ -53,6 +54,8 @@ pub struct Interp {
     /// Print only ASCII (`-` instead of an em dash) for consoles that
     /// cannot show anything else.
     pub ascii: bool,
+    /// Print a line for every function call and return (`--trace-calls`).
+    pub trace_calls: bool,
     pub passed: usize,
     pub failed: usize,
     drawings: usize,
@@ -76,6 +79,7 @@ impl Interp {
             out_dir,
             render_svg: false,
             ascii: false,
+            trace_calls: false,
             passed: 0,
             failed: 0,
             drawings: 0,
@@ -134,6 +138,7 @@ impl Interp {
             // but the function may have been *called* before that line ran.
             None => Err(self
                 .error(ErrorKind::Name, span, format!("`{name}` is used before it is defined"))
+                .code(codes::USED_TOO_EARLY)
                 .hint(format!("move the definition of `{name}` above the call that needs it"))),
         }
     }
@@ -355,6 +360,8 @@ impl Interp {
                         action: action.clone(),
                         to: self.state_name(to)?,
                         span: *span,
+                        from_span: from.span,
+                        to_span: to.span,
                     })
                 }
                 MachineItem::For { var, items, body } => {
@@ -376,6 +383,7 @@ impl Interp {
             i if i >= 0 => Ok(format!("{}{i}", state.name)),
             i => Err(self
                 .error(ErrorKind::Machine, index.span, format!("state index is negative ({i})"))
+                .code(codes::NEGATIVE_INDEX)
                 .hint("`%` always gives a result from 0 upwards, so `(i - 1) % n` wraps around safely")),
         }
     }
@@ -463,6 +471,7 @@ impl Interp {
                         if b == 0 {
                             return Err(self
                                 .error(ErrorKind::Math, span, "modulo by zero")
+                                .code(codes::MODULO_ZERO)
                                 .hint("the right-hand side of `%` is 0 here"));
                         }
                         // The result is never negative, like Python's % for a
@@ -479,7 +488,9 @@ impl Interp {
                                 ErrorKind::Math,
                                 span,
                                 format!("the range {a}..{b} is too large (limit {MAX_RANGE} items)"),
-                            ));
+                            )
+                            .code(codes::RANGE_TOO_LARGE)
+                            .hint("loop over a smaller range, or work with the language directly instead of listing its words"));
                         }
                         Value::Set(Rc::new((a..b).map(Value::Int).collect()))
                     }
@@ -527,6 +538,7 @@ impl Interp {
             word_span,
             format!("the word contains `{c}`, which is not in the machine's alphabet"),
         )
+        .code(codes::FOREIGN_WORD)
         .hint(format!("the machine is over {}", fmt_alphabet(alphabet)))
     }
 
@@ -541,6 +553,7 @@ impl Interp {
                     span,
                     format!("the Turing machine is still running after {} steps", tm::STEP_LIMIT),
                 )
+                .code(codes::STEP_LIMIT)
                 .hint("it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so Kleene Star stops here instead of waiting forever")),
             _ => Ok(run),
         }
@@ -567,6 +580,7 @@ impl Interp {
                     name.span,
                     format!("function `{}` is called before it is defined", name.text),
                 )
+                .code(codes::USED_TOO_EARLY)
                 .hint(format!("move `fn {}` above this line", name.text)));
         };
         if self.frames.len() >= MAX_DEPTH {
@@ -578,12 +592,22 @@ impl Interp {
                 )
                 .hint(format!("does `{}` call itself without ever reaching a base case?", name.text)));
         }
+        let indent = "  ".repeat(self.frames.len() - 1);
+        if self.trace_calls {
+            let shown: Vec<String> = f.params.iter().zip(&args).map(|((p, _), v)| format!("{}={}", p.text, v.brief())).collect();
+            let _ = writeln!(self.out, "{indent}-> {}({})   line {}", name.text, shown.join(", "), call_site.line);
+        }
         let params = f.params.iter().map(|(param, _)| param.text.clone()).zip(args).collect();
         self.frames.push(Frame { func: name.text.clone(), call_site, scopes: vec![params] });
         let flow = self.block(&f.body)?;
         self.frames.pop();
         match flow {
-            Flow::Return(value) => Ok(value),
+            Flow::Return(value) => {
+                if self.trace_calls {
+                    let _ = writeln!(self.out, "{indent}<- {} returned {}", name.text, value.brief());
+                }
+                Ok(value)
+            }
             Flow::Normal => unreachable!("checker ensures every function returns"),
         }
     }
@@ -672,6 +696,7 @@ impl Interp {
             }
             Err(DeriveError::TooManySteps(n)) => Err(self
                 .error(ErrorKind::Limit, span, format!("gave up looking for a derivation after {n} sentential forms"))
+                .code(codes::GAVE_UP)
                 .hint("the word is in the language, but its derivation is too long to find this way")),
         }
     }
@@ -706,7 +731,8 @@ impl Interp {
                                 fmt_alphabet(other)
                             ),
                         )
-                        .hint("languages can only be combined when they share an alphabet"));
+                        .code(codes::ALPHABET_MISMATCH)
+                        .hint("languages can only be combined when they share an alphabet; build both machines `over` the same one"));
                 }
                 _ => fixed = Some(own.clone()),
             }

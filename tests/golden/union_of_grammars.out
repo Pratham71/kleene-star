@@ -1,5 +1,5 @@
 Error in union_of_grammars.kstar, line 5:
     print union(G, /a*/)
                 ^
-TypeError: argument 1 of `union` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Grammar
+TypeError[E0300]: argument 1 of `union` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Grammar
   hint: `union` works on regular languages only; a Grammar can describe a language that is not regular
