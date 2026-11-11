@@ -100,7 +100,10 @@ fn main() -> ExitCode {
         }
         "run" => run_command(rest, false),
         "check" => run_command(rest, true),
-        "fmt" => fmt_command(rest),
+        "fmt" => {
+            let rest: Vec<String> = rest.iter().map(|s| s.to_string()).collect();
+            kstar::with_big_stack(move || fmt_command(&rest.iter().map(String::as_str).collect::<Vec<_>>()))
+        }
         "new" => match rest {
             [name] => new_file(name),
             _ => usage_error("`kstar new` needs one name", NEW_HELP),

@@ -74,3 +74,40 @@ pub fn files_in(dir: &Path, extension: &str) -> Vec<PathBuf> {
 pub fn project_dir() -> &'static Path {
     Path::new(env!("CARGO_MANIFEST_DIR"))
 }
+
+/// A small, seeded random number generator (xorshift64*), so that tests
+/// with random inputs are repeatable: the same seed gives the same inputs.
+pub struct Rng(u64);
+
+impl Rng {
+    pub fn new(seed: u64) -> Rng {
+        Rng(seed.max(1))
+    }
+
+    pub fn next(&mut self) -> u64 {
+        self.0 ^= self.0 >> 12;
+        self.0 ^= self.0 << 25;
+        self.0 ^= self.0 >> 27;
+        self.0.wrapping_mul(0x2545_F491_4F6C_DD1D)
+    }
+
+    /// A number in `0..n` (`n` must not be 0).
+    pub fn below(&mut self, n: usize) -> usize {
+        (self.next() % n as u64) as usize
+    }
+
+    /// True with probability `percent` in 100.
+    pub fn chance(&mut self, percent: usize) -> bool {
+        self.below(100) < percent
+    }
+
+    pub fn pick<'a, T>(&mut self, items: &'a [T]) -> &'a T {
+        &items[self.below(items.len())]
+    }
+}
+
+/// The seed for random tests: `KSTAR_SEED` if set, so a failure can be
+/// reproduced, otherwise a fixed one.
+pub fn seed() -> u64 {
+    std::env::var("KSTAR_SEED").ok().and_then(|s| s.parse().ok()).unwrap_or(20_261_111)
+}

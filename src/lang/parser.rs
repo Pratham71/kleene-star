@@ -23,13 +23,22 @@ pub struct Parser<'a> {
     /// Errors inside a machine that were recovered from: the parser skipped
     /// the bad line and went on with the next one.
     recovered: Vec<Diag>,
+    /// How deeply the expression or block being parsed is nested.
+    nesting: usize,
 }
 
 type Parse<T> = Result<T, Diag>;
 
+/// How deeply expressions and blocks may nest. Every later stage walks the
+/// syntax tree recursively, so without a limit a pathological program (a
+/// thousand opening parentheses, or a sum of ten thousand terms) would
+/// overflow the stack and crash instead of reporting an error. A chain such
+/// as `a + b + c` counts one level per operator, since it nests too.
+pub const MAX_NESTING: usize = 200;
+
 impl<'a> Parser<'a> {
     pub fn new(tokens: Vec<Token>, src: &'a str, repl: bool) -> Parser<'a> {
-        Parser { tokens, pos: 0, src, repl, depth: 0, recovered: Vec::new() }
+        Parser { tokens, pos: 0, src, repl, depth: 0, recovered: Vec::new(), nesting: 0 }
     }
 
     // program := statement*
@@ -62,6 +71,7 @@ impl<'a> Parser<'a> {
                 Err(error) => {
                     errors.push(error);
                     self.depth = 0;
+                    self.nesting = 0;
                     self.skip_to_next_statement(start);
                 }
             }
@@ -104,6 +114,18 @@ impl<'a> Parser<'a> {
             }
         }
         self.pos = self.tokens.len() - 1;
+    }
+
+    /// Goes one level deeper, failing past `MAX_NESTING`.
+    fn nest(&mut self) -> Parse<()> {
+        self.nesting += 1;
+        if self.nesting > MAX_NESTING {
+            return Err(self
+                .error(format!("this is nested too deeply (more than {MAX_NESTING} levels)"))
+                .code(codes::TOO_DEEP)
+                .hint("split it into smaller pieces with `let` or a function"));
+        }
+        Ok(())
     }
 
     /// Fails unless every token has been used, for callers that parse a
@@ -410,7 +432,9 @@ impl<'a> Parser<'a> {
         let otherwise = if self.eat(Tok::Else) {
             if *self.peek() == Tok::If {
                 let start = self.span();
+                self.nest()?;
                 let kind = self.if_statement()?;
+                self.nesting -= 1;
                 Some(vec![Stmt { kind, span: start.to(self.prev()) }])
             } else {
                 Some(self.block()?)
@@ -424,6 +448,7 @@ impl<'a> Parser<'a> {
     // block := '{' statement* '}'
     fn block(&mut self) -> Parse<Vec<Stmt>> {
         let open = self.expect(Tok::LBrace, "`{`")?;
+        self.nest()?;
         self.depth += 1;
         let mut stmts = Vec::new();
         while *self.peek() != Tok::RBrace {
@@ -434,6 +459,7 @@ impl<'a> Parser<'a> {
         }
         self.advance();
         self.depth -= 1;
+        self.nesting -= 1;
         Ok(stmts)
     }
 
@@ -454,6 +480,7 @@ impl<'a> Parser<'a> {
 
     fn machine_items(&mut self, kind: MachineKind) -> Parse<Vec<MachineItem>> {
         let open = self.expect(Tok::LBrace, "`{`")?;
+        self.nest()?;
         let mut items = Vec::new();
         while *self.peek() != Tok::RBrace {
             if *self.peek() == Tok::Eof {
@@ -465,12 +492,18 @@ impl<'a> Parser<'a> {
                 // Items are one per line, so a bad one can be skipped and the
                 // rest of the machine still checked for mistakes.
                 Err(error) => {
+                    // Nested too deeply: skipping would only meet the same
+                    // problem again, so give up on the whole machine.
+                    if error.code == codes::TOO_DEEP {
+                        return Err(error);
+                    }
                     self.recovered.push(error);
                     self.skip_to_next_item(start);
                 }
             }
         }
         self.advance();
+        self.nesting -= 1;
         Ok(items)
     }
 
@@ -810,7 +843,10 @@ impl<'a> Parser<'a> {
 
     // expr := or
     pub fn expr(&mut self) -> Parse<Expr> {
-        self.or()
+        self.nest()?;
+        let expr = self.or()?;
+        self.nesting -= 1;
+        Ok(expr)
     }
 
     fn binary(op: BinOp, left: Expr, right: Expr) -> Expr {
@@ -821,18 +857,24 @@ impl<'a> Parser<'a> {
     // or := and ('or' and)*
     fn or(&mut self) -> Parse<Expr> {
         let mut left = self.and()?;
+        let outer = self.nesting;
         while self.eat(Tok::Or) {
+            self.nest()?;
             left = Self::binary(BinOp::Or, left, self.and()?);
         }
+        self.nesting = outer;
         Ok(left)
     }
 
     // and := not ('and' not)*
     fn and(&mut self) -> Parse<Expr> {
         let mut left = self.not()?;
+        let outer = self.nesting;
         while self.eat(Tok::And) {
+            self.nest()?;
             left = Self::binary(BinOp::And, left, self.not()?);
         }
+        self.nesting = outer;
         Ok(left)
     }
 
@@ -840,7 +882,9 @@ impl<'a> Parser<'a> {
     fn not(&mut self) -> Parse<Expr> {
         if *self.peek() == Tok::Not {
             let start = self.advance().span;
+            self.nest()?;
             let inner = self.not()?;
+            self.nesting -= 1;
             let span = start.to(inner.span);
             return Ok(Expr { kind: ExprKind::Unary(UnOp::Not, Box::new(inner)), span });
         }
@@ -886,36 +930,46 @@ impl<'a> Parser<'a> {
     // sum := product (('+' | '-') product)*
     fn sum(&mut self) -> Parse<Expr> {
         let mut left = self.product()?;
+        let outer = self.nesting;
         loop {
             let op = match self.peek() {
                 Tok::Plus => BinOp::Add,
                 Tok::Minus => BinOp::Sub,
-                _ => return Ok(left),
+                _ => break,
             };
             self.advance();
+            self.nest()?;
             left = Self::binary(op, left, self.product()?);
         }
+        self.nesting = outer;
+        Ok(left)
     }
 
     // product := unary (('*' | '%') unary)*
     fn product(&mut self) -> Parse<Expr> {
         let mut left = self.unary()?;
+        let outer = self.nesting;
         loop {
             let op = match self.peek() {
                 Tok::Star => BinOp::Mul,
                 Tok::Percent => BinOp::Mod,
-                _ => return Ok(left),
+                _ => break,
             };
             self.advance();
+            self.nest()?;
             left = Self::binary(op, left, self.unary()?);
         }
+        self.nesting = outer;
+        Ok(left)
     }
 
     // unary := '-' unary | primary
     fn unary(&mut self) -> Parse<Expr> {
         if *self.peek() == Tok::Minus {
             let start = self.advance().span;
+            self.nest()?;
             let inner = self.unary()?;
+            self.nesting -= 1;
             let span = start.to(inner.span);
             return Ok(Expr { kind: ExprKind::Unary(UnOp::Neg, Box::new(inner)), span });
         }
@@ -942,7 +996,8 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let parsed = regex::parse(&text).map_err(|(offset, message)| {
                     let at = start.start + 1 + offset; // +1 skips the opening slash
-                    let span = Span { start: at, end: at + 1, line: start.line };
+                    let width = self.src[at..].chars().next().map_or(1, char::len_utf8);
+                    let span = Span { start: at, end: at + width, line: start.line };
                     Diag::new(ErrorKind::Syntax, span, format!("in regex: {message}"))
                         .code(codes::BAD_REGEX)
                         .hint("a regex is made of symbols, `|` for or, `*` for repeat, and `( )` for grouping, as in /(0|1)*01/")
@@ -1248,5 +1303,27 @@ mod tests {
         assert_eq!(code("fn f(n: int) -> Int { return n }"), codes::UNKNOWN_TYPE);
         assert_eq!(code("print"), codes::SYNTAX);
         assert_eq!(code("if true {"), codes::UNCLOSED);
+    }
+
+    // Regression: deep nesting overflowed the stack instead of being an error.
+    #[test]
+    fn deep_nesting_is_an_error() {
+        // Programs near the limit need the big stack every caller provides.
+        crate::with_big_stack(deep_nesting_cases);
+    }
+
+    fn deep_nesting_cases() {
+        let too_deep = [
+            format!("print {}1{}", "(".repeat(MAX_NESTING + 1), ")".repeat(MAX_NESTING + 1)),
+            format!("print 1{}", " + 1".repeat(MAX_NESTING + 1)),
+            format!("print {}true", "not ".repeat(MAX_NESTING + 1)),
+            format!("{}print 1{}", "if true { ".repeat(MAX_NESTING + 1), " }".repeat(MAX_NESTING + 1)),
+            format!("if true {{ print 1 }}{}", " else if true { print 1 }".repeat(MAX_NESTING + 1)),
+        ];
+        for src in &too_deep {
+            assert_eq!(parse(src).unwrap_err().code, codes::TOO_DEEP, "{}", &src[..40]);
+        }
+        let fine = format!("print {}1{}", "(".repeat(MAX_NESTING - 5), ")".repeat(MAX_NESTING - 5));
+        assert!(parse(&fine).is_ok());
     }
 }

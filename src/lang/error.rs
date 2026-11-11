@@ -223,17 +223,26 @@ impl Paint {
 /// The source line containing `span`, indented, optionally with a row of
 /// carets underneath (in the given colour) marking exactly which part is meant.
 fn excerpt(src: &str, span: Span, indent: &str, carets: Option<(Paint, &str)>) -> String {
-    let start = span.start.min(src.len());
+    // A span may end inside a character, or past the end; never slice there.
+    let floor = |offset: usize| {
+        let mut offset = offset.min(src.len());
+        while !src.is_char_boundary(offset) {
+            offset -= 1;
+        }
+        offset
+    };
+    let start = floor(span.start);
     let line_start = src[..start].rfind('\n').map_or(0, |i| i + 1);
     let line_end = src[start..].find('\n').map_or(src.len(), |i| start + i);
     let line = src[line_start..line_end].trim_end();
     let shown = line.trim_start();
-    let skipped = line.len() - shown.len();
+    // Counted in characters, like the carets: the indent may not be ASCII.
+    let skipped = line[..line.len() - shown.len()].chars().count();
 
     let mut out = format!("{indent}{shown}\n");
     if let Some((paint, style)) = carets {
         let before = src[line_start..start].chars().count().saturating_sub(skipped);
-        let end = span.end.clamp(start, line_start + line.len().max(start - line_start));
+        let end = floor(span.end).clamp(start, (line_start + line.len()).max(start));
         let width = src[start..end].chars().count().max(1);
         out.push_str(&format!("{indent}{}{}\n", " ".repeat(before), paint.paint(style, &"^".repeat(width))));
     }
@@ -288,5 +297,27 @@ mod tests {
             d.render("x.kstar", src),
             "Error in x.kstar, line 2:\n    let b = oops + 1\n            ^^^^\nNameError[E0200]: unknown\n  hint: define it first"
         );
+    }
+
+    // Regression: a span ending inside a multi-byte character (a regex error
+    // at a byte-order mark) made rendering panic.
+    #[test]
+    fn spans_inside_characters_render() {
+        let src = "let r = /a\u{feff}/\n";
+        let at = src.find('\u{feff}').unwrap();
+        let d = Diag::new(ErrorKind::Syntax, Span { start: at, end: at + 1, line: 1 }, "odd");
+        assert!(d.render("x.kstar", src).contains("^"));
+        let past = Diag::new(ErrorKind::Syntax, Span { start: 999, end: 2000, line: 1 }, "past the end");
+        assert!(past.render("x.kstar", src).contains("past the end"));
+    }
+
+    // Regression: carets were misplaced under a line indented with
+    // non-ASCII spaces, because the indent was counted in bytes.
+    #[test]
+    fn carets_line_up_after_a_wide_indent() {
+        let src = "\u{3000}\u{3000}oops here\n";
+        let start = src.find("here").unwrap();
+        let d = Diag::new(ErrorKind::Name, Span { start, end: start + 4, line: 1 }, "x");
+        assert!(d.render("x.kstar", src).contains("    oops here\n         ^^^^\n"), "{}", d.render("x.kstar", src));
     }
 }

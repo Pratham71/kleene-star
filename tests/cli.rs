@@ -173,6 +173,18 @@ fn new_writes_a_clean_starter_once() {
     assert!(stderr(&again).contains("already exists"));
 }
 
+// Regression: `kstar fmt` ran on the main thread, whose stack (1 MB on
+// Windows) was too small for programs near the nesting limit.
+#[test]
+fn fmt_handles_deep_programs() {
+    let dir = scratch("fmt_deep");
+    let deep = format!("print {}1{}\n", "(".repeat(190), ")".repeat(190));
+    std::fs::write(dir.join("deep.kstar"), &deep).unwrap();
+    let out = kstar(&dir, &["fmt", "--check", "deep.kstar"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    assert!(kstar(&dir, &["check", "deep.kstar"]).status.success());
+}
+
 #[test]
 fn explain_prints_the_documentation() {
     let dir = scratch("explain");

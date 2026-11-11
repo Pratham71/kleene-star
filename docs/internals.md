@@ -377,6 +377,53 @@ cargo test
 - **The command line** (`tests/cli.rs`) runs the real `kstar` binary in a
   scratch folder: several files, folders, `fmt -`, `new`, `explain`, colour,
   `--trace-calls`, and exit codes.
+- **Robustness** (`tests/robustness.rs`): Kleene Star must never crash. A
+  seeded generator produces random token sequences, truncated and mutated
+  copies of every program in the repository, unbalanced brackets, programs
+  nested a hundred thousand deep, huge literals and odd Unicode. Each goes
+  through the lexer, parser, checker, editor queries and formatter, and must
+  end in a result or a clean error; the formatter must also be idempotent.
+- **Properties** (`tests/properties.rs`): facts from the theory, checked on
+  random machines, regexes and grammars by comparing both sides on every
+  word up to a fixed length. The subset construction, eps removal and
+  `reduce` keep the language; minimization is idempotent and unique in size;
+  DFA to regex to DFA, and printing a regex and reading it back, keep the
+  language; De Morgan's laws, `reverse(reverse(L)) = L`, and the meaning of
+  union, difference and concatenation hold; CYK agrees with the PDA built by
+  `to_pda`; and Turing machines always stop within their step limit.
+- **Scale** (`tests/scale.rs`): big inputs with time budgets. The k-th
+  symbol from the end has an NFA of k + 1 states and a DFA of 2^k; a word of
+  a million symbols, in Rust and through a program; long traces; a grammar
+  of sixty variables; `to_regex` of a 32-state DFA.
+
+The random tests use a fixed seed, so they are repeatable. To try other
+inputs, set `KSTAR_SEED`. The heaviest cases are marked `#[ignore]` so that
+`cargo test` stays under a minute; run them in a release build:
+
+```bash
+cargo test --release -- --ignored
+```
+
+```bash
+KSTAR_SEED=12345 cargo test --release --test robustness -- --ignored
+```
+
+### Limits
+
+Every stage walks the program recursively, so the parser refuses nesting
+deeper than 200 levels (`MAX_NESTING`), and the regex parser 500
+(`regex::MAX_DEPTH`), with error E0113 instead of a stack overflow. In a
+debug build each level costs about 20 KB of stack, more than a default
+thread can give, so every entry point (`kstar run`, `check`, `fmt`, the
+REPL and each language-server thread) runs with a 256 MB stack. Only the
+part that is used is ever committed.
+
+A few results can grow exponentially, and are capped rather than allowed to
+run out of memory: `+` in a regex copies what it repeats (so a regex is
+limited to 20 000 nodes, and `(a+)+` is simplified to `a+`), and `to_regex`
+stops past 100 000 nodes with error E0608. State elimination removes the
+state whose removal creates the least, rather than going in a fixed order;
+for a 32-state DFA that took the time from minutes to milliseconds.
 
 After changing an error message on purpose, regenerate the saved outputs and
 read the diff before keeping it:

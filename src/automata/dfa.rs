@@ -77,11 +77,13 @@ impl Dfa {
     /// Unreachable states are kept and numbered last.
     pub fn renamed(&self) -> Dfa {
         let mut order = self.reachable();
-        for s in 0..self.states.len() {
-            if !order.contains(&s) {
-                order.push(s);
-            }
+        // Then the unreachable states. (A `seen` table, not `order.contains`,
+        // which made renaming a big machine take quadratic time.)
+        let mut seen = vec![false; self.states.len()];
+        for &s in &order {
+            seen[s] = true;
         }
+        order.extend((0..self.states.len()).filter(|&s| !seen[s]));
         let names = (0..order.len()).map(|i| format!("q{i}")).collect();
         self.remap(&order, names)
     }

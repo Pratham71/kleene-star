@@ -178,11 +178,18 @@ pub fn is_incomplete(text: &str) -> bool {
     opened > closed
 }
 
-/// Runs `work` on a thread with a large stack. The interpreter is recursive,
-/// so deeply nested Kleene Star calls need more stack than a default thread has.
+/// The stack size for threads that run Kleene Star code: 256 MB, of which
+/// only what is used is ever committed.
+pub const STACK_SIZE: usize = 256 * 1024 * 1024;
+
+/// Runs `work` on a thread with a large stack. Every stage is recursive: the
+/// parser, checker and formatter over the nesting of the program (which
+/// the parser limits to `lang::parser::MAX_NESTING` levels), and the
+/// interpreter over calls (up to 500 deep). A default thread has too little
+/// stack for the deepest programs allowed, especially in a debug build.
 pub fn with_big_stack<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) -> T {
     std::thread::Builder::new()
-        .stack_size(256 * 1024 * 1024)
+        .stack_size(STACK_SIZE)
         .spawn(work)
         .expect("could not start the interpreter thread")
         .join()

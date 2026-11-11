@@ -169,7 +169,17 @@ pub fn dfa_to_nfa(dfa: &Dfa) -> Nfa {
 /// State elimination. Edges are labelled with regexes; states are removed one
 /// at a time, and each removal re-routes the paths that went through it:
 /// `i --a--> k --b--> j` with a loop `c` on `k` becomes `i --a c* b--> j`.
+///
+/// Some languages have only very long regexes (for "the k-th symbol from
+/// the end is 1", state elimination grows exponentially with k), so see
+/// also `dfa_to_regex_within`, which gives up past a size.
 pub fn dfa_to_regex(dfa: &Dfa) -> Regex {
+    dfa_to_regex_within(dfa, usize::MAX).expect("no limit")
+}
+
+/// Like `dfa_to_regex`, but gives up, returning `None`, as soon as a regex
+/// being built has more than `max_size` nodes.
+pub fn dfa_to_regex_within(dfa: &Dfa, max_size: usize) -> Option<Regex> {
     // Fewer states means a much shorter regex, so minimise first.
     let dfa = super::minimize::minimize(dfa);
     let n = dfa.states.len();
@@ -188,7 +198,7 @@ pub fn dfa_to_regex(dfa: &Dfa) -> Regex {
         }
     }
     if !useful[dfa.start] {
-        return Regex::Empty;
+        return Some(Regex::Empty);
     }
 
     // edge[i][j] is the regex on the edge i -> j. Two extra states are added:
@@ -211,8 +221,20 @@ pub fn dfa_to_regex(dfa: &Dfa) -> Regex {
 
     let mut alive: Vec<State> = (0..n).filter(|&s| useful[s]).collect();
     alive.extend([new_start, new_final]);
-    // Eliminate from the highest-numbered state down, so the start goes last.
-    for k in (0..n).rev().filter(|&s| useful[s]) {
+    // Eliminate the states one at a time. The order does not change the
+    // language, but it changes the size of the result enormously: removing
+    // a state with i edges in and j edges out creates up to i * j new paths,
+    // each a copy of the regexes involved. So always remove the state where
+    // that costs least, weighing each edge by the size of its regex.
+    let mut remaining: Vec<State> = (0..n).filter(|&s| useful[s]).collect();
+    while !remaining.is_empty() {
+        let cost = |k: State| {
+            let into: usize = alive.iter().filter(|&&i| i != k && edge[i][k] != Regex::Empty).map(|&i| edge[i][k].size()).sum();
+            let out: usize = alive.iter().filter(|&&j| j != k && edge[k][j] != Regex::Empty).map(|&j| edge[k][j].size()).sum();
+            into.saturating_mul(out).saturating_add(edge[k][k].size())
+        };
+        let (index, &k) = remaining.iter().enumerate().min_by_key(|&(_, &k)| cost(k)).expect("not empty");
+        remaining.swap_remove(index);
         alive.retain(|&s| s != k);
         let looped = Regex::star(edge[k][k].clone());
         for &i in &alive {
@@ -229,10 +251,13 @@ pub fn dfa_to_regex(dfa: &Dfa) -> Regex {
                 );
                 let old = std::mem::replace(&mut edge[i][j], Regex::Empty);
                 edge[i][j] = Regex::alt(old, through);
+                if max_size != usize::MAX && edge[i][j].size() > max_size {
+                    return None;
+                }
             }
         }
     }
-    edge[new_start][new_final].clone()
+    Some(edge[new_start][new_final].clone())
 }
 
 #[cfg(test)]
@@ -295,6 +320,13 @@ mod tests {
     fn regex_of_the_empty_language() {
         let nothing = nfa_to_dfa(&regex_to_nfa(&Regex::Empty, &['0']));
         assert_eq!(dfa_to_regex(&nothing), Regex::Empty);
+    }
+
+    #[test]
+    fn gives_up_past_a_size() {
+        let dfa = nfa_to_dfa(&ends_in_01());
+        assert!(dfa_to_regex_within(&dfa, 3).is_none());
+        assert_eq!(dfa_to_regex_within(&dfa, 1000), Some(dfa_to_regex(&dfa)));
     }
 
     #[test]

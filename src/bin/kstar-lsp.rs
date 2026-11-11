@@ -184,9 +184,18 @@ impl LanguageServer for Backend {
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let (service, socket) =
-        LspService::new(|client| Backend { client, documents: Mutex::new(HashMap::new()) });
-    Server::new(tokio::io::stdin(), tokio::io::stdout(), socket).serve(service).await;
+fn main() {
+    // The parser, checker and formatter are recursive. The nesting limit
+    // keeps them within a few megabytes even in a debug build, which is
+    // more than a default 2 MB thread has, so give every thread plenty.
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .thread_stack_size(kstar::STACK_SIZE)
+        .enable_all()
+        .build()
+        .expect("could not start the language server");
+    runtime.block_on(async {
+        let (service, socket) =
+            LspService::new(|client| Backend { client, documents: Mutex::new(HashMap::new()) });
+        Server::new(tokio::io::stdin(), tokio::io::stdout(), socket).serve(service).await;
+    });
 }

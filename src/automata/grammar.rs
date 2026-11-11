@@ -437,28 +437,44 @@ fn cyk(g: &Grammar, word: &[char]) -> bool {
         return g.rules_for(g.start).any(|r| r.body.is_empty());
     }
     let vars = g.variables.len();
-    let mut table = vec![vec![vec![false; vars]; n]; n];
+    // The rules `A -> B C`, found by their B, so that each step only looks
+    // at the rules that could apply instead of at every rule.
+    let mut by_left: Vec<Vec<(usize, usize)>> = vec![Vec::new(); vars];
+    for rule in &g.rules {
+        if let [Sym::V(b), Sym::V(c)] = rule.body[..] {
+            by_left[b].push((c, rule.head));
+        }
+    }
+    // `has[i][len - 1]` marks the variables that derive the `len` symbols
+    // from position `i`; `list` holds the same as a list, to loop over.
+    let mut has = vec![vec![vec![false; vars]; n]; n];
+    let mut list: Vec<Vec<Vec<usize>>> = vec![vec![Vec::new(); n]; n];
     for (i, &c) in word.iter().enumerate() {
         for rule in &g.rules {
-            if rule.body == [Sym::T(c)] {
-                table[i][0][rule.head] = true;
+            if rule.body == [Sym::T(c)] && !has[i][0][rule.head] {
+                has[i][0][rule.head] = true;
+                list[i][0].push(rule.head);
             }
         }
     }
     for len in 2..=n {
         for i in 0..=n - len {
+            let mut found = Vec::new();
             for split in 1..len {
-                for rule in &g.rules {
-                    if let [Sym::V(b), Sym::V(c)] = rule.body[..] {
-                        if table[i][split - 1][b] && table[i + split][len - split - 1][c] {
-                            table[i][len - 1][rule.head] = true;
+                let (left, right) = (i, i + split);
+                for &b in &list[left][split - 1] {
+                    for &(c, head) in &by_left[b] {
+                        if has[right][len - split - 1][c] && !has[i][len - 1][head] {
+                            has[i][len - 1][head] = true;
+                            found.push(head);
                         }
                     }
                 }
             }
+            list[i][len - 1] = found;
         }
     }
-    table[0][n - 1][g.start]
+    has[0][n - 1][g.start]
 }
 
 impl fmt::Display for Grammar {

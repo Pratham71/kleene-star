@@ -367,14 +367,14 @@ failed is not reported again where it is used.
 
 | Error | Cause |
 |---|---|
-| `SyntaxError` | The text is not a valid program. |
+| `SyntaxError` | The text is not a valid program, or nests more than 200 levels deep (500 in a regex). |
 | `NameError` | A name is unknown, defined twice, or used before its definition has run; a grammar variable with no rules. |
 | `TypeError` | A value of the wrong type, a wrong number of arguments, a function that might not return, or `trace` on something that is not a `Dfa` or `Nfa`. |
 | `MachineError` | A machine breaks a rule: no start state, a DFA that is not total or not deterministic, an eps move in a DFA, a grammar with no rules, a Turing machine with two moves for one state and symbol or a blank in its alphabet. |
 | `AlphabetError` | A symbol outside the alphabet, or two machines over different alphabets. |
 | `MathError` | Modulo by zero, a result too large for an `Int`, or a range that is too large. |
 | `RecursionError` | More than 500 function calls in progress at once. |
-| `LimitError` | A search gave up: a PDA run (50 000 configurations or a stack of 1 000), a derivation (200 000 sentential forms), or a Turing machine still running after 100 000 steps. |
+| `LimitError` | A search gave up: a PDA run (50 000 configurations or a stack of 1 000), a derivation (200 000 sentential forms), or a Turing machine still running after 100 000 steps; or a result too large to build, such as a regex from `to_regex` of more than 100 000 parts. |
 | `ValueError` | A value of the right type that cannot be used, such as a word a grammar cannot derive. |
 | `IOError` | `draw` could not write its file. |
 

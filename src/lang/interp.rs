@@ -26,6 +26,8 @@ const MAX_DEPTH: usize = 500;
 const DERIVE_LIMIT: usize = 200_000;
 /// The largest range `a..b` we are willing to build.
 const MAX_RANGE: i64 = 1_000_000;
+/// The largest regex `to_regex` builds, in nodes of its syntax tree.
+const MAX_REGEX_SIZE: usize = 100_000;
 
 /// One function call in progress.
 struct Frame {
@@ -655,7 +657,19 @@ impl Interp {
             "to_nfa" => Value::nfa(nfa(0)),
             "to_regex" => match &args[0] {
                 Value::Regex(_) => args[0].clone(),
-                _ => Value::Regex(Rc::new(convert::dfa_to_regex(&dfa(0)))),
+                _ => match convert::dfa_to_regex_within(&dfa(0), MAX_REGEX_SIZE) {
+                    Some(regex) => Value::Regex(Rc::new(regex)),
+                    None => {
+                        return Err(self
+                            .error(
+                                ErrorKind::Limit,
+                                spans[0],
+                                format!("the regex for this language would be too large (over {MAX_REGEX_SIZE} parts)"),
+                            )
+                            .code(codes::TOO_LARGE)
+                            .hint("some languages only have very long regexes; keep working with the machine instead"));
+                    }
+                },
             },
             "minimize" => Value::dfa(minimize::minimize(&dfa(0))),
             "reduce" => Value::nfa(minimize::reduce(&nfa(0))),

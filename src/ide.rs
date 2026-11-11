@@ -142,6 +142,7 @@ impl Analysis {
     /// What to show when the mouse rests on `offset`: the span it is about,
     /// and Markdown text.
     pub fn hover(&self, offset: usize) -> Option<(Span, String)> {
+        let offset = char_boundary(&self.src, offset);
         if self.stale {
             return None;
         }
@@ -176,9 +177,11 @@ impl Analysis {
     /// The identifier-like word around `offset`, if any.
     fn word_at(&self, offset: usize) -> Option<Span> {
         let is_word = |c: char| c.is_alphanumeric() || c == '_';
-        let bytes = &self.src;
-        let start = bytes[..offset.min(bytes.len())].rfind(|c: char| !is_word(c)).map_or(0, |i| i + 1);
-        let end = bytes[offset.min(bytes.len())..].find(|c: char| !is_word(c)).map_or(bytes.len(), |i| offset + i);
+        let offset = char_boundary(&self.src, offset);
+        let before = self.src[..offset].char_indices().rev().find(|&(_, c)| !is_word(c));
+        // Just after the character that ends the word, however wide it is.
+        let start = before.map_or(0, |(i, c)| i + c.len_utf8());
+        let end = self.src[offset..].find(|c: char| !is_word(c)).map_or(self.src.len(), |i| offset + i);
         (start < end).then(|| Span { start, end, line: self.src[..start].matches('\n').count() + 1 })
     }
 
@@ -186,6 +189,7 @@ impl Analysis {
 
     /// What could be typed at `offset`.
     pub fn completions(&self, offset: usize) -> Vec<Completion> {
+        let offset = char_boundary(&self.src, offset);
         let inside = |(start, end): (usize, usize)| start <= offset && offset <= end;
         let mut out: Vec<Completion> = Vec::new();
         let push = |out: &mut Vec<Completion>, c: Completion| {
@@ -252,7 +256,7 @@ impl Analysis {
     /// cursor is in. This reads the tokens before the cursor rather than the
     /// syntax tree, so it works while the call is still being typed.
     pub fn signature_help(&self, offset: usize) -> Option<SignatureHelp> {
-        let offset = offset.min(self.src.len());
+        let offset = char_boundary(&self.src, offset);
         let tokens = lex(&self.src, 0, 1).or_else(|_| lex(&self.src[..offset], 0, 1)).ok()?;
         // Open brackets before the cursor; for `(` after a name, the name
         // and how many commas have been passed.
@@ -324,9 +328,19 @@ pub fn offset_at(src: &str, line: u32, character: u32) -> usize {
     src.len()
 }
 
+/// `offset`, moved back to the start of the character it is in, and no
+/// further than the end of `src`. Offsets from outside may be anywhere.
+fn char_boundary(src: &str, offset: usize) -> usize {
+    let mut offset = offset.min(src.len());
+    while !src.is_char_boundary(offset) {
+        offset -= 1;
+    }
+    offset
+}
+
 /// The LSP position (line from 0, UTF-16 character) of a byte offset.
 pub fn position_of(src: &str, offset: usize) -> (u32, u32) {
-    let offset = offset.min(src.len());
+    let offset = char_boundary(src, offset);
     let line_start = src[..offset].rfind('\n').map_or(0, |i| i + 1);
     let line = src[..line_start].matches('\n').count();
     let character: usize = src[line_start..offset].chars().map(char::len_utf16).sum();
@@ -498,5 +512,19 @@ print Even accepts \"00\", count
         assert_eq!(offset_at(src, 1, 13), offset);
         assert_eq!(offset_at(src, 0, 99), at(src, "\n", 0, 0));
         assert_eq!(offset_at(src, 9, 0), src.len());
+    }
+
+    // Regression: offsets inside a character, or just after an emoji, made
+    // hover, signature help and positions panic.
+    #[test]
+    fn offsets_inside_characters_are_safe() {
+        let src = "let x = \"\u{1F600}\"\nprint len(\u{1F600}x)";
+        let a = Analysis::new(src);
+        for offset in 0..=src.len() + 2 {
+            let _ = a.hover(offset);
+            let _ = a.signature_help(offset);
+            let _ = a.completions(offset);
+            let _ = position_of(src, offset);
+        }
     }
 }

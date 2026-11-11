@@ -270,6 +270,16 @@ and refuses to save anything that would mean something different. Seeing
 this error means `kstar fmt` has a bug. The file is left alone; please
 report the bug together with the file.
 
+## E0113: Nested too deeply
+
+Expressions and blocks may nest at most 200 levels deep: parentheses inside
+parentheses, `if` inside `if`, or a long chain such as `a + b + c + ...`,
+where each operator counts as a level. Regexes have a limit of their own,
+500 levels, where each symbol in a row counts. Every part of Kleene Star
+walks the program recursively, and the limit turns what would be a crash
+into this error. Real programs stay far below it; when one does not, split
+it into pieces with `let` or a function.
+
 ## E0200: A name that is not defined
 
 The name is used but never defined, or defined further down the file.
@@ -1033,6 +1043,39 @@ ValueError[E0606]: the grammar cannot derive "aab"
 `draw` writes a `.dot` file (and, with Graphviz installed, an `.svg`) into
 the current folder or the one given with `kstar run --out`. The folder must
 exist and be writable.
+
+## E0608: A result too large to build
+
+`to_regex` turns a machine into a regex by state elimination, and for some
+languages every regex is very long: for "the 7th symbol from the end is 1"
+it runs to millions of symbols. Rather than run out of memory, it stops
+past 100000 parts of the regex. Keep working with the machine itself; every
+operation that takes a regex also takes a DFA or NFA.
+
+```kstar-error
+alphabet B = {0, 1}
+fn kth_from_end(k: Int) -> Nfa {
+    return nfa over B {
+        start  q[0]
+        accept q[k]
+        q[0] --0,1--> q[0]
+        q[0] --1--> q[1]
+        for i in 1..k {
+            q[i] --0,1--> q[i + 1]
+        }
+    }
+}
+print to_regex(kth_from_end(7))
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 13, in <main>
+    print to_regex(kth_from_end(7))
+                   ^^^^^^^^^^^^^^^
+LimitError[E0608]: the regex for this language would be too large (over 100000 parts)
+  hint: some languages only have very long regexes; keep working with the machine instead
+```
 
 ## W0100: A state that can never be reached
 

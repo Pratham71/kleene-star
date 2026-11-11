@@ -51,6 +51,35 @@ impl Regex {
         }
     }
 
+    /// `a+`, one or more: `a a*`. There is no separate node for it, so `a`
+    /// is copied; but `(a+)+` is just `a+` and `(a*)+` is `a*`, so repeated
+    /// `+` does not double the size each time.
+    pub fn plus(a: Regex) -> Regex {
+        match a {
+            Star(_) | Empty | Eps => Regex::star(a),
+            Concat(ref x, ref y) if matches!(&**y, Star(z) if z == x) => a,
+            a => Regex::concat(a.clone(), Regex::star(a)),
+        }
+    }
+
+    /// `a?`, zero or one: `a|()`. `(a+)?` is `a*`.
+    pub fn optional(a: Regex) -> Regex {
+        match a {
+            Star(_) | Eps => a,
+            Concat(ref x, ref y) if matches!(&**y, Star(z) if z == x) => Regex::star(*x.clone()),
+            a => Regex::alt(a, Eps),
+        }
+    }
+
+    /// The number of nodes in the tree.
+    pub fn size(&self) -> usize {
+        match self {
+            Empty | Eps | Any | Sym(_) => 1,
+            Star(a) => 1 + a.size(),
+            Concat(a, b) | Alt(a, b) => 1 + a.size() + b.size(),
+        }
+    }
+
     /// Collects every symbol written in the regex.
     pub fn symbols(&self, out: &mut BTreeSet<char>) {
         match self {
@@ -122,9 +151,17 @@ impl fmt::Display for Regex {
 /// A parse failure: byte offset into the regex text, and a message.
 pub type ParseError = (usize, String);
 
+/// How deeply a regex may nest, counting each symbol of a concatenation and
+/// each alternative as a level, since they nest in the tree. The algorithms
+/// on regexes are recursive, so this keeps them from overflowing the stack.
+pub const MAX_DEPTH: usize = 500;
+/// The most nodes a parsed regex may have. `+` copies what it repeats, so
+/// without a limit a short regex could become enormous.
+pub const MAX_SIZE: usize = 20_000;
+
 /// Parses regex source text (without the surrounding slashes).
 pub fn parse(src: &str) -> Result<Regex, ParseError> {
-    let mut p = Parser { chars: src.char_indices().collect(), pos: 0, end: src.len() };
+    let mut p = Parser { chars: src.char_indices().collect(), pos: 0, end: src.len(), depth: 0 };
     let regex = p.alt()?;
     match p.peek() {
         None => Ok(regex),
@@ -137,6 +174,8 @@ struct Parser {
     chars: Vec<(usize, char)>,
     pos: usize,
     end: usize,
+    /// How deeply the part being parsed is nested; see `MAX_DEPTH`.
+    depth: usize,
 }
 
 impl Parser {
@@ -148,25 +187,41 @@ impl Parser {
         self.chars.get(self.pos).copied()
     }
 
+    /// Goes one level deeper, failing past `MAX_DEPTH`.
+    fn nest(&mut self) -> Result<(), ParseError> {
+        self.depth += 1;
+        if self.depth > MAX_DEPTH {
+            let at = self.chars.get(self.pos).map_or(self.end, |&(at, _)| at);
+            return Err((at, format!("this regex is too long or nested too deeply (the limit is {MAX_DEPTH} levels)")));
+        }
+        Ok(())
+    }
+
     // alt := concat ('|' concat)*
     fn alt(&mut self) -> Result<Regex, ParseError> {
+        let outer = self.depth;
         let mut left = self.concat()?;
         while let Some((_, '|')) = self.peek() {
             self.pos += 1;
+            self.nest()?;
             left = Regex::alt(left, self.concat()?);
         }
+        self.depth = outer;
         Ok(left)
     }
 
     // concat := postfix*        (nothing at all means the empty string)
     fn concat(&mut self) -> Result<Regex, ParseError> {
+        let outer = self.depth;
         let mut left = Eps;
         while let Some((_, c)) = self.peek() {
             if c == '|' || c == ')' {
                 break;
             }
+            self.nest()?;
             left = Regex::concat(left, self.postfix()?);
         }
+        self.depth = outer;
         Ok(left)
     }
 
@@ -174,13 +229,19 @@ impl Parser {
     fn postfix(&mut self) -> Result<Regex, ParseError> {
         let mut inner = self.atom()?;
         loop {
-            inner = match self.peek() {
-                Some((_, '*')) => Regex::star(inner),
-                Some((_, '+')) => Regex::concat(inner.clone(), Regex::star(inner)),
-                Some((_, '?')) => Regex::alt(inner, Eps),
+            let at = match self.peek() {
+                Some((at, '*' | '+' | '?')) => at,
                 _ => return Ok(inner),
             };
+            inner = match self.chars[self.pos].1 {
+                '*' => Regex::star(inner),
+                '+' => Regex::plus(inner),
+                _ => Regex::optional(inner),
+            };
             self.pos += 1;
+            if inner.size() > MAX_SIZE {
+                return Err((at, format!("this regex is too large (more than {MAX_SIZE} parts once `+` is expanded)")));
+            }
         }
     }
 
@@ -190,7 +251,9 @@ impl Parser {
         self.pos += 1;
         match c {
             '(' => {
+                self.nest()?;
                 let inner = self.alt()?;
+                self.depth -= 1;
                 match self.peek() {
                     Some((_, ')')) => {
                         self.pos += 1;
@@ -265,5 +328,33 @@ mod tests {
         let mut set = BTreeSet::new();
         parse("(0|1)*a").unwrap().symbols(&mut set);
         assert_eq!(set, BTreeSet::from(['0', '1', 'a']));
+    }
+
+    // Regression: each `+` used to copy everything before it, so 30 of them
+    // made a regex of a billion nodes and the program hung.
+    #[test]
+    fn repeated_plus_does_not_blow_up() {
+        let r = parse(&format!("a{}", "+".repeat(40))).unwrap();
+        assert_eq!(r.to_string(), "aa*");
+        let r = parse(&format!("{}a{}", "(".repeat(40), ")+".repeat(40))).unwrap();
+        assert_eq!(r.to_string(), "aa*");
+        assert_eq!(parse("(ab)+?").unwrap().to_string(), "(ab)*");
+        assert_eq!(parse("a*+").unwrap().to_string(), "a*");
+        // Growth that cannot be avoided is refused, not attempted.
+        let doubling = format!("{}x{}", "(".repeat(30), "y)+".repeat(30));
+        assert!(parse(&doubling).unwrap_err().1.contains("too large"));
+    }
+
+    // Regression: a regex nested thousands deep overflowed the stack.
+    #[test]
+    fn deep_regexes_are_refused() {
+        crate::with_big_stack(deep_regex_cases);
+    }
+
+    fn deep_regex_cases() {
+        let deep = format!("{}a{}", "(".repeat(MAX_DEPTH + 1), ")".repeat(MAX_DEPTH + 1));
+        assert!(parse(&deep).unwrap_err().1.contains("nested too deeply"));
+        assert!(parse(&"a".repeat(MAX_DEPTH + 1)).is_err());
+        assert!(parse(&"a".repeat(MAX_DEPTH - 1)).is_ok());
     }
 }
