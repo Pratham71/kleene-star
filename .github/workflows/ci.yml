@@ -1,6 +1,7 @@
 # Runs the tests and clippy on Windows, Linux and macOS for every push and
 # pull request, so platform differences (line endings, paths, console
-# encoding) are caught before they reach main.
+# encoding) are caught before they reach main, then tests and packages the
+# VS Code extension. (This workflow is currently disabled on GitHub.)
 name: CI
 
 on:
@@ -40,3 +41,30 @@ jobs:
       - name: examples are formatted
         shell: bash
         run: cargo run --quiet -- fmt --check examples
+
+  vscode:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # The extension's tests use the debug `kstar` and `kstar-lsp`.
+      - name: build kstar and kstar-lsp
+        run: cargo build
+      - name: npm ci
+        working-directory: editors/vscode
+        run: npm ci
+      - name: npm test
+        working-directory: editors/vscode
+        run: npm test
+      - name: package the .vsix
+        working-directory: editors/vscode
+        run: npx vsce package --skip-license
+      - uses: actions/upload-artifact@v7
+        with:
+          name: kleene-star-vsix
+          path: editors/vscode/*.vsix

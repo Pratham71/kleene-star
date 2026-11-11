@@ -309,6 +309,19 @@ tested directly, without an editor.
 open file, converts between LSP positions (UTF-16 columns) and offsets, and
 publishes the first error as a diagnostic.
 
+### The VS Code extension
+
+`editors/vscode` is a thin client. `extension.js` finds `kstar-lsp` and
+`kstar` (a setting, the PATH, or the usual install folders), starts the
+server with `vscode-languageclient`, and runs `kstar run`, `check` or
+`trace` for its commands, showing the output in a panel. Highlighting is a
+TextMate grammar (`syntaxes/kstar.tmLanguage.json`); machines and grammars
+are regions from their header to the closing `}`, so states, labels, rule
+heads and terminals can be coloured differently from ordinary code. Its
+tests (`npm test`) tokenize code with VS Code's own TextMate engine, check
+every snippet with `kstar check`, and drive the real server over the
+protocol.
+
 ## 11. The formatter
 
 `src/lang/format.rs`

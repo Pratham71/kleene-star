@@ -80,6 +80,8 @@ impl LanguageServer for Backend {
                     trigger_characters: Some(vec!["(".into(), ",".into()]),
                     ..Default::default()
                 }),
+                document_formatting_provider: Some(OneOf::Left(true)),
+                document_symbol_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             // Positions are in UTF-16 units, the protocol's default.
@@ -162,6 +164,27 @@ impl LanguageServer for Backend {
         }))
     }
 
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let documents = self.documents.lock().expect("no thread panicked holding the lock");
+        let Some(analysis) = documents.get(&params.text_document.uri) else { return Ok(None) };
+        // One edit replacing the whole text: simple, and `kstar fmt` already
+        // guarantees the meaning is unchanged.
+        Ok(analysis.formatted().map(|text| {
+            let end = ide::position_of(&analysis.src, analysis.src.len());
+            vec![TextEdit::new(Range::new(Position::new(0, 0), Position::new(end.0, end.1)), text)]
+        }))
+    }
+
+    async fn document_symbol(&self, params: DocumentSymbolParams) -> Result<Option<DocumentSymbolResponse>> {
+        let documents = self.documents.lock().expect("no thread panicked holding the lock");
+        let Some(analysis) = documents.get(&params.text_document.uri) else { return Ok(None) };
+        if analysis.stale {
+            return Ok(None);
+        }
+        let symbols = analysis.outline.iter().map(|s| document_symbol(&analysis.src, s)).collect();
+        Ok(Some(DocumentSymbolResponse::Nested(symbols)))
+    }
+
     async fn signature_help(&self, params: SignatureHelpParams) -> Result<Option<SignatureHelp>> {
         Ok(self.with_document(&params.text_document_position_params, |a, offset| {
             let help = a.signature_help(offset)?;
@@ -181,6 +204,27 @@ impl LanguageServer for Backend {
                 active_parameter: Some(help.active as u32),
             })
         }))
+    }
+}
+
+#[allow(deprecated)] // `deprecated` is a required field, but itself deprecated
+fn document_symbol(src: &str, symbol: &ide::Symbol) -> DocumentSymbol {
+    DocumentSymbol {
+        name: symbol.name.clone(),
+        detail: (!symbol.detail.is_empty()).then(|| symbol.detail.clone()),
+        kind: match symbol.kind {
+            ide::SymbolKind::Alphabet => SymbolKind::ENUM,
+            ide::SymbolKind::Machine => SymbolKind::CLASS,
+            ide::SymbolKind::Grammar => SymbolKind::STRUCT,
+            ide::SymbolKind::Function => SymbolKind::FUNCTION,
+            ide::SymbolKind::Value => SymbolKind::VARIABLE,
+            ide::SymbolKind::Part => SymbolKind::ENUM_MEMBER,
+        },
+        tags: None,
+        deprecated: None,
+        range: range(src, symbol.span),
+        selection_range: range(src, symbol.name_span),
+        children: Some(symbol.children.iter().map(|c| document_symbol(src, c)).collect()),
     }
 }
 

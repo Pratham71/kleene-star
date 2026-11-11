@@ -68,11 +68,18 @@ through a machine, and Tab completes names.
 hover information (types, signatures, built-in documentation, which states
 are start or accepting), go to definition, find all references, completion
 (keywords, built-ins, names in scope, and the states and symbols of the
-machine you are in), and signature help. It uses the same lexer, parser and
-checker as `kstar`, so it reports exactly the errors and warnings
-`kstar check` would.
+machine you are in), signature help, an outline of the file, and formatting
+(the same as `kstar fmt`). It uses the same lexer, parser and checker as
+`kstar`, so it reports exactly the errors and warnings `kstar check` would.
 
-For VS Code, see [`editors/vscode`](../../editors/vscode/README.md).
+For VS Code there is an extension in [`editors/vscode`](../../editors/vscode/README.md):
+highlighting, snippets for every kind of block, the language server's
+features, and commands to run, check and trace the current file. Install
+its `.vsix` with `code --install-extension kleene-star-0.2.0.vsix`.
+
+`kstar trace file.kstar M 0101` runs a file without showing its output and
+then traces machine `M` on `0101`; the extension's *Trace a Machine...*
+command uses it.
 
 ## Formatting with `kstar fmt`
 

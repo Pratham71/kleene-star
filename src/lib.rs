@@ -56,6 +56,12 @@ impl Session {
         self.color = enabled;
     }
 
+    /// Sends what the program prints somewhere else from now on, for
+    /// example to `std::io::sink()` to run a file quietly.
+    pub fn set_output(&mut self, out: Box<dyn Write>) {
+        self.interp.set_output(out);
+    }
+
     /// Makes every function call and return print a line, with its
     /// arguments and result.
     pub fn trace_calls(&mut self, enabled: bool) {

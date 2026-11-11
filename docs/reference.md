@@ -561,6 +561,7 @@ Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 | `kstar fmt --check <files>...` | Lists the files that are not formatted, changing nothing. |
 | `kstar fmt -` | Formats standard input to standard output, for editors and scripts. |
 | `kstar new <name>` | Writes `<name>.kstar`, a small working program to start from. Never overwrites. |
+| `kstar trace <file> <M> <word>` | Runs the file without showing its output, then traces machine `M` (any expression) on `word`. |
 | `kstar explain <code>` | Explains an error or warning code; `--list` lists them all. |
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
 | `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |

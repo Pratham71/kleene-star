@@ -59,12 +59,42 @@ pub struct SignatureHelp {
     pub doc: Option<String>,
 }
 
+/// What kind of thing an outline entry is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SymbolKind {
+    Alphabet,
+    Machine,
+    Grammar,
+    Function,
+    Value,
+    /// A state inside a machine, or a variable inside a grammar.
+    Part,
+}
+
+/// One entry of a file's outline, for the editor's outline view and
+/// "go to symbol".
+#[derive(Debug, Clone, PartialEq)]
+pub struct Symbol {
+    pub name: String,
+    pub kind: SymbolKind,
+    /// A short description, like `dfa over B`.
+    pub detail: String,
+    /// The whole definition.
+    pub span: Span,
+    /// Just the name.
+    pub name_span: Span,
+    /// States of a machine, variables of a grammar.
+    pub children: Vec<Symbol>,
+}
+
 /// Everything known about one version of a file.
 pub struct Analysis {
     pub src: String,
     /// Every error, then (only if there are no errors) every warning.
     pub problems: Vec<Problem>,
     pub index: Index,
+    /// The top-level definitions, in order.
+    pub outline: Vec<Symbol>,
     /// True when the text did not parse and `index` was carried over from an
     /// earlier version. Its names are still useful for completion, but its
     /// positions no longer match the text.
@@ -80,7 +110,14 @@ impl Analysis {
         let mut checker = Checker::new(false);
         let checked = crate::lang::check_source(&src, 0, 1, false, &mut checker);
         let problems = checked.errors.into_iter().chain(checked.warnings).map(Problem::from).collect();
-        Analysis { src, problems, index: checker.index, stale: false }
+        let outline = outline(&checked.program, &checker.index);
+        Analysis { src, problems, index: checker.index, outline, stale: false }
+    }
+
+    /// The file in the standard style, as `kstar fmt` writes it, or `None`
+    /// if it does not parse (or is already formatted).
+    pub fn formatted(&self) -> Option<String> {
+        crate::format_program("<editor>", &self.src).ok().filter(|f| *f != self.src)
     }
 
     /// The errors alone, without the warnings.
@@ -328,6 +365,72 @@ pub fn offset_at(src: &str, line: u32, character: u32) -> usize {
     src.len()
 }
 
+/// The outline of a program: its top-level definitions, with the states of
+/// each machine and the variables of each grammar inside them.
+fn outline(program: &[crate::lang::ast::Stmt], index: &Index) -> Vec<Symbol> {
+    use crate::lang::ast::StmtKind;
+    // The states (or grammar variables) defined inside `body`.
+    let parts = |body: Span, kind: DefKind| -> Vec<Symbol> {
+        index
+            .defs
+            .iter()
+            .filter(|d| d.kind == kind && body.start <= d.span.start && d.span.end <= body.end)
+            .map(|d| Symbol {
+                name: d.name.clone(),
+                kind: SymbolKind::Part,
+                detail: String::new(),
+                span: d.span,
+                name_span: d.span,
+                children: Vec::new(),
+            })
+            .collect()
+    };
+    let symbol = |name: &crate::lang::ast::Name, kind, detail: String, span, children| Symbol {
+        name: name.text.clone(),
+        kind,
+        detail,
+        span,
+        name_span: name.span,
+        children,
+    };
+    program
+        .iter()
+        .filter_map(|stmt| {
+            Some(match &stmt.kind {
+                StmtKind::Alphabet { name, symbols } => {
+                    let shown: Vec<String> = symbols.iter().map(|(c, _)| c.to_string()).collect();
+                    symbol(name, SymbolKind::Alphabet, format!("{{{}}}", shown.join(", ")), stmt.span, Vec::new())
+                }
+                StmtKind::MachineDef { name, machine } => symbol(
+                    name,
+                    SymbolKind::Machine,
+                    format!("{} over {}", machine.kind.keyword(), machine.alphabet.text),
+                    stmt.span,
+                    parts(machine.body, DefKind::State),
+                ),
+                StmtKind::GrammarDef { name, grammar } => symbol(
+                    name,
+                    SymbolKind::Grammar,
+                    format!("grammar over {}", grammar.alphabet.text),
+                    stmt.span,
+                    parts(grammar.body, DefKind::GrammarVariable),
+                ),
+                StmtKind::Fn(f) => {
+                    let params: Vec<String> = f.params.iter().map(|(n, ty)| format!("{}: {ty}", n.text)).collect();
+                    let detail = format!("({}) -> {}", params.join(", "), f.ret);
+                    symbol(&f.name, SymbolKind::Function, detail, stmt.span, Vec::new())
+                }
+                StmtKind::Let { name, .. } => {
+                    let ty = index.defs.iter().find(|d| d.span == name.span).and_then(|d| d.ty.clone());
+                    let detail = ty.map(|t| t.to_string()).unwrap_or_default();
+                    symbol(name, SymbolKind::Value, detail, stmt.span, Vec::new())
+                }
+                _ => return None,
+            })
+        })
+        .collect()
+}
+
 /// `offset`, moved back to the start of the character it is in, and no
 /// further than the end of `src`. Offsets from outside may be anywhere.
 fn char_boundary(src: &str, offset: usize) -> usize {
@@ -526,5 +629,30 @@ print Even accepts \"00\", count
             let _ = a.completions(offset);
             let _ = position_of(src, offset);
         }
+    }
+
+    #[test]
+    fn outline_lists_definitions_with_their_parts() {
+        let a = Analysis::new(PROGRAM);
+        let names: Vec<(&str, SymbolKind)> = a.outline.iter().map(|s| (s.name.as_str(), s.kind)).collect();
+        assert_eq!(
+            names,
+            [("B", SymbolKind::Alphabet), ("Even", SymbolKind::Machine), ("twice", SymbolKind::Function), ("count", SymbolKind::Value)]
+        );
+        let even = &a.outline[1];
+        assert_eq!(even.detail, "dfa over B");
+        let states: Vec<&str> = even.children.iter().map(|s| s.name.as_str()).collect();
+        assert_eq!(states, ["even", "odd"]);
+        assert!(text(PROGRAM, even.span).starts_with("dfa Even over B {") && text(PROGRAM, even.span).ends_with('}'));
+        assert_eq!(text(PROGRAM, even.name_span), "Even");
+        assert_eq!(a.outline[2].detail, "(n: Int) -> Int");
+        assert_eq!(a.outline[3].detail, "Int");
+    }
+
+    #[test]
+    fn formatting() {
+        assert_eq!(Analysis::new(PROGRAM).formatted(), None, "already formatted");
+        assert_eq!(Analysis::new("let x=1\nprint   x\n").formatted().as_deref(), Some("let x = 1\nprint x\n"));
+        assert_eq!(Analysis::new("let x = (\n").formatted(), None, "does not parse");
     }
 }

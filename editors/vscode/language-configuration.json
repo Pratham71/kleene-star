@@ -13,14 +13,23 @@
     { "open": "[", "close": "]" },
     { "open": "\"", "close": "\"", "notIn": ["string", "comment"] }
   ],
+  "autoCloseBefore": ";:.,=}])> \n\t",
   "surroundingPairs": [
     ["{", "}"],
     ["(", ")"],
     ["[", "]"],
-    ["\"", "\""]
+    ["\"", "\""],
+    ["/", "/"]
   ],
+  "folding": {
+    "markers": {
+      "start": "^\\s*#\\s*region\\b",
+      "end": "^\\s*#\\s*endregion\\b"
+    }
+  },
+  "wordPattern": "[A-Za-z_][A-Za-z0-9_]*|-?\\d+",
   "indentationRules": {
-    "increaseIndentPattern": "\\{[^}]*$",
+    "increaseIndentPattern": "\\{[^}\"#]*(#.*)?$",
     "decreaseIndentPattern": "^\\s*\\}"
   }
 }

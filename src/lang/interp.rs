@@ -90,6 +90,11 @@ impl Interp {
         }
     }
 
+    /// Sends what the program prints somewhere else from now on.
+    pub fn set_output(&mut self, out: Box<dyn Write>) {
+        self.out = out;
+    }
+
     /// Runs a program (or, in the REPL, one more piece of it).
     pub fn run(&mut self, program: &[Stmt], file: &str, src: &str) -> Run<()> {
         self.file = file.to_string();

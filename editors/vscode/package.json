@@ -1,15 +1,21 @@
 {
   "name": "kleene-star",
   "displayName": "Kleene Star",
-  "description": "Highlighting, errors, hover, go to definition and completion for Kleene Star (.kstar) files.",
+  "description": "Kleene Star (.kstar) files: highlighting, snippets, errors and warnings as you type, hover, go to definition, outline, formatting, and commands to run, check and trace.",
   "version": "0.2.0",
   "publisher": "kleene-star",
   "private": true,
   "license": "UNLICENSED",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Pratham71/kleene-star"
+  },
   "engines": {
     "vscode": "^1.91.0"
   },
-  "categories": ["Programming Languages"],
+  "categories": ["Programming Languages", "Snippets", "Formatters"],
+  "keywords": ["automata", "dfa", "nfa", "regex", "theory of computation"],
   "main": "./extension.js",
   "activationEvents": [],
   "contributes": {
@@ -18,7 +24,11 @@
         "id": "kstar",
         "aliases": ["Kleene Star", "kstar"],
         "extensions": [".kstar"],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/kstar-file.svg",
+          "dark": "./images/kstar-file.svg"
+        }
       }
     ],
     "grammars": [
@@ -28,18 +38,86 @@
         "path": "./syntaxes/kstar.tmLanguage.json"
       }
     ],
+    "snippets": [
+      {
+        "language": "kstar",
+        "path": "./snippets/kstar.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "kstar.run",
+        "title": "Run File",
+        "category": "Kleene Star",
+        "icon": "$(play)"
+      },
+      {
+        "command": "kstar.check",
+        "title": "Check File",
+        "category": "Kleene Star",
+        "icon": "$(check)"
+      },
+      {
+        "command": "kstar.trace",
+        "title": "Trace a Machine...",
+        "category": "Kleene Star",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "kstar.format",
+        "title": "Format File",
+        "category": "Kleene Star"
+      },
+      {
+        "command": "kstar.restartServer",
+        "title": "Restart Language Server",
+        "category": "Kleene Star"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        { "command": "kstar.run", "when": "editorLangId == kstar", "group": "navigation@1" },
+        { "command": "kstar.check", "when": "editorLangId == kstar", "group": "navigation@2" },
+        { "command": "kstar.trace", "when": "editorLangId == kstar", "group": "navigation@3" }
+      ],
+      "commandPalette": [
+        { "command": "kstar.run", "when": "editorLangId == kstar" },
+        { "command": "kstar.check", "when": "editorLangId == kstar" },
+        { "command": "kstar.trace", "when": "editorLangId == kstar" },
+        { "command": "kstar.format", "when": "editorLangId == kstar" }
+      ]
+    },
     "configuration": {
       "title": "Kleene Star",
       "properties": {
         "kstar.serverPath": {
           "type": "string",
-          "default": "kstar-lsp",
-          "description": "The kstar-lsp program to run. The default finds it on your PATH; give a full path if it is somewhere else."
+          "default": "",
+          "markdownDescription": "Full path to the `kstar-lsp` language server. Leave empty to look on your PATH and in the usual install folders."
+        },
+        "kstar.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Full path to the `kstar` command, used by **Run**, **Check** and **Trace**. Leave empty to look on your PATH and in the usual install folders."
         }
+      }
+    },
+    "configurationDefaults": {
+      "[kstar]": {
+        "editor.defaultFormatter": "kleene-star.kleene-star"
       }
     }
   },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "package": "vsce package --skip-license"
+  },
   "dependencies": {
     "vscode-languageclient": "^11.0.0"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^4.1.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   }
 }

@@ -3,75 +3,239 @@
   "name": "Kleene Star",
   "scopeName": "source.kstar",
   "fileTypes": ["kstar"],
-  "patterns": [
-    { "include": "#comment" },
-    { "include": "#string" },
-    { "include": "#regex" },
-    { "include": "#transition" },
-    { "include": "#keyword" },
-    { "include": "#type" },
-    { "include": "#builtin" },
-    { "include": "#number" },
-    { "include": "#operator" }
-  ],
+  "patterns": [{ "include": "#statements" }],
   "repository": {
+    "statements": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#machine" },
+        { "include": "#grammar" },
+        { "include": "#alphabet" },
+        { "include": "#function" },
+        { "include": "#expressions" }
+      ]
+    },
+
     "comment": {
       "match": "#.*$",
       "name": "comment.line.number-sign.kstar"
     },
+
+    "machine": {
+      "comment": "`dfa Name over B { ... }`, also `nfa`, `pda` and `tm`, with or without a name.",
+      "begin": "\\b(dfa|nfa|pda|tm)\\b(?:\\s+([A-Za-z_]\\w*))?\\s+(over)\\s+([A-Za-z_]\\w*)\\s*(\\{)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.machine.kstar" },
+        "2": { "name": "entity.name.type.machine.kstar" },
+        "3": { "name": "keyword.other.over.kstar" },
+        "4": { "name": "entity.name.type.alphabet.kstar" },
+        "5": { "name": "punctuation.section.block.begin.kstar" }
+      },
+      "end": "\\}",
+      "endCaptures": { "0": { "name": "punctuation.section.block.end.kstar" } },
+      "name": "meta.machine.kstar",
+      "patterns": [{ "include": "#machine-body" }]
+    },
+    "machine-body": {
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "comment": "`start q0`, `accept q1, q2`, `reject r`",
+          "match": "\\b(start|accept|reject)\\b",
+          "name": "keyword.control.state-role.kstar"
+        },
+        {
+          "comment": "`for i in 0..n { ... }` generating items",
+          "begin": "\\b(for)\\s+([A-Za-z_]\\w*)\\s+(in)\\b",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.kstar" },
+            "2": { "name": "variable.other.kstar" },
+            "3": { "name": "keyword.control.kstar" }
+          },
+          "end": "\\}",
+          "endCaptures": { "0": { "name": "punctuation.section.block.end.kstar" } },
+          "patterns": [
+            { "match": "\\{", "name": "punctuation.section.block.begin.kstar" },
+            { "include": "#machine-body" },
+            { "include": "#expressions" }
+          ]
+        },
+        { "include": "#transition" },
+        { "include": "#state" }
+      ]
+    },
+    "state": {
+      "comment": "A state name, or a computed one: `q[i + 1]`.",
+      "patterns": [
+        {
+          "begin": "\\b([A-Za-z_]\\w*)(\\[)",
+          "beginCaptures": {
+            "1": { "name": "variable.other.state.kstar" },
+            "2": { "name": "punctuation.definition.index.begin.kstar" }
+          },
+          "end": "\\]",
+          "endCaptures": { "0": { "name": "punctuation.definition.index.end.kstar" } },
+          "patterns": [{ "include": "#expressions" }]
+        },
+        { "match": "\\b[A-Za-z_]\\w*\\b", "name": "variable.other.state.kstar" }
+      ]
+    },
+    "transition": {
+      "comment": "The label between `--` and `-->`: symbols for a DFA or NFA (`0,1`), `read, pop/push` for a PDA (`a, Z/AZ`), `read/write,move` for a Turing machine (`0/1,R`).",
+      "begin": "(?<!-)--(?![->])",
+      "beginCaptures": { "0": { "name": "keyword.operator.transition.begin.kstar" } },
+      "end": "-->",
+      "endCaptures": { "0": { "name": "keyword.operator.transition.end.kstar" } },
+      "contentName": "meta.transition.label.kstar",
+      "patterns": [
+        { "match": "\\beps\\b", "name": "constant.language.eps.kstar" },
+        { "match": "(?<=,)\\s*\\b([LRS])\\b(?=\\s*-->)", "captures": { "1": { "name": "keyword.other.direction.kstar" } } },
+        { "match": "/", "name": "keyword.operator.stack.kstar" },
+        { "match": ",", "name": "punctuation.separator.label.kstar" },
+        { "match": "_", "name": "constant.character.blank.kstar" },
+        { "match": "[^\\s,/]", "name": "constant.character.symbol.kstar" }
+      ]
+    },
+
+    "grammar": {
+      "comment": "`grammar G over B { S -> a S b | eps }`",
+      "begin": "\\b(grammar)\\b(?:\\s+([A-Za-z_]\\w*))?\\s+(over)\\s+([A-Za-z_]\\w*)\\s*(\\{)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.grammar.kstar" },
+        "2": { "name": "entity.name.type.grammar.kstar" },
+        "3": { "name": "keyword.other.over.kstar" },
+        "4": { "name": "entity.name.type.alphabet.kstar" },
+        "5": { "name": "punctuation.section.block.begin.kstar" }
+      },
+      "end": "\\}",
+      "endCaptures": { "0": { "name": "punctuation.section.block.end.kstar" } },
+      "name": "meta.grammar.kstar",
+      "patterns": [
+        { "include": "#comment" },
+        {
+          "match": "^\\s*([A-Z]\\w*)\\s*(->)",
+          "captures": {
+            "1": { "name": "entity.name.function.rule.kstar" },
+            "2": { "name": "keyword.operator.produces.kstar" }
+          }
+        },
+        { "match": "->", "name": "keyword.operator.produces.kstar" },
+        { "match": "\\|", "name": "keyword.operator.alternative.kstar" },
+        { "match": "\\beps\\b", "name": "constant.language.eps.kstar" },
+        { "match": "\\b[A-Z]\\w*", "name": "variable.other.nonterminal.kstar" },
+        { "match": "[^\\s|]", "name": "constant.character.terminal.kstar" }
+      ]
+    },
+
+    "alphabet": {
+      "comment": "`alphabet B = {0, 1}`",
+      "begin": "\\b(alphabet)\\s+([A-Za-z_]\\w*)\\s*(=)\\s*(\\{)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.alphabet.kstar" },
+        "2": { "name": "entity.name.type.alphabet.kstar" },
+        "3": { "name": "keyword.operator.assignment.kstar" },
+        "4": { "name": "punctuation.section.braces.begin.kstar" }
+      },
+      "end": "\\}",
+      "endCaptures": { "0": { "name": "punctuation.section.braces.end.kstar" } },
+      "patterns": [
+        { "match": "\\beps\\b", "name": "invalid.illegal.eps.kstar" },
+        { "match": ",", "name": "punctuation.separator.kstar" },
+        { "match": "[^\\s,]", "name": "constant.character.symbol.kstar" }
+      ]
+    },
+
+    "function": {
+      "comment": "`fn name(n: Int) -> Bool`",
+      "begin": "\\b(fn)\\s+([A-Za-z_]\\w*)\\s*(\\()",
+      "beginCaptures": {
+        "1": { "name": "storage.type.function.kstar" },
+        "2": { "name": "entity.name.function.kstar" },
+        "3": { "name": "punctuation.definition.parameters.begin.kstar" }
+      },
+      "end": "\\)",
+      "endCaptures": { "0": { "name": "punctuation.definition.parameters.end.kstar" } },
+      "patterns": [
+        { "match": "\\b([A-Za-z_]\\w*)\\s*(:)", "captures": { "1": { "name": "variable.parameter.kstar" }, "2": { "name": "punctuation.separator.type.kstar" } } },
+        { "include": "#type" },
+        { "match": ",", "name": "punctuation.separator.kstar" }
+      ]
+    },
+
+    "expressions": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#string" },
+        { "include": "#regex" },
+        { "include": "#machine" },
+        { "include": "#grammar" },
+        { "include": "#keyword" },
+        { "include": "#return-type" },
+        { "include": "#type" },
+        { "include": "#call" },
+        { "include": "#number" },
+        { "include": "#operator" }
+      ]
+    },
     "string": {
       "begin": "\"",
-      "end": "\"",
+      "end": "\"|$",
       "name": "string.quoted.double.kstar",
       "patterns": [{ "match": "\\\\[\"\\\\]", "name": "constant.character.escape.kstar" }]
     },
     "regex": {
       "comment": "A `/` after a name, number, `eps` or closing bracket is a PDA slash, not a regex.",
       "begin": "(?<![\\w)\\]])/",
-      "end": "/",
+      "end": "/|$",
       "name": "string.regexp.kstar",
-      "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.kstar" }]
-    },
-    "transition": {
-      "comment": "The arrows of a transition: `--` and `-->`.",
-      "match": "-->|--",
-      "name": "keyword.operator.arrow.kstar"
+      "patterns": [
+        { "match": "\\\\.", "name": "constant.character.escape.kstar" },
+        { "match": "[*+?]", "name": "keyword.operator.quantifier.regexp.kstar" },
+        { "match": "\\|", "name": "keyword.operator.or.regexp.kstar" },
+        { "match": "\\.", "name": "constant.character.any.regexp.kstar" },
+        { "match": "[()\\[\\]]", "name": "punctuation.definition.group.regexp.kstar" }
+      ]
     },
     "keyword": {
       "patterns": [
-        {
-          "match": "\\b(alphabet|dfa|nfa|pda|tm|grammar|fn)\\b",
-          "name": "storage.type.kstar"
-        },
+        { "match": "\\b(alphabet|dfa|nfa|pda|tm|grammar|fn)\\b", "name": "storage.type.kstar" },
         {
           "match": "\\b(over|start|accept|reject|let|return|if|else|for|in|print|test|draw|trace|on)\\b",
           "name": "keyword.control.kstar"
         },
-        {
-          "match": "\\b(and|or|not|accepts)\\b",
-          "name": "keyword.operator.word.kstar"
-        },
-        {
-          "match": "\\b(true|false|eps)\\b",
-          "name": "constant.language.kstar"
-        }
+        { "match": "\\b(and|or|not|accepts)\\b", "name": "keyword.operator.word.kstar" },
+        { "match": "\\b(true|false)\\b", "name": "constant.language.boolean.kstar" },
+        { "match": "\\beps\\b", "name": "constant.language.eps.kstar" }
       ]
+    },
+    "return-type": {
+      "match": "(->)\\s*(?=[A-Z])",
+      "captures": { "1": { "name": "keyword.operator.arrow.kstar" } }
     },
     "type": {
       "match": "\\b(Int|Bool|Str|Alphabet|Dfa|Nfa|Pda|Tm|Regex|Grammar|Set)\\b",
-      "name": "entity.name.type.kstar"
+      "name": "support.type.kstar"
     },
-    "builtin": {
-      "match": "\\b(to_dfa|to_nfa|to_regex|minimize|reduce|remove_eps|rename|union|intersect|difference|complement|concat|star|reverse|equivalent|is_empty|states|len|to_cnf|to_pda|to_grammar|derive|run)(?=\\s*\\()",
-      "name": "support.function.builtin.kstar"
+    "call": {
+      "patterns": [
+        {
+          "match": "\\b(to_dfa|to_nfa|to_regex|minimize|reduce|remove_eps|rename|union|intersect|difference|complement|concat|star|reverse|equivalent|is_empty|states|len|to_cnf|to_pda|to_grammar|derive|run)(?=\\s*\\()",
+          "name": "support.function.builtin.kstar"
+        },
+        { "match": "\\b([A-Za-z_]\\w*)(?=\\s*\\()", "name": "entity.name.function.call.kstar" }
+      ]
     },
     "number": {
       "match": "\\b\\d+\\b",
-      "name": "constant.numeric.kstar"
+      "name": "constant.numeric.integer.kstar"
     },
     "operator": {
-      "match": "->|==|!=|<=|>=|\\.\\.|[+\\-*%<>=|]",
-      "name": "keyword.operator.kstar"
+      "patterns": [
+        { "match": "==|!=|<=|>=|<|>", "name": "keyword.operator.comparison.kstar" },
+        { "match": "\\.\\.", "name": "keyword.operator.range.kstar" },
+        { "match": "[+\\-*%]", "name": "keyword.operator.arithmetic.kstar" },
+        { "match": "=", "name": "keyword.operator.assignment.kstar" }
+      ]
     }
   }
 }

@@ -1,0 +1,138 @@
+{
+  "Alphabet": {
+    "prefix": "alphabet",
+    "body": [
+      "alphabet ${1:B} = {${2:0, 1}}"
+    ],
+    "description": "An alphabet: the symbols machines and grammars use."
+  },
+  "DFA": {
+    "prefix": "dfa",
+    "body": [
+      "dfa ${1:M} over ${2:B} {",
+      "    start  ${3:q0}",
+      "    accept ${4:q1}",
+      "    ${3:q0} --${5:0}--> ${3:q0}",
+      "    ${3:q0} --${6:1}--> ${4:q1}",
+      "    ${4:q1} --${7:0,1}--> ${4:q1}$0",
+      "}"
+    ],
+    "description": "A deterministic finite automaton: one move per state and symbol."
+  },
+  "NFA": {
+    "prefix": "nfa",
+    "body": [
+      "nfa ${1:N} over ${2:B} {",
+      "    start  ${3:a}",
+      "    accept ${4:b}",
+      "    ${3:a} --${5:0,1}--> ${3:a}",
+      "    ${3:a} --${6:1}--> ${4:b}",
+      "    $0",
+      "}"
+    ],
+    "description": "A nondeterministic finite automaton; moves may be missing, repeated or eps."
+  },
+  "PDA": {
+    "prefix": "pda",
+    "body": [
+      "pda ${1:P} over ${2:AB} {",
+      "    start  ${3:p}",
+      "    accept ${4:q}",
+      "    ${3:p} --${5:a}, ${6:eps}/${7:A}--> ${3:p}",
+      "    ${3:p} --${8:eps}, ${9:Z}/${10:Z}--> ${4:q}",
+      "    $0",
+      "}"
+    ],
+    "description": "A pushdown automaton. Moves are `read, pop/push`; the stack starts with Z."
+  },
+  "Turing machine": {
+    "prefix": "tm",
+    "body": [
+      "tm ${1:T} over ${2:B} {",
+      "    start  ${3:s}",
+      "    accept ${4:yes}",
+      "    reject ${5:no}",
+      "    ${3:s} --${6:0}/${7:0},${8|R,L,S|}--> ${3:s}",
+      "    ${3:s} --_/_,S--> ${4:yes}",
+      "    $0",
+      "}"
+    ],
+    "description": "A Turing machine. Moves are `read/write,direction`; `_` is the blank."
+  },
+  "Grammar": {
+    "prefix": "grammar",
+    "body": [
+      "grammar ${1:G} over ${2:AB} {",
+      "    ${3:S} -> ${4:a S b | eps}",
+      "    $0",
+      "}"
+    ],
+    "description": "A context-free grammar. Variables start with a capital letter."
+  },
+  "Transition": {
+    "prefix": "--",
+    "body": [
+      "${1:q0} --${2:0}--> ${3:q1}"
+    ],
+    "description": "A transition inside a machine."
+  },
+  "Machine family": {
+    "prefix": "fnmachine",
+    "body": [
+      "fn ${1:family}(${2:n}: Int) -> Dfa {",
+      "    return dfa over ${3:B} {",
+      "        start  q[0]",
+      "        accept q[0]",
+      "        for i in 0..${2:n} {",
+      "            q[i] --${4:0}--> q[(i + 1) % ${2:n}]",
+      "            q[i] --${5:1}--> q[i]",
+      "        }",
+      "    }",
+      "}"
+    ],
+    "description": "A function that builds a machine for each n, with states q[0], q[1], ..."
+  },
+  "Function": {
+    "prefix": "fn",
+    "body": [
+      "fn ${1:name}(${2:n}: ${3:Int}) -> ${4:Int} {",
+      "    return ${0:n}",
+      "}"
+    ],
+    "description": "A function. Parameters and the result have types."
+  },
+  "If": {
+    "prefix": "if",
+    "body": [
+      "if ${1:true} {",
+      "    $2",
+      "} else {",
+      "    $0",
+      "}"
+    ],
+    "description": "if / else"
+  },
+  "For": {
+    "prefix": "for",
+    "body": [
+      "for ${1:w} in ${2:{\"0\", \"01\"\\}} {",
+      "    $0",
+      "}"
+    ],
+    "description": "Loop over a set, a range like 0..n, a string or an alphabet."
+  },
+  "Test": {
+    "prefix": "test",
+    "body": [
+      "test ${1:M} accepts \"${2:01}\""
+    ],
+    "description": "Check something; failed tests are counted at the end."
+  },
+  "Trace": {
+    "prefix": "trace",
+    "body": [
+      "trace ${1:M} on \"${2:01}\""
+    ],
+    "description": "Show every step of a machine on a word."
+  }
+}

@@ -38,7 +38,7 @@ const BROKEN: &str = "let x = 1;\nprint y\nlet z = 1 + true\n";
 fn help_for_every_command() {
     let dir = scratch("help");
     let general = stdout(&kstar(&dir, &["help"]));
-    for command in ["run", "check", "fmt", "new", "explain", "repl"] {
+    for command in ["run", "check", "fmt", "new", "trace", "explain", "repl"] {
         assert!(general.contains(command), "help does not mention {command}");
         let specific = kstar(&dir, &[command, "--help"]);
         assert!(specific.status.success());
@@ -183,6 +183,25 @@ fn fmt_handles_deep_programs() {
     let out = kstar(&dir, &["fmt", "--check", "deep.kstar"]);
     assert!(out.status.success(), "{}", stderr(&out));
     assert!(kstar(&dir, &["check", "deep.kstar"]).status.success());
+}
+
+#[test]
+fn trace_runs_the_file_quietly_then_traces() {
+    let dir = scratch("trace");
+    let program = "alphabet B = {0, 1}\ndfa M over B { start a  accept b  a --0--> a  a --1--> b  b --0,1--> b }\nprint \"not shown\"\ntest M accepts \"1\"\n";
+    std::fs::write(dir.join("m.kstar"), program).unwrap();
+    let out = kstar(&dir, &["trace", "m.kstar", "M", "01"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let text = stdout(&out);
+    assert!(text.starts_with("Input: 01\n"), "{text}");
+    assert!(text.contains("Result: ACCEPTED"), "{text}");
+    assert!(!text.contains("not shown") && !text.contains("tests:"), "{text}");
+    // Any expression works as the machine, and the word may be empty.
+    assert!(kstar(&dir, &["trace", "m.kstar", "minimize(M)", ""]).status.success());
+    let missing = kstar(&dir, &["trace", "m.kstar", "Nope", "0"]);
+    assert_eq!(missing.status.code(), Some(1));
+    assert!(stderr(&missing).contains("`Nope` is not defined"));
+    assert_eq!(kstar(&dir, &["trace", "m.kstar"]).status.code(), Some(2));
 }
 
 #[test]

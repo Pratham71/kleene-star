@@ -20,6 +20,7 @@ Commands:
   check <files>...      look for errors and warnings without running
   fmt <files>...        rewrite files in the standard style
   new <name>            start a new program from a template
+  trace <file> <M> <w>  run a file quietly, then trace machine M on word w
   explain <code>        explain an error code, such as E0200
   repl                  try things out interactively
   version               show the version
@@ -69,6 +70,14 @@ Usage: kstar new <name>
 Writes <name>.kstar, a small program to start from. An existing file is
 never overwritten.";
 
+const TRACE_HELP: &str = "\
+Usage: kstar trace [--color <when>] <file> <machine> <word>
+
+Runs the file without showing its output, then shows every step of
+<machine> on <word>, as `trace <machine> on \"<word>\"` would at the end of
+the file. <machine> may be any expression, such as `to_dfa(r)`. Use \"\" for
+the empty word.";
+
 const EXPLAIN_HELP: &str = "\
 Usage: kstar explain <code>
 
@@ -108,6 +117,7 @@ fn main() -> ExitCode {
             [name] => new_file(name),
             _ => usage_error("`kstar new` needs one name", NEW_HELP),
         },
+        "trace" => trace_command(rest),
         "explain" => match rest {
             ["--list"] => {
                 for code in codes::ALL {
@@ -130,7 +140,7 @@ fn main() -> ExitCode {
         file if file.ends_with(".kstar") => run_command(&args, false),
         other => {
             let mut message = format!("unknown command `{other}`");
-            let commands = ["run", "check", "fmt", "new", "explain", "repl", "version", "help"];
+            let commands = ["run", "check", "fmt", "new", "trace", "explain", "repl", "version", "help"];
             if let Some(close) = kstar::lang::error::did_you_mean(other, commands.into_iter()) {
                 message.push_str(&format!("; did you mean `{close}`?"));
             }
@@ -148,6 +158,7 @@ fn help(command: Option<&str>) -> ExitCode {
         Some("new") => NEW_HELP,
         Some("explain") => EXPLAIN_HELP,
         Some("repl") => REPL_HELP,
+        Some("trace") => TRACE_HELP,
         Some(_) => USAGE,
     };
     println!("{text}");
@@ -419,6 +430,45 @@ fn watch(options: &Options) -> ExitCode {
         }
         std::thread::sleep(Duration::from_millis(300));
     }
+}
+
+/// `kstar trace`: runs a file with its output thrown away, then traces one
+/// machine on one word.
+fn trace_command(args: &[&str]) -> ExitCode {
+    let options = match Options::parse(args, false) {
+        Ok(options) => options,
+        Err(message) => return usage_error(&message, TRACE_HELP),
+    };
+    let [file, machine, word] = &options.files[..] else {
+        return usage_error("`kstar trace` needs a file, a machine and a word", TRACE_HELP);
+    };
+    let text = match std::fs::read_to_string(file) {
+        Ok(text) => text.replace("\r\n", "\n"),
+        Err(e) => {
+            eprintln!("kstar: cannot read {file}: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let name = shown(Path::new(file));
+    let word = word.replace('\\', "\\\\").replace('"', "\\\"");
+    let entry = format!("trace {machine} on \"{word}\"");
+    let color = options.color;
+    kstar::with_big_stack(move || {
+        let mut session = Session::new(&name, Box::new(std::io::sink()), PathBuf::from("."), true);
+        session.ascii_only(console_needs_ascii());
+        session.color(color);
+        let result = session.run(&text).and_then(|()| {
+            session.set_output(Box::new(std::io::stdout()));
+            session.run(&entry)
+        });
+        match result {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(message) => {
+                eprintln!("{message}");
+                ExitCode::FAILURE
+            }
+        }
+    })
 }
 
 /// `kstar fmt`: formats each file in place, or with `--check` only reports
