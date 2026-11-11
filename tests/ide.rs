@@ -1,15 +1,15 @@
 //! The editor sees the same errors as the command line: for every golden
 //! program that is rejected before it runs, the language server's
-//! diagnostic must be exactly the error `toc` prints, at the same line.
+//! diagnostic must be exactly the error `kstar` prints, at the same line.
 
 mod common;
 use common::{files_in, project_dir};
-use toc::ide::{position_of, Analysis};
+use kstar::ide::{position_of, Analysis};
 
 #[test]
 fn diagnostics_match_the_command_line() {
     let mut checked = 0;
-    for program in files_in(&project_dir().join("tests/golden"), "toc") {
+    for program in files_in(&project_dir().join("tests/golden"), "kstar") {
         let src = std::fs::read_to_string(&program).unwrap().replace("\r\n", "\n");
         let expected = std::fs::read_to_string(program.with_extension("out")).unwrap().replace("\r\n", "\n");
         // Only errors found before running: they start with "Error in NAME, line N:".
@@ -26,7 +26,7 @@ fn diagnostics_match_the_command_line() {
 
 #[test]
 fn every_example_analyses_cleanly() {
-    for example in files_in(&project_dir().join("examples"), "toc") {
+    for example in files_in(&project_dir().join("examples"), "kstar") {
         let src = std::fs::read_to_string(&example).unwrap();
         let analysis = Analysis::new(&src);
         assert_eq!(analysis.problem, None, "{example:?}");

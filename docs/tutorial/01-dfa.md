@@ -8,7 +8,7 @@ state. If it ends in an accepting state, the string is in its language.
 
 Every machine works over an alphabet: the set of symbols its strings are made of.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 alphabet Letters = {a, b, c}
 
@@ -28,7 +28,7 @@ A symbol is a single letter or digit.
 This machine accepts binary strings that contain `11`. Its three states
 remember how much of `11` has been seen so far.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 dfa HasDouble1 over B {
@@ -68,7 +68,7 @@ In the printed table, `->` marks the start state and `*` marks accepting states.
 
 `machine accepts "string"` is true or false.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 dfa HasDouble1 over B {
     start  none
@@ -98,7 +98,7 @@ false
 `print` shows a value. `test` checks one: it stays silent when the condition is
 true and reports the line when it is false. At the end you get a count.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 dfa HasDouble1 over B {
     start  none
@@ -123,10 +123,10 @@ a transition goes to the wrong place.
 
 ## A DFA must be complete
 
-"Deterministic" means *exactly one* move for every state and symbol. TOC-Lang
+"Deterministic" means *exactly one* move for every state and symbol. Kleene Star
 checks this before your program runs:
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 
 dfa Broken over B {
@@ -138,7 +138,7 @@ dfa Broken over B {
 ```
 
 ```text
-Error in demo.toc, line 3:
+Error in demo.kstar, line 3:
     dfa Broken over B {
     ^^^^^^^^^^^^^^^^^
 MachineError: DFA `Broken` is not total: no transition from `q0` on `1`
@@ -148,7 +148,7 @@ MachineError: DFA `Broken` is not total: no transition from `q0` on `1`
 The usual fix is a **dead state**: a non-accepting state that loops to itself
 on every symbol.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 dfa Fixed over B {
@@ -171,7 +171,7 @@ in the alphabet, are reported the same way.
 
 `draw` writes a Graphviz file you can turn into a picture.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 dfa Fixed over B {
     start  q0
@@ -189,7 +189,7 @@ draw Fixed
 wrote Fixed.dot
 ```
 
-If [Graphviz](https://graphviz.org) is installed, `toc` also writes `Fixed.svg`.
+If [Graphviz](https://graphviz.org) is installed, `kstar` also writes `Fixed.svg`.
 Otherwise paste the contents of the `.dot` file into any online Graphviz viewer.
 
 Next: [nondeterminism and eps moves](02-nfa.md).

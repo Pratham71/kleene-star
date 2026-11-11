@@ -9,7 +9,7 @@ proved by a construction, and each construction is a function here.
 These use the **product construction**: run both machines side by side, with
 one state for every pair of states.
 
-```toc
+```kstar
 let even_zeros = /1*(01*01*)*/
 let ends_in_1  = /(0|1)*1/
 
@@ -32,7 +32,7 @@ is a DFA whose states are named after the pairs, like `(q0,q1)`.
 `complement` swaps accepting and non-accepting states. This is only correct for
 a complete DFA, which is one reason DFAs must have every transition.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 let ends_in_1 = to_dfa(/(0|1)*1/, B)
 
@@ -51,7 +51,7 @@ empty, but over `{0, 1}` it is every string containing a `1`. Use
 `equivalent(a, b)` is true when the two languages are exactly the same.
 `is_empty(a)` is true when a language contains no strings at all.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 let a = to_dfa(/1*(01*01*)*/, B)
 let b = to_dfa(/(0|1)*1/, B)
@@ -68,15 +68,15 @@ test equivalent(union(a, complement(a)), /(0|1)*/)
 of the two" and checking that it is empty.
 
 You cannot compare machines with `==`. Two machines can look completely
-different and still accept the same language, so TOC-Lang makes you say which
+different and still accept the same language, so Kleene Star makes you say which
 question you are asking:
 
-```toc-error
+```kstar-error
 let same = /a*/ == /a*a*/
 ```
 
 ```text
-Error in demo.toc, line 1:
+Error in demo.kstar, line 1:
     let same = /a*/ == /a*a*/
                ^^^^^^^^^^^^^^
 TypeError: `==` cannot compare machines or regexes
@@ -87,7 +87,7 @@ TypeError: `==` cannot compare machines or regexes
 
 These are built with eps moves, so they return NFAs.
 
-```toc
+```kstar
 test equivalent(concat(/0*/, /1*/), /0*1*/)
 test equivalent(star(/01/), /(01)*/)
 test equivalent(reverse(/001*/), /1*00/)
@@ -98,7 +98,7 @@ test equivalent(reverse(/001*/), /1*00/)
 A finite language is just a set of strings, written in braces. It can be used
 anywhere a language is expected.
 
-```toc
+```kstar
 let words = {"0", "01", "011"}
 
 test words accepts "01"
@@ -125,7 +125,7 @@ tests: 3 passed, 0 failed
 
 Two machines can only be combined when they are over the same alphabet.
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 alphabet L = {a, b}
 dfa Zeros over B { start s  accept s  s --0--> s  s --1--> t  t --0,1--> t }
@@ -136,7 +136,7 @@ let both = union(Zeros, As)
 
 ```text
 Traceback (most recent call last):
-  demo.toc, line 6, in <main>
+  demo.kstar, line 6, in <main>
     let both = union(Zeros, As)
                             ^^
 AlphabetError: this machine is over {a, b}, but {0, 1} is needed here

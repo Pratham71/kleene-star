@@ -1,4 +1,4 @@
-//! The formatter behind `toc fmt`: rewrites a program in one canonical style.
+//! The formatter behind `kstar fmt`: rewrites a program in one canonical style.
 //!
 //! The style, in short:
 //!
@@ -87,7 +87,7 @@ fn same_program(before: &str, after: &str) -> Result<(), Diag> {
         Span { start: 0, end: 0, line: 1 },
         "formatting would change this program, so it was left alone",
     )
-    .hint("this is a bug in `toc fmt`; please report it with the file that caused it"))
+    .hint("this is a bug in `kstar fmt`; please report it with the file that caused it"))
 }
 
 struct Formatter<'a> {
@@ -578,7 +578,7 @@ mod tests {
     use super::*;
 
     fn fmt(src: &str) -> String {
-        format(src).unwrap_or_else(|d| panic!("{}", d.render("t.toc", src)))
+        format(src).unwrap_or_else(|d| panic!("{}", d.render("t.kstar", src)))
     }
 
     #[test]

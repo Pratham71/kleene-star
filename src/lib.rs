@@ -1,9 +1,9 @@
-//! TOC-Lang: a small language for Theory of Computation.
+//! Kleene Star: a small language for Theory of Computation.
 //!
 //! * `automata` is a plain Rust library of machines and algorithms.
 //! * `lang` is the language built on top of it.
 //! * `Session` (below) ties the stages of `lang` together.
-//! * `ide` answers editor questions; the `toc-lsp` server is built on it.
+//! * `ide` answers editor questions; the `kstar-lsp` server is built on it.
 
 pub mod automata;
 pub mod ide;
@@ -89,7 +89,7 @@ impl Session {
     }
 }
 
-/// Rewrites a program in the canonical style, as `toc fmt` does. Windows
+/// Rewrites a program in the canonical style, as `kstar fmt` does. Windows
 /// line endings in `text` are kept. On failure returns the formatted error
 /// (a program must parse before it can be formatted).
 pub fn format_program(file: &str, text: &str) -> Result<String, String> {
@@ -110,7 +110,7 @@ pub fn is_incomplete(text: &str) -> bool {
 }
 
 /// Runs `work` on a thread with a large stack. The interpreter is recursive,
-/// so deeply nested TOC calls need more stack than a default thread has.
+/// so deeply nested Kleene Star calls need more stack than a default thread has.
 pub fn with_big_stack<T: Send + 'static>(work: impl FnOnce() -> T + Send + 'static) -> T {
     std::thread::Builder::new()
         .stack_size(256 * 1024 * 1024)

@@ -1,25 +1,25 @@
 true true false
 Traceback (most recent call last):
-  mutual_recursion.toc, line 11, in <main>
+  mutual_recursion.kstar, line 11, in <main>
     print is_even(-1)
-  mutual_recursion.toc, line 4, in is_even
+  mutual_recursion.kstar, line 4, in is_even
     return is_odd(n - 1)
-  mutual_recursion.toc, line 8, in is_odd
+  mutual_recursion.kstar, line 8, in is_odd
     return is_even(n - 1)
-  mutual_recursion.toc, line 4, in is_even
+  mutual_recursion.kstar, line 4, in is_even
     return is_odd(n - 1)
-  mutual_recursion.toc, line 8, in is_odd
+  mutual_recursion.kstar, line 8, in is_odd
     return is_even(n - 1)
   ... 490 more calls ...
-  mutual_recursion.toc, line 4, in is_even
+  mutual_recursion.kstar, line 4, in is_even
     return is_odd(n - 1)
-  mutual_recursion.toc, line 8, in is_odd
+  mutual_recursion.kstar, line 8, in is_odd
     return is_even(n - 1)
-  mutual_recursion.toc, line 4, in is_even
+  mutual_recursion.kstar, line 4, in is_even
     return is_odd(n - 1)
-  mutual_recursion.toc, line 8, in is_odd
+  mutual_recursion.kstar, line 8, in is_odd
     return is_even(n - 1)
-  mutual_recursion.toc, line 4, in is_even
+  mutual_recursion.kstar, line 4, in is_even
     return is_odd(n - 1)
            ^^^^^^^^^^^^^
 RecursionError: more than 500 calls are in progress at once

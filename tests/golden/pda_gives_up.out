@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  pda_gives_up.toc, line 9, in <main>
+  pda_gives_up.kstar, line 9, in <main>
     print Forever accepts "ab"
                           ^^^^
 LimitError: gave up after looking at 50000 configurations of the PDA without finding an accepting run

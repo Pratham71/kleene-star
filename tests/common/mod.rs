@@ -1,4 +1,4 @@
-//! Shared by the integration tests: run a TOC program and capture what a
+//! Shared by the integration tests: run a Kleene Star program and capture what a
 //! user would see.
 #![allow(dead_code)] // each test file uses a different part of this module
 
@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use toc::Session;
+use kstar::Session;
 
 /// A writer that keeps what is written, so the test can read it back.
 #[derive(Clone, Default)]
@@ -31,7 +31,7 @@ pub struct Outcome {
 
 pub fn run_program(shown_name: &str, text: &str) -> Outcome {
     let (shown_name, text) = (shown_name.to_string(), text.replace("\r\n", "\n"));
-    toc::with_big_stack(move || {
+    kstar::with_big_stack(move || {
         let capture = Capture::default();
         let mut session = Session::new(&shown_name, Box::new(capture.clone()), scratch_dir(), false);
         let result = session.run(&text);
@@ -51,7 +51,7 @@ pub fn run_program(shown_name: &str, text: &str) -> Outcome {
 
 /// Where `draw` statements in test programs put their files.
 fn scratch_dir() -> PathBuf {
-    let dir = std::env::temp_dir().join("toc-tests");
+    let dir = std::env::temp_dir().join("kstar-tests");
     std::fs::create_dir_all(&dir).unwrap();
     dir
 }

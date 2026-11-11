@@ -1,4 +1,4 @@
-Error in unknown_symbol.toc, line 6:
+Error in unknown_symbol.kstar, line 6:
     a --0, 2--> b
            ^
 AlphabetError: symbol `2` is not in alphabet `B`

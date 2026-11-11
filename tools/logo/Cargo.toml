@@ -1,0 +1,13 @@
+# Renders assets/logo.svg into assets/logo.png and assets/kstar.ico.
+# Run from the repository root:  cargo run --manifest-path tools/logo/Cargo.toml
+# It is a separate package so the language itself does not depend on an SVG
+# renderer.
+[package]
+name = "kstar-logo"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+resvg = "0.45"
+ico = "0.4"

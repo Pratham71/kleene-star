@@ -31,7 +31,7 @@ This machine adds one to a binary number. It walks to the right end, then
 works back to the left turning trailing `1`s into `0`s until it can turn a
 `0` (or a blank) into a `1`.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 tm Increment over B {
@@ -62,7 +62,7 @@ without the blanks at either end.
 `trace` shows every step: the move taken, the state after it, and the tape
 with the head's cell in brackets.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 tm Increment over B {
     start  right
@@ -103,7 +103,7 @@ left.
 Symbols the machine writes, like `X`, do not need to be in the alphabet: the
 alphabet is only what the *input* may contain.
 
-```toc
+```kstar
 alphabet ABC = {a, b, c}
 
 tm Abc over ABC {
@@ -162,11 +162,11 @@ XXYYZZ
 ## Machines that never stop
 
 A Turing machine can run forever, and no program can tell in general whether
-it will: that is the **halting problem**. So TOC-Lang runs a machine for at
+it will: that is the **halting problem**. So Kleene Star runs a machine for at
 most 100 000 steps (100 for `trace`). If it has not halted by then, you get
 an error that says so, instead of a wrong answer or a frozen program:
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 tm Forever over B {
     start  walk
@@ -180,11 +180,11 @@ print Forever accepts "01"
 
 ```text
 Traceback (most recent call last):
-  demo.toc, line 9, in <main>
+  demo.kstar, line 9, in <main>
     print Forever accepts "01"
                           ^^^^
 LimitError: the Turing machine is still running after 100000 steps
-  hint: it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so TOC-Lang stops here instead of waiting forever
+  hint: it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so Kleene Star stops here instead of waiting forever
 ```
 
 For the same reason, `equivalent` refuses Turing machines: whether two of

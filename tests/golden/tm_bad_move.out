@@ -1,4 +1,4 @@
-Error in tm_bad_move.toc, line 4:
+Error in tm_bad_move.kstar, line 4:
     s --0/1--> s
            ^^^
 SyntaxError: expected `,` and a direction (L, R or S), found `-->`

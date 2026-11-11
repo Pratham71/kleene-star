@@ -1,4 +1,4 @@
-# TOC-Lang: a small, well-designed language for Theory of Computation
+# Kleene Star: a small, well-designed language for Theory of Computation
 
 > Status: stages 0 to 9 below are built. This is the design as agreed on 2026-11-10,
 > with the layout, error format and test sections updated to match the code.
@@ -42,7 +42,8 @@ My calls (open to change):
   (e.g. "divisible by n").
 - **Drawing** writes Graphviz DOT (`name.dot`), rendered to SVG only if Graphviz is installed.
   `print` of a machine shows a transition table.
-- File extension `.toc`; binary `toc`.
+- File extension `.kstar`; binary `kstar`. (Until v0.2 the project was called TOC-Lang, with
+  `.toc` files and a `toc` binary; it is now Kleene Star, after the star in `a*`.)
 - **"min-NFA"**: true NFA minimisation is PSPACE-hard, so `reduce(nfa)` merges equivalent
   states (smaller, not guaranteed smallest). `minimize` is exact and DFA-only.
 - **Finite languages** are a set of strings, `{"a", "ab"}`, usable wherever a language is expected.
@@ -120,9 +121,9 @@ Error output:
 
 ```
 Traceback (most recent call last):
-  examples/div.toc, line 28, in <main>
+  examples/div.kstar, line 28, in <main>
     test div_by(0) accepts "110"
-  examples/div.toc, line 17, in div_by
+  examples/div.kstar, line 17, in div_by
     q[i] --0--> q[(2 * i) % n]
                   ^^^^^^^^^^^
 MathError: modulo by zero
@@ -138,7 +139,7 @@ source-line-and-caret format without a call chain, and stop the program before i
 Cargo.toml
 src/
   lib.rs             Session: feeds text through the stages; shared by CLI, REPL and tests
-  main.rs            CLI: `toc run file.toc`, `toc check file.toc`, `toc repl`
+  main.rs            CLI: `kstar run file.kstar`, `kstar check file.kstar`, `kstar repl`
   automata/          pure library, no knowledge of the language
     dfa.rs  nfa.rs  regex.rs  convert.rs  minimize.rs  ops.rs  dot.rs
   lang/
@@ -147,13 +148,13 @@ src/
     builtins.rs                  built-in function names and their types
     value.rs  interp.rs          runtime values, evaluator, call stack
     error.rs                     error kinds, traceback and caret rendering
-examples/            *.toc sample programs
+examples/            *.kstar sample programs
 tests/
   golden/            programs with their exact expected output, mostly error cases
   golden.rs          runs them
   programs.rs        runs every example and every code sample in the docs
 docs/
-  tutorial/          follows a ToC course: DFA, NFA, eps-NFA, regex, closure properties
+  tutorial/          follows a Theory of Computation course: DFA, NFA, eps-NFA, regex, closure properties
   reference.md       grammar (EBNF), types, built-ins, error catalogue
   internals.md       how the interpreter works, stage by stage
 ```
@@ -183,7 +184,7 @@ short walkthrough of what was built and why.
 8. **REPL** with `rustyline`.
 9. **DFA -> regex** (state elimination); finish tutorial and reference.
 
-Later, each as its own design: `export` to Rust source, `toc fmt`, context-free grammars and
+Later, each as its own design: `export` to Rust source, `kstar fmt`, context-free grammars and
 PDAs, Turing machines.
 
 ## Verification

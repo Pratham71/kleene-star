@@ -1,4 +1,4 @@
-# TOC-Lang reference
+# Kleene Star reference
 
 Everything in the language on one page. For a gentler introduction, start with
 [the tutorial](tutorial/01-dfa.md).
@@ -39,7 +39,7 @@ comment that runs to the end of the line.
 - Functions may call each other in any order, but a function must be defined
   above the top-level line that first calls it.
 
-```toc
+```kstar
 let limit = 3
 
 fn below_limit(n: Int) -> Bool {
@@ -158,7 +158,7 @@ grammar Name over Alphabet {
 `trace M on "0110"` runs `M` (a `Dfa`, `Nfa`, `Pda` or `Tm`) on the word and prints a
 table with one row per symbol, then the result and the reason for it:
 
-```toc
+```kstar
 alphabet B = {0, 1}
 dfa Ones over B {
     start  even
@@ -249,7 +249,7 @@ Comparisons do not chain: write `a < b and b < c`. `and` and `or` skip the
 right side when the left side already decides the answer. `%` is the remainder
 and is never negative for a positive divisor. There is no division operator.
 
-```toc
+```kstar
 print 7 % 3, -1 % 3, 2 + 3 * 4
 print "ab" + "c", 1..4, {2, 1} == {1, 2}
 print /a*b/ accepts "aab", {"x", "y"} accepts "z"
@@ -372,31 +372,31 @@ running also show the chain of calls, most recent last.
 
 One example of each of the common ones:
 
-```toc-error
+```kstar-error
 let total = 1
 let total = 2
 ```
 
 ```text
-Error in demo.toc, line 2:
+Error in demo.kstar, line 2:
     let total = 2
         ^^^^^
 NameError: `total` is already defined
   hint: values cannot be changed once defined; choose a new name
 ```
 
-```toc-error
+```kstar-error
 print len(42)
 ```
 
 ```text
-Error in demo.toc, line 1:
+Error in demo.kstar, line 1:
     print len(42)
               ^^
 TypeError: argument 1 of `len` must be a Str, Set or Alphabet, but this is an Int
 ```
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 nfa M over B {
     start a
@@ -405,14 +405,14 @@ nfa M over B {
 ```
 
 ```text
-Error in demo.toc, line 4:
+Error in demo.kstar, line 4:
     a --x--> a
         ^
 AlphabetError: symbol `x` is not in alphabet `B`
   hint: B = {0, 1}
 ```
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 dfa M over B {
     start a
@@ -423,14 +423,14 @@ dfa M over B {
 ```
 
 ```text
-Error in demo.toc, line 5:
+Error in demo.kstar, line 5:
     a --0--> b
     ^^^^^^^^^^
 MachineError: state `a` already goes to `a` on `0`
   hint: a DFA has one transition per state and symbol; use `nfa` if you want a choice
 ```
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 dfa Any over B {
     start  q
@@ -441,14 +441,14 @@ trace Any accepts "01"
 ```
 
 ```text
-Error in demo.toc, line 7:
+Error in demo.kstar, line 7:
     trace Any accepts "01"
               ^^^^^^^
 SyntaxError: expected `on` after the machine to trace, found `accepts`
   hint: write `trace M on "0110"`
 ```
 
-```toc-error
+```kstar-error
 fn forever(n: Int) -> Int {
     return forever(n + 1)
 }
@@ -524,25 +524,25 @@ Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 `not` `on` `or` `over` `pda` `print` `reject` `return` `start` `test` `tm`
 `trace` `true`.
 
-## The `toc` command
+## The `kstar` command
 
 | Command | What it does |
 |---|---|
-| `toc run file.toc` | Runs a program. `toc file.toc` is the same. |
-| `toc run file.toc --out dir` | Runs it, writing drawings into `dir`. |
-| `toc check file.toc` | Reports errors without running. |
-| `toc fmt file.toc ...` | Rewrites files in the standard style. See [formatting](#formatting). |
-| `toc fmt --check file.toc ...` | Lists the files that are not formatted, changing nothing. |
-| `toc repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
-| `toc help`, `toc version` | Help and version. |
+| `kstar run file.kstar` | Runs a program. `kstar file.kstar` is the same. |
+| `kstar run file.kstar --out dir` | Runs it, writing drawings into `dir`. |
+| `kstar check file.kstar` | Reports errors without running. |
+| `kstar fmt file.kstar ...` | Rewrites files in the standard style. See [formatting](#formatting). |
+| `kstar fmt --check file.kstar ...` | Lists the files that are not formatted, changing nothing. |
+| `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
+| `kstar help`, `kstar version` | Help and version. |
 
 The exit code is 0 on success, 1 if there was an error or a failed test (or,
-for `toc fmt --check`, a file that would change), and 2 if the command itself
+for `kstar fmt --check`, a file that would change), and 2 if the command itself
 was wrong.
 
 ## Formatting
 
-`toc fmt` rewrites a program in one standard style:
+`kstar fmt` rewrites a program in one standard style:
 
 | Rule | Example |
 |---|---|
@@ -556,7 +556,7 @@ was wrong.
 | Parentheses, numbers, strings and regexes are kept exactly as written | |
 
 Formatting is idempotent (formatting twice changes nothing more) and never
-changes meaning: `toc fmt` compares the tokens and comments before and after
+changes meaning: `kstar fmt` compares the tokens and comments before and after
 and refuses to write if they differ. The file must parse; type errors do not
 matter. Windows line endings are kept. A comment inside a statement that
 spans several lines moves to just after that statement.

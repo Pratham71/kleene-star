@@ -1,4 +1,4 @@
-Error in compare_machines.toc, line 1:
+Error in compare_machines.kstar, line 1:
     let same = /a*/ == /a*a*/
                ^^^^^^^^^^^^^^
 TypeError: `==` cannot compare machines or regexes

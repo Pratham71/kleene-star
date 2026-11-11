@@ -1,9 +1,9 @@
 {
-  "name": "toc-lang",
-  "displayName": "TOC-Lang",
-  "description": "Highlighting, errors, hover, go to definition and completion for TOC-Lang (.toc) files.",
+  "name": "kleene-star",
+  "displayName": "Kleene Star",
+  "description": "Highlighting, errors, hover, go to definition and completion for Kleene Star (.kstar) files.",
   "version": "0.2.0",
-  "publisher": "toc-lang",
+  "publisher": "kleene-star",
   "private": true,
   "license": "UNLICENSED",
   "engines": {
@@ -15,26 +15,26 @@
   "contributes": {
     "languages": [
       {
-        "id": "toc",
-        "aliases": ["TOC-Lang", "toc"],
-        "extensions": [".toc"],
+        "id": "kstar",
+        "aliases": ["Kleene Star", "kstar"],
+        "extensions": [".kstar"],
         "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
-        "language": "toc",
-        "scopeName": "source.toc",
-        "path": "./syntaxes/toc.tmLanguage.json"
+        "language": "kstar",
+        "scopeName": "source.kstar",
+        "path": "./syntaxes/kstar.tmLanguage.json"
       }
     ],
     "configuration": {
-      "title": "TOC-Lang",
+      "title": "Kleene Star",
       "properties": {
-        "toc.serverPath": {
+        "kstar.serverPath": {
           "type": "string",
-          "default": "toc-lsp",
-          "description": "The toc-lsp program to run. The default finds it on your PATH; give a full path if it is somewhere else."
+          "default": "kstar-lsp",
+          "description": "The kstar-lsp program to run. The default finds it on your PATH; give a full path if it is somewhere else."
         }
       }
     }

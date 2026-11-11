@@ -1,6 +1,6 @@
-//! Tests for `toc fmt`.
+//! Tests for `kstar fmt`.
 //!
-//! * Golden files: every `tests/format/NAME.toc` is formatted and the result
+//! * Golden files: every `tests/format/NAME.kstar` is formatted and the result
 //!   (or the error) must equal `tests/format/NAME.out`. Regenerate them with
 //!   `UPDATE_GOLDEN=1 cargo test --test format` and review the diff.
 //! * Every example is already formatted, and formatting never changes what a
@@ -11,12 +11,12 @@ mod common;
 use common::{files_in, project_dir, run_program};
 
 fn format(name: &str, text: &str) -> Result<String, String> {
-    toc::format_program(name, &text.replace("\r\n", "\n"))
+    kstar::format_program(name, &text.replace("\r\n", "\n"))
 }
 
 #[test]
 fn golden_format_files() {
-    let inputs = files_in(&project_dir().join("tests/format"), "toc");
+    let inputs = files_in(&project_dir().join("tests/format"), "kstar");
     assert!(!inputs.is_empty(), "no format tests found");
     let update = std::env::var_os("UPDATE_GOLDEN").is_some();
     let mut failures = Vec::new();
@@ -43,11 +43,11 @@ fn golden_format_files() {
 /// leaves exactly the same program: same output, same test results.
 #[test]
 fn examples_are_formatted_and_keep_their_meaning() {
-    for example in files_in(&project_dir().join("examples"), "toc") {
+    for example in files_in(&project_dir().join("examples"), "kstar") {
         let name = example.file_name().unwrap().to_string_lossy().to_string();
         let text = std::fs::read_to_string(&example).unwrap().replace("\r\n", "\n");
         let formatted = format(&name, &text).unwrap_or_else(|e| panic!("{e}"));
-        assert_eq!(formatted, text, "examples/{name} is not formatted; run `toc fmt examples/{name}`");
+        assert_eq!(formatted, text, "examples/{name} is not formatted; run `kstar fmt examples/{name}`");
         assert_eq!(format(&name, &formatted).unwrap(), formatted, "{name}: not idempotent");
         let before = run_program(&name, &text);
         let after = run_program(&name, &formatted);
@@ -59,8 +59,8 @@ fn examples_are_formatted_and_keep_their_meaning() {
 #[test]
 fn formatting_is_idempotent_and_keeps_output() {
     let root = project_dir();
-    let mut programs = files_in(&root.join("tests/format"), "toc");
-    programs.extend(files_in(&root.join("tests/golden"), "toc"));
+    let mut programs = files_in(&root.join("tests/format"), "kstar");
+    programs.extend(files_in(&root.join("tests/golden"), "kstar"));
     for program in programs {
         let name = program.file_name().unwrap().to_string_lossy().to_string();
         let text = std::fs::read_to_string(&program).unwrap().replace("\r\n", "\n");
@@ -76,6 +76,6 @@ fn formatting_is_idempotent_and_keeps_output() {
 
 #[test]
 fn windows_line_endings_are_kept() {
-    let formatted = toc::format_program("w.toc", "let x=1\r\nprint x\r\n").unwrap();
+    let formatted = kstar::format_program("w.kstar", "let x=1\r\nprint x\r\n").unwrap();
     assert_eq!(formatted, "let x = 1\r\nprint x\r\n");
 }

@@ -1,4 +1,4 @@
-Error in equivalent_context_free.toc, line 11:
+Error in equivalent_context_free.kstar, line 11:
     print equivalent(G, H)
                      ^
 TypeError: `equivalent` cannot compare context-free languages, and this is a Grammar

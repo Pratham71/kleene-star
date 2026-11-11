@@ -3,7 +3,7 @@
 //!
 //! Everything here works on byte offsets into the source and uses the real
 //! lexer, parser and checker; nothing is parsed a second way. The language
-//! server (`src/bin/toc-lsp.rs`) only converts between these offsets and the
+//! server (`src/bin/kstar-lsp.rs`) only converts between these offsets and the
 //! line/column positions of the Language Server Protocol.
 
 use crate::lang::builtins;
@@ -291,7 +291,7 @@ impl Analysis {
 }
 
 fn code(text: &str) -> String {
-    format!("```toc\n{text}\n```")
+    format!("```kstar\n{text}\n```")
 }
 
 fn keyword(word: &str) -> Completion {
@@ -379,15 +379,15 @@ print Even accepts \"00\", count
     fn hover_shows_types_signatures_and_states() {
         let a = Analysis::new(PROGRAM);
         let hover = |needle: &str, nth: usize| a.hover(at(PROGRAM, needle, nth, 1)).unwrap().1;
-        assert_eq!(hover("count", 1), "```toc\nlet count: Int\n```");
-        assert_eq!(hover("twice", 1), "```toc\nfn twice(n: Int) -> Int\n```");
-        assert_eq!(hover("n * 2", 0), "```toc\nn: Int (parameter)\n```");
-        assert_eq!(hover("Even", 1), "```toc\ndfa Even over B\n```");
-        assert_eq!(hover("B", 1), "```toc\nalphabet B = {0, 1}\n```");
+        assert_eq!(hover("count", 1), "```kstar\nlet count: Int\n```");
+        assert_eq!(hover("twice", 1), "```kstar\nfn twice(n: Int) -> Int\n```");
+        assert_eq!(hover("n * 2", 0), "```kstar\nn: Int (parameter)\n```");
+        assert_eq!(hover("Even", 1), "```kstar\ndfa Even over B\n```");
+        assert_eq!(hover("B", 1), "```kstar\nalphabet B = {0, 1}\n```");
         assert_eq!(hover("odd", 2), "state odd of DFA `Even`");
         assert_eq!(hover("even", 1), "state even of DFA `Even` (start, accepting)");
         // An expression: its type.
-        assert_eq!(a.hover(at(PROGRAM, "\"00\"", 0, 1)).unwrap().1, "```toc\n\"00\": Str\n```");
+        assert_eq!(a.hover(at(PROGRAM, "\"00\"", 0, 1)).unwrap().1, "```kstar\n\"00\": Str\n```");
     }
 
     #[test]
@@ -395,7 +395,7 @@ print Even accepts \"00\", count
         let src = "let m = minimize(/0*1/)\n";
         let (span, text) = Analysis::new(src).hover(at(src, "minimize", 0, 2)).unwrap();
         assert_eq!(&src[span.start..span.end], "minimize");
-        assert!(text.starts_with("```toc\nminimize(lang) -> Dfa\n```"));
+        assert!(text.starts_with("```kstar\nminimize(lang) -> Dfa\n```"));
         assert!(text.contains("smallest DFA"));
     }
 

@@ -1,3 +1,6 @@
 /target
+/tools/logo/target
 *.dot
 *.svg
+# The logo is hand-written, not the output of `draw`.
+!/assets/logo.svg

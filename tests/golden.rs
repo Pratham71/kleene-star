@@ -1,4 +1,4 @@
-//! Golden tests: every `tests/golden/NAME.toc` is run and its complete output
+//! Golden tests: every `tests/golden/NAME.kstar` is run and its complete output
 //! (everything printed, then the error if there was one) must equal
 //! `tests/golden/NAME.out`.
 //!
@@ -10,7 +10,7 @@ use common::{files_in, project_dir, run_program};
 
 #[test]
 fn golden_files() {
-    let programs = files_in(&project_dir().join("tests/golden"), "toc");
+    let programs = files_in(&project_dir().join("tests/golden"), "kstar");
     assert!(!programs.is_empty(), "no golden tests found");
     let update = std::env::var_os("UPDATE_GOLDEN").is_some();
 
@@ -18,7 +18,7 @@ fn golden_files() {
     for program in programs {
         let name = program.file_stem().unwrap().to_string_lossy().to_string();
         let text = std::fs::read_to_string(&program).unwrap();
-        let actual = run_program(&format!("{name}.toc"), &text).output;
+        let actual = run_program(&format!("{name}.kstar"), &text).output;
         let expected_path = program.with_extension("out");
         if update {
             std::fs::write(&expected_path, &actual).unwrap();

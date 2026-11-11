@@ -1,14 +1,14 @@
-//! `toc-lsp`: the TOC-Lang language server.
+//! `kstar-lsp`: the Kleene Star language server.
 //!
 //! An editor starts this program and talks to it over stdin and stdout using
 //! the Language Server Protocol. All the language knowledge lives in
-//! `toc::ide`; this file only keeps the open documents and converts between
+//! `kstar::ide`; this file only keeps the open documents and converts between
 //! the protocol's line/character positions and byte offsets.
 
 use std::collections::HashMap;
 use std::sync::Mutex;
-use toc::ide::{self, Analysis, CompletionKind as Kind};
-use toc::lang::token::Span;
+use kstar::ide::{self, Analysis, CompletionKind as Kind};
+use kstar::lang::token::Span;
 use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::ls_types::*;
 use tower_lsp_server::{Client, LanguageServer, LspService, Server};
@@ -42,7 +42,7 @@ impl Backend {
                     Diagnostic {
                         range: range(&analysis.src, problem.span),
                         severity: Some(DiagnosticSeverity::ERROR),
-                        source: Some("toc".into()),
+                        source: Some("kstar".into()),
                         message,
                         ..Default::default()
                     }
@@ -67,7 +67,7 @@ impl Backend {
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         Ok(InitializeResult {
-            server_info: Some(ServerInfo { name: "toc-lsp".into(), version: Some(env!("CARGO_PKG_VERSION").into()) }),
+            server_info: Some(ServerInfo { name: "kstar-lsp".into(), version: Some(env!("CARGO_PKG_VERSION").into()) }),
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),

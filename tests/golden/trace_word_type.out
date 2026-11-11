@@ -1,4 +1,4 @@
-Error in trace_word_type.toc, line 7:
+Error in trace_word_type.kstar, line 7:
     trace Any on 101
                  ^^^
 TypeError: the word to trace must be a Str, but this is an Int

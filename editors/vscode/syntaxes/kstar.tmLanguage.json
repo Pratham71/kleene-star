@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "TOC-Lang",
-  "scopeName": "source.toc",
-  "fileTypes": ["toc"],
+  "name": "Kleene Star",
+  "scopeName": "source.kstar",
+  "fileTypes": ["kstar"],
   "patterns": [
     { "include": "#comment" },
     { "include": "#string" },
@@ -17,61 +17,61 @@
   "repository": {
     "comment": {
       "match": "#.*$",
-      "name": "comment.line.number-sign.toc"
+      "name": "comment.line.number-sign.kstar"
     },
     "string": {
       "begin": "\"",
       "end": "\"",
-      "name": "string.quoted.double.toc",
-      "patterns": [{ "match": "\\\\[\"\\\\]", "name": "constant.character.escape.toc" }]
+      "name": "string.quoted.double.kstar",
+      "patterns": [{ "match": "\\\\[\"\\\\]", "name": "constant.character.escape.kstar" }]
     },
     "regex": {
       "comment": "A `/` after a name, number, `eps` or closing bracket is a PDA slash, not a regex.",
       "begin": "(?<![\\w)\\]])/",
       "end": "/",
-      "name": "string.regexp.toc",
-      "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.toc" }]
+      "name": "string.regexp.kstar",
+      "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.kstar" }]
     },
     "transition": {
       "comment": "The arrows of a transition: `--` and `-->`.",
       "match": "-->|--",
-      "name": "keyword.operator.arrow.toc"
+      "name": "keyword.operator.arrow.kstar"
     },
     "keyword": {
       "patterns": [
         {
           "match": "\\b(alphabet|dfa|nfa|pda|tm|grammar|fn)\\b",
-          "name": "storage.type.toc"
+          "name": "storage.type.kstar"
         },
         {
           "match": "\\b(over|start|accept|reject|let|return|if|else|for|in|print|test|draw|trace|on)\\b",
-          "name": "keyword.control.toc"
+          "name": "keyword.control.kstar"
         },
         {
           "match": "\\b(and|or|not|accepts)\\b",
-          "name": "keyword.operator.word.toc"
+          "name": "keyword.operator.word.kstar"
         },
         {
           "match": "\\b(true|false|eps)\\b",
-          "name": "constant.language.toc"
+          "name": "constant.language.kstar"
         }
       ]
     },
     "type": {
       "match": "\\b(Int|Bool|Str|Alphabet|Dfa|Nfa|Pda|Tm|Regex|Grammar|Set)\\b",
-      "name": "entity.name.type.toc"
+      "name": "entity.name.type.kstar"
     },
     "builtin": {
       "match": "\\b(to_dfa|to_nfa|to_regex|minimize|reduce|remove_eps|rename|union|intersect|difference|complement|concat|star|reverse|equivalent|is_empty|states|len|to_cnf|to_pda|to_grammar|derive|run)(?=\\s*\\()",
-      "name": "support.function.builtin.toc"
+      "name": "support.function.builtin.kstar"
     },
     "number": {
       "match": "\\b\\d+\\b",
-      "name": "constant.numeric.toc"
+      "name": "constant.numeric.kstar"
     },
     "operator": {
       "match": "->|==|!=|<=|>=|\\.\\.|[+\\-*%<>=|]",
-      "name": "keyword.operator.toc"
+      "name": "keyword.operator.kstar"
     }
   }
 }

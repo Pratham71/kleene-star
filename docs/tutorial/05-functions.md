@@ -6,7 +6,7 @@ once and build any member of it.
 
 ## Functions
 
-```toc
+```kstar
 fn double(n: Int) -> Int {
     return n * 2
 }
@@ -43,7 +43,7 @@ in a line that would never execute.
 Leave out the name and a machine definition becomes a value you can return or
 store.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 fn only(word_length: Int) -> Nfa {
@@ -79,7 +79,7 @@ Two new things make this work:
 Binary numbers divisible by `n`. State `q[i]` means "the number read so far
 leaves remainder `i`". Reading a bit doubles the number and adds the bit.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 fn div_by(n: Int) -> Dfa {
@@ -109,7 +109,7 @@ always safe as a state number.
 "The k-th symbol from the end is 1" needs `k + 1` NFA states but `2^k` DFA
 states. With a function, you can watch it happen.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 fn kth_from_end(k: Int) -> Nfa {
@@ -143,7 +143,7 @@ k = 5  NFA: 6  min-DFA: 32
 `for` also works outside machines. It can step through a range, a set, the
 characters of a string, or the symbols of an alphabet.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 let r = /(0|1)*01/
 
@@ -176,7 +176,7 @@ When something fails inside a function, the error shows how the program got
 there. Read it from the bottom: the last line is what went wrong, the lines
 above are who called whom.
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 
 fn div_by(n: Int) -> Dfa {
@@ -199,11 +199,11 @@ test smallest(0) accepts "110"
 
 ```text
 Traceback (most recent call last):
-  demo.toc, line 18, in <main>
+  demo.kstar, line 18, in <main>
     test smallest(0) accepts "110"
-  demo.toc, line 15, in smallest
+  demo.kstar, line 15, in smallest
     return minimize(div_by(n))
-  demo.toc, line 8, in div_by
+  demo.kstar, line 8, in div_by
     q[i] --0--> q[(2 * i) % n]
                   ^^^^^^^^^^^
 MathError: modulo by zero

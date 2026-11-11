@@ -1,10 +1,10 @@
 3
 Traceback (most recent call last):
-  traceback_nested.toc, line 20, in <main>
+  traceback_nested.kstar, line 20, in <main>
     test smallest(0) accepts "110"
-  traceback_nested.toc, line 16, in smallest
+  traceback_nested.kstar, line 16, in smallest
     return minimize(div_by(n))
-  traceback_nested.toc, line 9, in div_by
+  traceback_nested.kstar, line 9, in div_by
     q[i] --0--> q[(2 * i) % n]
                   ^^^^^^^^^^^
 MathError: modulo by zero

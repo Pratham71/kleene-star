@@ -1,8 +1,8 @@
 true
 Traceback (most recent call last):
-  foreign_word.toc, line 7, in <main>
+  foreign_word.kstar, line 7, in <main>
     print check("0a0")
-  foreign_word.toc, line 4, in check
+  foreign_word.kstar, line 4, in check
     return Zeros accepts word
                          ^^^^
 AlphabetError: the word contains `a`, which is not in the machine's alphabet

@@ -11,7 +11,7 @@ new tools can: **context-free grammars**, which generate words, and
 A grammar is a set of rewriting rules. This one generates
 a<sup>n</sup>b<sup>n</sup>:
 
-```toc
+```kstar
 alphabet AB = {a, b}
 
 grammar Equal over AB {
@@ -40,7 +40,7 @@ Reading the definition:
 Symbols in a rule are separated by spaces, so `a S b` is three symbols and
 `aSb` is a mistake:
 
-```toc-error
+```kstar-error
 alphabet AB = {a, b}
 grammar G over AB {
     S -> aSb | eps
@@ -48,7 +48,7 @@ grammar G over AB {
 ```
 
 ```text
-Error in demo.toc, line 3:
+Error in demo.kstar, line 3:
     S -> aSb | eps
          ^^^
 SyntaxError: `aSb` is not one symbol
@@ -64,7 +64,7 @@ A **derivation** shows how the start variable becomes a word, one rule at a
 time. `derive(g, word)` finds a *leftmost* derivation, where each step
 rewrites the leftmost variable, and returns it as a string:
 
-```toc
+```kstar
 alphabet AB = {a, b}
 grammar Equal over AB {
     S -> a S b | eps
@@ -81,7 +81,7 @@ S
 
 Asking for a word the grammar cannot make is an error, not a silent `false`:
 
-```toc-error
+```kstar-error
 alphabet AB = {a, b}
 grammar Equal over AB {
     S -> a S b | eps
@@ -91,7 +91,7 @@ print derive(Equal, "abb")
 
 ```text
 Traceback (most recent call last):
-  demo.toc, line 5, in <main>
+  demo.kstar, line 5, in <main>
     print derive(Equal, "abb")
                         ^^^^^
 ValueError: the grammar cannot derive "abb"
@@ -105,7 +105,7 @@ in **Chomsky normal form** (CNF): every rule is `A -> B C` (two variables) or
 `A -> a` (one terminal), and only the start variable may have `eps`.
 `to_cnf(g)` shows the converted grammar:
 
-```toc
+```kstar
 alphabet LR = {l, r}
 
 # Balanced brackets, written with l and r.
@@ -141,7 +141,7 @@ start variable can generate the whole of it.
 
 `is_empty(g)` asks whether a grammar generates no words at all:
 
-```toc
+```kstar
 alphabet AB = {a, b}
 grammar Endless over AB {
     S -> a S
@@ -171,7 +171,7 @@ Any of the three parts can be `eps`. The stack starts holding a single `Z`,
 so a PDA can tell when it has reached the bottom. Stack symbols are letters
 and digits written together, top first.
 
-```toc
+```kstar
 alphabet AB = {a, b}
 
 # Push an A for every a; then pop one A for every b.
@@ -208,13 +208,13 @@ moves reads all of it and ends in an accepting state. What is left on the
 stack does not matter. (Textbooks also define acceptance by empty stack; the
 two recognise the same languages.)
 
-Like an NFA, a PDA may have several moves to choose from. TOC-Lang tries
+Like an NFA, a PDA may have several moves to choose from. Kleene Star tries
 every possibility, breadth first. Because eps moves can push forever, the
 search stops after 50 000 configurations, or when the stack would grow past
 1 000 symbols, and then reports that it does not know the answer instead of
 guessing:
 
-```toc-error
+```kstar-error
 alphabet AB = {a, b}
 pda Forever over AB {
     start  p
@@ -226,7 +226,7 @@ print Forever accepts "ab"
 
 ```text
 Traceback (most recent call last):
-  demo.toc, line 7, in <main>
+  demo.kstar, line 7, in <main>
     print Forever accepts "ab"
                           ^^^^
 LimitError: gave up after looking at 50000 configurations of the PDA without finding an accepting run
@@ -238,7 +238,7 @@ LimitError: gave up after looking at 50000 configurations of the PDA without fin
 `trace` shows a run: the move taken, the state, the input still to read, and
 the stack, top first.
 
-```toc
+```kstar
 alphabet AB = {a, b}
 pda AnBn over AB {
     start  push
@@ -294,7 +294,7 @@ derivations: the stack holds what is still to be matched. A variable on top is
 replaced by one of its right-hand sides (an eps move); a terminal on top is
 matched against the input.
 
-```toc
+```kstar
 alphabet AB = {a, b}
 grammar Pal over AB {
     S -> a S a | b S b | a | b | eps
@@ -322,7 +322,7 @@ Reason: Read all of the input and reached accepting state accept
 variable per state of its minimal DFA, a rule `A -> a B` for each transition,
 and `A -> eps` for each accepting state.
 
-```toc
+```kstar
 print to_grammar(/(0|1)*01/)
 ```
 
@@ -337,9 +337,9 @@ B -> 0 A | 1 S | eps
 
 For regular languages, `equivalent(a, b)` always has an answer. For
 context-free languages it cannot: **no algorithm can decide whether two
-grammars generate the same language**. TOC-Lang says so before running:
+grammars generate the same language**. Kleene Star says so before running:
 
-```toc-error
+```kstar-error
 alphabet AB = {a, b}
 grammar G over AB {
     S -> a S b | eps
@@ -352,7 +352,7 @@ print equivalent(G, H)
 ```
 
 ```text
-Error in demo.toc, line 9:
+Error in demo.kstar, line 9:
     print equivalent(G, H)
                      ^
 TypeError: `equivalent` cannot compare context-free languages, and this is a Grammar

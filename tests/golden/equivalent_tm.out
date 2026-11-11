@@ -1,4 +1,4 @@
-Error in equivalent_tm.toc, line 6:
+Error in equivalent_tm.kstar, line 6:
     print equivalent(M, M)
                      ^
 TypeError: `equivalent` cannot compare Turing machines

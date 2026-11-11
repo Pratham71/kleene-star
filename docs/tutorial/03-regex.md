@@ -2,13 +2,13 @@
 
 A **regular expression** describes a language by its shape instead of by a
 machine. Regexes, NFAs and DFAs describe exactly the same class of languages,
-the regular languages, and TOC-Lang converts freely between them.
+the regular languages, and Kleene Star converts freely between them.
 
 ## Writing a regex
 
 A regex goes between slashes.
 
-```toc
+```kstar
 let r = /(0|1)*01/
 
 print r accepts "1101"
@@ -42,7 +42,7 @@ false
 joined with eps moves. It is simple but produces many states. `to_dfa` then
 applies the subset construction, and `minimize` finds the smallest DFA.
 
-```toc
+```kstar
 let r = /(a|b)*abb/
 
 let n = to_nfa(r)
@@ -67,7 +67,7 @@ min-DFA: 4 states
 Converted machines have descriptive but long state names such as `{q1,q3,q7}`.
 `rename` replaces them with `q0, q1, ...`, numbered outward from the start.
 
-```toc
+```kstar
 let m = rename(minimize(/(a|b)*abb/))
 print m
 ```
@@ -89,7 +89,7 @@ regex directly here and did the conversions itself.
 `to_regex` works by **state elimination**: it removes states one at a time,
 replacing the paths through each with a regex.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 dfa EvenZeros over B {
@@ -122,7 +122,7 @@ are a good exercise: convert, and use `equivalent` to confirm nothing changed.
 A regex on its own uses just the symbols written in it. When it is combined
 with a machine, it adopts the machine's alphabet. You can also choose one.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 print to_dfa(/0*/)

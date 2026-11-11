@@ -1,5 +1,5 @@
-# The standard style that `toc fmt` produces. This file is already
-# formatted: running `toc fmt examples/07_style.toc` changes nothing.
+# The standard style that `kstar fmt` produces. This file is already
+# formatted: running `kstar fmt examples/07_style.kstar` changes nothing.
 
 alphabet B = {0, 1}
 

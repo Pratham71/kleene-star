@@ -1,4 +1,4 @@
-Error in tm_blank_in_alphabet.toc, line 2:
+Error in tm_blank_in_alphabet.kstar, line 2:
     tm M over B {
     ^^^^^^^^^^^
 MachineError: TM `M` is over an alphabet containing `_`, which is the blank

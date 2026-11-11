@@ -1,4 +1,4 @@
-# A quick tour of TOC-Lang. Run it with:  toc run examples/tour.toc
+# A quick tour of Kleene Star. Run it with:  kstar run examples/tour.kstar
 
 alphabet B = {0, 1}
 

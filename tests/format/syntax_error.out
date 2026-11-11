@@ -1,4 +1,4 @@
-Error in syntax_error.toc, line 3:
+Error in syntax_error.kstar, line 3:
     print x
     ^^^^^
 SyntaxError: expected `)`, found `print`

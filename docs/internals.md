@@ -1,4 +1,4 @@
-# How TOC-Lang works inside
+# How Kleene Star works inside
 
 This page is a guided tour of the source code, in the order a program travels
 through it. Each stage is one file, and each file starts with a comment saying
@@ -16,7 +16,7 @@ The project has two halves that know very little about each other:
 - `src/automata/` is an ordinary Rust library. It has no idea a language exists.
 - `src/lang/` is the language. It calls the library to do the real work.
 
-That split is why TOC-Lang is an **interpreter** and not a compiler. A TOC
+That split is why Kleene Star is an **interpreter** and not a compiler. A Kleene Star
 program is a short script that says *which* machines to build and *what* to ask.
 The expensive part, such as a subset construction over thousands of states,
 happens inside the library, which is compiled Rust. Compiling the script itself
@@ -242,7 +242,7 @@ are checked in `machine.rs`, like every other machine.
 
 ## 10. The language server
 
-`src/lang/index.rs`, `src/ide.rs`, `src/bin/toc-lsp.rs`
+`src/lang/index.rs`, `src/ide.rs`, `src/bin/kstar-lsp.rs`
 
 While checking, the checker already knows what every name refers to. It
 writes this down in an `Index`: every definition (with its kind, type,
@@ -259,7 +259,7 @@ tree, so it works while a call is half typed; when the text does not parse,
 `with_fallback` keeps the previous index for completion. All of this is
 tested directly, without an editor.
 
-`toc-lsp` is a thin `tower-lsp-server` shell: it keeps one `Analysis` per
+`kstar-lsp` is a thin `tower-lsp-server` shell: it keeps one `Analysis` per
 open file, converts between LSP positions (UTF-16 columns) and offsets, and
 publishes the first error as a diagnostic.
 
@@ -267,7 +267,7 @@ publishes the first error as a diagnostic.
 
 `src/lang/format.rs`
 
-`toc fmt` parses the program as usual and prints the syntax tree back out in
+`kstar fmt` parses the program as usual and prints the syntax tree back out in
 the standard style. The tree was built for running programs, not for
 printing them, so a few things come from elsewhere:
 
@@ -308,7 +308,7 @@ there. All the text is kept in one growing string so that an error can quote a
 line typed several entries ago.
 
 The interpreter runs on a thread with a large stack, because a tree-walking
-interpreter uses the Rust stack for every nested TOC call.
+interpreter uses the Rust stack for every nested Kleene Star call.
 
 ## Testing
 
@@ -320,7 +320,7 @@ cargo test
 - **Golden tests** (`tests/golden/`) run a program and compare everything it
   prints with a saved `.out` file. Most of them are deliberately broken
   programs, so the wording and layout of every error message is pinned down.
-- **Formatting** (`tests/format.rs`): every `tests/format/*.toc` must format
+- **Formatting** (`tests/format.rs`): every `tests/format/*.kstar` must format
   to its `.out` file, every example must already be formatted, and
   formatting must never change what a program prints.
 - **Examples and docs** (`tests/programs.rs`): every file in `examples/` must
@@ -339,7 +339,7 @@ UPDATE_GOLDEN=1 cargo test --test golden --test format
 Ideas that fit the current design, roughly in order of size:
 
 - `export`: write a DFA out as a standalone Rust function. This is where a
-  compile step makes sense, since the result would run without TOC-Lang.
+  compile step makes sense, since the result would run without Kleene Star.
 
 New machine types belong in `src/automata/` as plain Rust first, with tests,
 and get syntax in `src/lang/` second.

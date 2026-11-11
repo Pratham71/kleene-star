@@ -1,4 +1,4 @@
-Error in pda_bad_move.toc, line 4:
+Error in pda_bad_move.kstar, line 4:
     p --a, Z--> p
             ^^^
 SyntaxError: expected `/` and the symbols to push, found `-->`

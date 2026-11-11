@@ -1,21 +1,23 @@
 [package]
-name = "toc"
+name = "kstar"
 version = "0.1.0"
 edition = "2021"
-description = "TOC-Lang: a small language for Theory of Computation"
+# `cargo run` runs the language, not the language server.
+default-run = "kstar"
+description = "Kleene Star: a small language for Theory of Computation"
 
 [lib]
-name = "toc"
+name = "kstar"
 path = "src/lib.rs"
 
 [[bin]]
-name = "toc"
+name = "kstar"
 path = "src/main.rs"
 
 # The language server for editors; see editors/vscode.
 [[bin]]
-name = "toc-lsp"
-path = "src/bin/toc-lsp.rs"
+name = "kstar-lsp"
+path = "src/bin/kstar-lsp.rs"
 
 [dependencies]
 rustyline = "19.0.0"

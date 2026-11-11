@@ -1,8 +1,8 @@
 //! Keeps the examples and the documentation honest.
 //!
 //! * Every program in `examples/` must run without errors or failed tests.
-//! * Every code block in the docs marked ```toc must do the same, every block
-//!   marked ```toc-error must be rejected, and the output shown underneath
+//! * Every code block in the docs marked ```kstar must do the same, every block
+//!   marked ```kstar-error must be rejected, and the output shown underneath
 //!   must be what the program really prints. So if the language changes,
 //!   out-of-date documentation fails the build.
 
@@ -11,7 +11,7 @@ use common::{files_in, project_dir, run_program};
 
 #[test]
 fn examples_run_cleanly() {
-    let examples = files_in(&project_dir().join("examples"), "toc");
+    let examples = files_in(&project_dir().join("examples"), "kstar");
     assert!(!examples.is_empty(), "no examples found");
     for example in examples {
         let name = example.file_name().unwrap().to_string_lossy().to_string();
@@ -56,7 +56,7 @@ fn code_blocks(markdown: &str) -> Vec<Block> {
     blocks
 }
 
-/// Every ```toc block must run cleanly and every ```toc-error block must
+/// Every ```kstar block must run cleanly and every ```kstar-error block must
 /// fail. When a ```text block comes straight after either, it must be
 /// exactly what the program prints.
 #[test]
@@ -73,12 +73,12 @@ fn documentation_code_runs() {
         let blocks = code_blocks(&std::fs::read_to_string(&page).unwrap());
         for (i, block) in blocks.iter().enumerate() {
             let should_pass = match block.tag.as_str() {
-                "toc" => true,
-                "toc-error" => false,
+                "kstar" => true,
+                "kstar-error" => false,
                 _ => continue,
             };
             checked += 1;
-            let outcome = run_program("demo.toc", &block.text);
+            let outcome = run_program("demo.kstar", &block.text);
             if outcome.ok != should_pass {
                 problems.push(format!(
                     "{name}: this block should {}:\n{}\nit printed:\n{}",

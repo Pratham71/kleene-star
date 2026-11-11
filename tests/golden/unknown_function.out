@@ -1,4 +1,4 @@
-Error in unknown_function.toc, line 1:
+Error in unknown_function.kstar, line 1:
     let d = minimise(/(a|b)*abb/)
             ^^^^^^^^
 NameError: there is no function called `minimise`

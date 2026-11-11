@@ -39,4 +39,4 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
       - name: examples are formatted
         shell: bash
-        run: cargo run --quiet -- fmt --check examples/*.toc
+        run: cargo run --quiet -- fmt --check examples/*.kstar

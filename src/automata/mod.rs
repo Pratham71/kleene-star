@@ -1,6 +1,6 @@
 //! The automata library.
 //!
-//! Everything in here is plain Rust with no knowledge of the TOC language:
+//! Everything in here is plain Rust with no knowledge of the Kleene Star language:
 //! machines go in, machines come out. The interpreter in `crate::lang` is
 //! just one user of it.
 

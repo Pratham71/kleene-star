@@ -1,27 +1,27 @@
 # Appendix: tools
 
-The `toc` command does more than run programs. This page covers the tools
+The `kstar` command does more than run programs. This page covers the tools
 that help you write them.
 
-## Editor support with `toc-lsp`
+## Editor support with `kstar-lsp`
 
-`toc-lsp` is a language server: editors start it to get errors as you type,
+`kstar-lsp` is a language server: editors start it to get errors as you type,
 hover information (types, signatures, built-in documentation, which states
 are start or accepting), go to definition, find all references, completion
 (keywords, built-ins, names in scope, and the states and symbols of the
 machine you are in), and signature help. It uses the same lexer, parser and
-checker as `toc`, so it reports exactly the errors `toc check` would.
+checker as `kstar`, so it reports exactly the errors `kstar check` would.
 
 For VS Code, see [`editors/vscode`](../../editors/vscode/README.md).
 
-## Formatting with `toc fmt`
+## Formatting with `kstar fmt`
 
-People lay code out differently, and a TOC program does not care: line breaks
+People lay code out differently, and a Kleene Star program does not care: line breaks
 and spaces are not significant. But code is easier to read when it always
-looks the same. `toc fmt` rewrites a file in the standard style, so you never
+looks the same. `kstar fmt` rewrites a file in the standard style, so you never
 have to line up arrows by hand.
 
-Suppose `messy.toc` contains:
+Suppose `messy.kstar` contains:
 
 ```text
 alphabet B={0,1}
@@ -40,12 +40,12 @@ both --0,1--> both}
 Running
 
 ```bash
-toc fmt messy.toc
+kstar fmt messy.kstar
 ```
 
 rewrites it as:
 
-```toc
+```kstar
 alphabet B = {0, 1}
 dfa HasDouble1 over B {
     start  none
@@ -73,7 +73,7 @@ The style:
 - parentheses are kept exactly as you wrote them, and so are numbers,
   strings and regexes.
 
-Formatting never changes what a program does. As a safety check, `toc fmt`
+Formatting never changes what a program does. As a safety check, `kstar fmt`
 compares the program before and after, token by token, and refuses to write
 anything if they differ.
 
@@ -82,10 +82,10 @@ To find files that are not formatted yet, without changing them, use
 status 1, which makes it easy to use in a script or CI:
 
 ```bash
-toc fmt --check examples/*.toc
+kstar fmt --check examples/*.kstar
 ```
 
-A file must be free of syntax errors to be formatted; otherwise `toc fmt`
+A file must be free of syntax errors to be formatted; otherwise `kstar fmt`
 shows the error and leaves the file alone. Type errors do not matter: the
 formatter only reads the program, it does not check it.
 

@@ -1,4 +1,4 @@
-Error in not_total.toc, line 3:
+Error in not_total.kstar, line 3:
     dfa Broken over B {
     ^^^^^^^^^^^^^^^^^
 MachineError: DFA `Broken` is not total: no transition from `q0` on `1`

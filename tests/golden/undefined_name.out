@@ -1,4 +1,4 @@
-Error in undefined_name.toc, line 2:
+Error in undefined_name.kstar, line 2:
     print alphabet_sise + 1
           ^^^^^^^^^^^^^
 NameError: `alphabet_sise` is not defined

@@ -80,7 +80,7 @@ impl Diag {
     /// An error found before running shows the place and the problem:
     ///
     /// ```text
-    /// Error in demo.toc, line 5:
+    /// Error in demo.kstar, line 5:
     ///     q0 --2--> q1
     ///          ^
     /// AlphabetError: symbol '2' is not in alphabet B
@@ -91,9 +91,9 @@ impl Diag {
     ///
     /// ```text
     /// Traceback (most recent call last):
-    ///   demo.toc, line 28, in <main>
+    ///   demo.kstar, line 28, in <main>
     ///     test div_by(0) accepts "110"
-    ///   demo.toc, line 17, in div_by
+    ///   demo.kstar, line 17, in div_by
     ///     q[i] --0--> q[(2 * i) % n]
     ///                   ^^^^^^^^^^^
     /// MathError: modulo by zero
@@ -198,8 +198,8 @@ mod tests {
         let d = Diag::new(ErrorKind::Name, Span { start, end: start + 4, line: 2 }, "unknown")
             .hint("define it first");
         assert_eq!(
-            d.render("x.toc", src),
-            "Error in x.toc, line 2:\n    let b = oops + 1\n            ^^^^\nNameError: unknown\n  hint: define it first"
+            d.render("x.kstar", src),
+            "Error in x.kstar, line 2:\n    let b = oops + 1\n            ^^^^\nNameError: unknown\n  hint: define it first"
         );
     }
 }

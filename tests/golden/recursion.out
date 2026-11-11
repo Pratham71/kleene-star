@@ -1,24 +1,24 @@
 Traceback (most recent call last):
-  recursion.toc, line 4, in <main>
+  recursion.kstar, line 4, in <main>
     print count_down(10)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
   ... 490 more calls ...
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
-  recursion.toc, line 2, in count_down
+  recursion.kstar, line 2, in count_down
     return count_down(n - 1)
            ^^^^^^^^^^^^^^^^^
 RecursionError: more than 500 calls are in progress at once

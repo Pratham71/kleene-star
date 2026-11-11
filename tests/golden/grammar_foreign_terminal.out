@@ -1,4 +1,4 @@
-Error in grammar_foreign_terminal.toc, line 3:
+Error in grammar_foreign_terminal.kstar, line 3:
     S -> a S c | eps
              ^
 AlphabetError: symbol `c` is not in alphabet `AB`

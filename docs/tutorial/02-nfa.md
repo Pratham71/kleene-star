@@ -9,7 +9,7 @@ choices ends in an accepting state. You can think of it as guessing correctly.
 "The third symbol from the end is 1." A DFA would have to remember the last
 three symbols. An NFA just guesses when the third-from-last symbol arrives.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 nfa ThirdFromEnd over B {
@@ -48,7 +48,7 @@ An **eps move** (ε-transition) changes state without reading a symbol. Write
 This machine accepts strings of 0s whose length is a multiple of 2 or of 3. It
 guesses which, before reading anything.
 
-```toc
+```kstar
 alphabet Z = {0}
 
 nfa TwosOrThrees over Z {
@@ -68,7 +68,7 @@ test TwosOrThrees accepts "000"
 test not (TwosOrThrees accepts "00000")
 ```
 
-An NFA with eps moves is often called an **eps-NFA**. In TOC-Lang it is still
+An NFA with eps moves is often called an **eps-NFA**. In Kleene Star it is still
 an `nfa`; the printed table gains an `eps` column.
 
 ## From NFA to DFA
@@ -76,7 +76,7 @@ an `nfa`; the printed table gains an `eps` column.
 Every NFA has an equivalent DFA. The **subset construction** builds it: each
 DFA state is the *set* of NFA states the NFA could currently be in.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 nfa EndsIn01 over B {
     start  a
@@ -109,7 +109,7 @@ or `b`". A state is accepting if its set contains an accepting NFA state.
 
 `remove_eps` gives an ordinary NFA for the same language.
 
-```toc
+```kstar
 alphabet Z = {0}
 nfa TwosOrThrees over Z {
     start  s
@@ -152,7 +152,7 @@ languages are equal exactly when their minimal DFAs have the same shape.
 It does not promise the smallest possible NFA, because finding that is
 PSPACE-hard, which means no efficient method is known.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 nfa ThirdFromEnd over B {
     start  a

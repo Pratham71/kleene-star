@@ -4,7 +4,7 @@ use super::error::{Diag, ErrorKind};
 use super::token::{Span, Tok, Token};
 
 /// A `# ...` comment. The parser never sees comments; only the formatter
-/// (`toc fmt`) needs them, to put them back where they were.
+/// (`kstar fmt`) needs them, to put them back where they were.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
     /// The comment including its `#`, without trailing spaces.
@@ -185,7 +185,7 @@ fn lex_into(
                     '|' => (Tok::Bar, 1),
                     ';' => {
                         return Err(error(i + 1, "unexpected `;`".into())
-                            .hint("TOC has no semicolons; just end the line"));
+                            .hint("Kleene Star has no semicolons; just end the line"));
                     }
                     other => {
                         return Err(error(

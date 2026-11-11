@@ -6,3 +6,12 @@
 # Windows-only scripts keep Windows line endings.
 *.ps1 text eol=crlf
 *.bat text eol=crlf
+
+# Images are binary: never touch their bytes.
+*.png binary
+*.ico binary
+
+# GitHub's language detection does not know Kleene Star. Left alone it guesses
+# from the content and can mislabel .kstar files as some other language, so
+# they are marked as plain text (still counted in the statistics).
+*.kstar linguist-language=Text linguist-detectable=true

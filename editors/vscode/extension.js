@@ -1,4 +1,4 @@
-// The TOC-Lang extension: starts the `toc-lsp` language server for .toc
+// The Kleene Star extension: starts the `kstar-lsp` language server for .kstar
 // files. Everything clever happens in the server; this file only connects
 // VS Code to it.
 
@@ -8,18 +8,18 @@ const { LanguageClient } = require("vscode-languageclient/node");
 let client;
 
 function activate(context) {
-  const command = vscode.workspace.getConfiguration("toc").get("serverPath") || "toc-lsp";
+  const command = vscode.workspace.getConfiguration("kstar").get("serverPath") || "kstar-lsp";
   const server = { command, args: [] };
   client = new LanguageClient(
-    "toc",
-    "TOC-Lang",
+    "kstar",
+    "Kleene Star",
     { run: server, debug: server },
-    { documentSelector: [{ scheme: "file", language: "toc" }] }
+    { documentSelector: [{ scheme: "file", language: "kstar" }] }
   );
   client.start().catch((error) => {
     vscode.window.showErrorMessage(
-      `TOC-Lang: could not start "${command}" (${error.message}). ` +
-        "Install toc-lsp and put it on your PATH, or set toc.serverPath."
+      `Kleene Star: could not start "${command}" (${error.message}). ` +
+        "Install kstar-lsp and put it on your PATH, or set kstar.serverPath."
     );
   });
   context.subscriptions.push({ dispose: () => client && client.stop() });

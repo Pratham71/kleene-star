@@ -1,4 +1,4 @@
-Error in reject_in_dfa.toc, line 4:
+Error in reject_in_dfa.kstar, line 4:
     reject s
     ^^^^^^
 SyntaxError: only a Turing machine has `reject` states, and this is a `dfa`

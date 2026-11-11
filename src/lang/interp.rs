@@ -541,7 +541,7 @@ impl Interp {
                     span,
                     format!("the Turing machine is still running after {} steps", tm::STEP_LIMIT),
                 )
-                .hint("it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so TOC-Lang stops here instead of waiting forever")),
+                .hint("it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so Kleene Star stops here instead of waiting forever")),
             _ => Ok(run),
         }
     }

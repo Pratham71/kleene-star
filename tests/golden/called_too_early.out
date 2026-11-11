@@ -1,5 +1,5 @@
 Traceback (most recent call last):
-  called_too_early.toc, line 2, in <main>
+  called_too_early.kstar, line 2, in <main>
     print size()
           ^^^^
 NameError: function `size` is called before it is defined

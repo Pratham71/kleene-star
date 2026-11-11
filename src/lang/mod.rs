@@ -1,4 +1,4 @@
-//! The TOC language: from source text to a running program.
+//! The Kleene Star language: from source text to a running program.
 //!
 //! ```text
 //! text --lexer--> tokens --parser--> syntax tree --checker--> (ok) --interpreter--> output

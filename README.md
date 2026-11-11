@@ -1,9 +1,12 @@
-# TOC-Lang
+<p align="center"><img src="assets/logo.svg" alt="Kleene Star logo: a K with a raised star" width="96"></p>
 
-A small language for Theory of Computation. You describe machines the way you
-draw them on paper, then ask questions about them.
+# Kleene Star
 
-```toc
+A small language for Theory of Computation, named after the star in `a*`.
+The command is `kstar` and programs live in `.kstar` files. You describe
+machines the way you draw them on paper, then ask questions about them.
+
+```kstar
 alphabet B = {0, 1}
 
 nfa EndsIn01 over B {
@@ -56,15 +59,15 @@ cargo build --release
 ```
 
 ```bash
-cargo run -- run examples/tour.toc
+cargo run -- run examples/tour.kstar
 ```
 
 ```bash
 cargo run -- repl
 ```
 
-`toc run file.toc` runs a program, `toc check file.toc` only looks for errors,
-`toc fmt file.toc` tidies its layout, and `toc repl` gives you an interactive
+`kstar run file.kstar` runs a program, `kstar check file.kstar` only looks for errors,
+`kstar fmt file.kstar` tidies its layout, and `kstar repl` gives you an interactive
 prompt. The exit code is 0 when there
 were no errors and no failed tests.
 
@@ -79,7 +82,7 @@ were no errors and no failed tests.
 7. [Grammars and pushdown automata](docs/tutorial/07-context-free.md)
 8. [Turing machines](docs/tutorial/08-turing.md)
 
-Appendix: [tools](docs/tutorial/tools.md), including `toc fmt` and the `toc-lsp`
+Appendix: [tools](docs/tutorial/tools.md), including `kstar fmt` and the `kstar-lsp`
 language server ([VS Code extension](editors/vscode/README.md)).
 
 Then keep [the reference](docs/reference.md) open: every statement, type,
@@ -93,7 +96,7 @@ If you want to know how the interpreter itself works, read
 
 Errors point at the problem and usually suggest a fix:
 
-```toc-error
+```kstar-error
 alphabet B = {0, 1}
 
 dfa Broken over B {
@@ -105,7 +108,7 @@ dfa Broken over B {
 ```
 
 ```text
-Error in demo.toc, line 3:
+Error in demo.kstar, line 3:
     dfa Broken over B {
     ^^^^^^^^^^^^^^^^^
 MachineError: DFA `Broken` is not total: no transition from `q0` on `1`
@@ -116,11 +119,11 @@ Errors that happen while running show the chain of calls, most recent last:
 
 ```text
 Traceback (most recent call last):
-  demo.toc, line 20, in <main>
+  demo.kstar, line 20, in <main>
     test smallest(0) accepts "110"
-  demo.toc, line 16, in smallest
+  demo.kstar, line 16, in smallest
     return minimize(div_by(n))
-  demo.toc, line 9, in div_by
+  demo.kstar, line 9, in div_by
     q[i] --0--> q[(2 * i) % n]
                   ^^^^^^^^^^^
 MathError: modulo by zero
@@ -132,10 +135,12 @@ MathError: modulo by zero
 ```text
 src/automata/   the machines and algorithms, as a plain Rust library
 src/lang/       the language: lexer, parser, checker, interpreter
-src/main.rs     the `toc` command
+src/main.rs     the `kstar` command
 examples/       programs to read and run
 tests/          golden tests for output and error messages
 docs/           tutorial, reference, internals, design
+editors/vscode/ the VS Code extension
+assets/         the logo; tools/logo renders the PNG and Windows icon from it
 ```
 
 Run the tests with `cargo test`. They include every example and every code

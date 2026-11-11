@@ -6,7 +6,7 @@
 
 ## Tracing a DFA
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 # Binary numbers divisible by 3. The state is the remainder so far:
@@ -58,7 +58,7 @@ An NFA can be in several states at once, so each cell is the **set** of
 states it could be in. The sets already include everything reachable by eps
 moves, so they are exactly the states the subset construction would build.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 nfa EndsIn01 over B {
@@ -97,7 +97,7 @@ the NFA can never accept; the reason then says so.
 A symbol the machine does not know stops the trace at that point. The
 program itself carries on, so you can trace many words in a row.
 
-```toc
+```kstar
 alphabet B = {0, 1}
 
 dfa Any over B {
@@ -128,19 +128,19 @@ the program goes on
 `trace` works on a `Dfa`, an `Nfa`, a `Pda` (see [chapter 7](07-context-free.md)) or a `Tm` (see [chapter 8](08-turing.md)). A regex or a finite set has no states to
 show, so convert it first:
 
-```toc-error
+```kstar-error
 trace /(0|1)*01/ on "101"
 ```
 
 ```text
-Error in demo.toc, line 1:
+Error in demo.kstar, line 1:
     trace /(0|1)*01/ on "101"
           ^^^^^^^^^^
 TypeError: `trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is a Regex
   hint: a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on "01"`
 ```
 
-```toc
+```kstar
 trace rename(minimize(/(0|1)*01/)) on "101"
 ```
 
@@ -165,5 +165,5 @@ The machine to trace is any expression, so `trace to_dfa(r) on w` or
 ## A note on the dash
 
 On a Windows console that cannot show the em dash (for example when the
-output is piped into a program that reads it with an old code page), `toc`
+output is piped into a program that reads it with an old code page), `kstar`
 prints `-` instead. Everything else is the same.

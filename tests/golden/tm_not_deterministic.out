@@ -1,4 +1,4 @@
-Error in tm_not_deterministic.toc, line 6:
+Error in tm_not_deterministic.kstar, line 6:
     s --0/1,R--> t
     ^^^^^^^^^^^^^^
 MachineError: state `s` already has a move when reading `0`

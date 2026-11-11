@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Kleene Star</title>
+  <!-- K*: a bold K with a raised star, like the regex operator. Two colours:
+       a deep indigo tile and white. tools/logo turns this into logo.png and
+       kstar.ico; run it again after changing this file. -->
+  <rect width="256" height="256" rx="52" fill="#2b2d7c"/>
+  <g fill="#ffffff">
+    <!-- the K: a stem and two arms -->
+    <rect x="42" y="96" width="44" height="124"/>
+    <polygon points="80,160 140,96 196,96 118,178 86,192"/>
+    <polygon points="106,158 144,140 204,220 148,220"/>
+  </g>
+  <!-- the star: three crossed bars, as an asterisk is drawn -->
+  <g stroke="#ffffff" stroke-width="18" stroke-linecap="round" transform="translate(206 52)">
+    <line x1="0" y1="-27" x2="0" y2="27"/>
+    <line x1="-23.4" y1="-13.5" x2="23.4" y2="13.5"/>
+    <line x1="-23.4" y1="13.5" x2="23.4" y2="-13.5"/>
+  </g>
+</svg>
