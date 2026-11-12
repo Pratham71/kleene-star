@@ -82,3 +82,27 @@ test("no file package.json refers to is excluded from the package", () => {
     }
   }
 });
+
+test("every key and menu runs a declared command, and F5 runs the file", () => {
+  const declared = new Set(manifest.contributes.commands.map((c) => c.command));
+  const used = [
+    ...manifest.contributes.keybindings,
+    ...Object.values(manifest.contributes.menus).flat(),
+  ].map((entry) => entry.command);
+  for (const command of used) {
+    assert.ok(declared.has(command), `${command} is used but not declared`);
+  }
+  const f5 = manifest.contributes.keybindings.find((k) => k.key === "f5");
+  assert.strictEqual(f5.command, "kstar.run");
+  assert.match(f5.when, /editorLangId == kstar/, "F5 must only run .kstar files");
+});
+
+test("every setting extension.js reads is declared", () => {
+  const source = fs.readFileSync(path.join(root, "extension.js"), "utf8");
+  const declared = Object.keys(manifest.contributes.configuration.properties);
+  const read = [...source.matchAll(/getConfiguration\("kstar"\)\.get\("(\w+)"\)/g)].map((m) => `kstar.${m[1]}`);
+  assert.ok(read.includes("kstar.runIn"), `found ${read.join(", ")}`);
+  for (const setting of read) {
+    assert.ok(declared.includes(setting), `${setting} is read but not declared`);
+  }
+});

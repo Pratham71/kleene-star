@@ -15,10 +15,15 @@ Support for Kleene Star (`.kstar`) files:
 - **Snippets** for each kind of block: `alphabet`, `dfa`, `nfa`, `pda`, `tm`,
   `grammar`, `fn`, `fnmachine` (a family of machines), `if`, `for`, `test`,
   `trace`, and `--` for a transition.
+- **Run with F5** (or Ctrl+F5): saves the file and runs `kstar run` on it
+  in a terminal, exactly as on the command line, with colours.
 - **Commands** (Command Palette, or the run button at the top right of a
   `.kstar` file): *Kleene Star: Run File*, *Check File*, *Trace a
   Machine...* (pick a machine, type a word, see every step), *Format File*,
-  and *Restart Language Server*. Output appears in the Kleene Star panel.
+  and *Restart Language Server*. Run and Trace use the terminal (or the
+  Kleene Star output panel, with `kstar.runIn`); Check uses the panel.
+  If you also use the Code Runner extension, its run button is not this
+  one; see [Code Runner](#code-runner).
 - The K\* icon for `.kstar` files (see [file icons](#file-icons) if you use
   an icon theme such as Material Icon Theme).
 
@@ -53,7 +58,7 @@ The extension is not on the Marketplace; install it from a `.vsix` file.
 3. **Install it**:
 
    ```bash
-   code --install-extension kleene-star-0.2.1.vsix
+   code --install-extension kleene-star-0.2.2.vsix
    ```
 
    or, in VS Code, *Extensions* → `...` → *Install from VSIX...*.
@@ -81,6 +86,22 @@ this to your settings:
 |---|---|---|
 | `kstar.serverPath` | (empty) | Full path to `kstar-lsp`. Empty: search the PATH and the install folders. |
 | `kstar.path` | (empty) | Full path to `kstar`, used by Run, Check and Trace. Empty: search as above. |
+| `kstar.runIn` | `terminal` | Where Run and Trace run `kstar`: `terminal`, or `output` for the Kleene Star output panel. |
+
+## Code Runner
+
+The Code Runner extension adds its own run button, which does not know
+Kleene Star. Use F5 or the Kleene Star button instead, or teach Code Runner
+the command in your settings:
+
+```json
+"code-runner.executorMap": {
+  "kstar": "kstar run"
+}
+```
+
+(Add the `"kstar"` line to your existing `code-runner.executorMap` if you
+have one.)
 
 ## Developing
 

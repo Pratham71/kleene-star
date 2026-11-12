@@ -17,6 +17,7 @@ const windows = process.platform === "win32";
 
 let client;
 let output;
+let terminal;
 
 /// The folders where an installer or `cargo install` puts the programs,
 /// tried after the PATH.
@@ -107,9 +108,9 @@ async function currentFile() {
   return editor.document;
 }
 
-/// Runs `kstar` with `args` in the folder of `document` and shows what it
-/// prints in the Kleene Star output panel. Arguments are passed straight to
-/// the program, so names and words need no quoting.
+/// Runs `kstar` with `args` in the folder of `document`, in a terminal or
+/// the Kleene Star output panel (the `kstar.runIn` setting). Arguments are
+/// passed straight to the program, so names and words need no quoting.
 async function runKstar(document, args) {
   const kstar = find("kstar", "path");
   if (!kstar) {
@@ -117,6 +118,10 @@ async function runKstar(document, args) {
     return;
   }
   const file = document.uri.fsPath;
+  if (vscode.workspace.getConfiguration("kstar").get("runIn") !== "output") {
+    runInTerminal(kstar, args, path.dirname(file));
+    return;
+  }
   output.clear();
   output.show(true);
   output.appendLine(`> kstar ${args.join(" ")}`);
@@ -131,6 +136,22 @@ async function runKstar(document, args) {
       output.appendLine(code === 0 ? "\n[done]" : `\n[exit code ${code}]`);
     }
   );
+}
+
+/// Runs `kstar` in a terminal of its own, the way it runs on the command
+/// line, with colours. The terminal starts the program itself rather than a
+/// shell, so no quoting is needed on any platform; it stays open afterwards
+/// to show the output, and is replaced by the next run.
+function runInTerminal(kstar, args, cwd) {
+  if (terminal) terminal.dispose();
+  terminal = vscode.window.createTerminal({
+    name: "Kleene Star",
+    shellPath: kstar,
+    shellArgs: args,
+    cwd,
+    iconPath: new vscode.ThemeIcon("play"),
+  });
+  terminal.show(true);
 }
 
 /// The machines defined in `document`, from the language server's outline.
@@ -185,6 +206,10 @@ function activate(context) {
       client = undefined;
       await startServer();
     }),
+    vscode.window.onDidCloseTerminal((closed) => {
+      if (closed === terminal) terminal = undefined;
+    }),
+    { dispose: () => terminal && terminal.dispose() },
     vscode.workspace.onDidChangeConfiguration(async (event) => {
       if (event.affectsConfiguration("kstar.serverPath")) {
         await vscode.commands.executeCommand("kstar.restartServer");

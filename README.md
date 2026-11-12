@@ -91,7 +91,7 @@ curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.
 The scripts pick the build for your system, check its SHA-256 checksum,
 install it in your user folder (`%LOCALAPPDATA%\Programs\Kleene Star\bin`
 or `~/.kstar/bin`), add that folder to the PATH and print how to
-uninstall. `KSTAR_VERSION=v0.2.1` installs a particular release.
+uninstall. `KSTAR_VERSION=v0.2.2` installs a particular release.
 
 ### From source
 
@@ -107,7 +107,7 @@ installing, use `cargo run -- <command>` instead of `kstar <command>`.
 ### The editor extension
 
 ```bash
-code --install-extension kleene-star-0.2.1.vsix
+code --install-extension kleene-star-0.2.2.vsix
 ```
 
 It finds `kstar-lsp` on the PATH or in any of the folders above, and gives
