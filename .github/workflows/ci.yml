@@ -1,13 +1,14 @@
 # Runs the tests and clippy on Windows, Linux and macOS for every push and
 # pull request, so platform differences (line endings, paths, console
 # encoding) are caught before they reach main, then tests and packages the
-# VS Code extension. (This workflow is currently disabled on GitHub.)
+# VS Code extension. It can also be run by hand from the Actions tab.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions: {}
 

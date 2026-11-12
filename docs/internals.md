@@ -457,8 +457,14 @@ Ideas that fit the current design, roughly in order of size:
   knowing how this copy was installed (installer, script or `cargo install`).
 - Publishing the VS Code extension on the marketplace and the crate on
   crates.io.
-- The cross-platform "CI" workflow is switched off for now; the release
-  workflow runs the tests on every platform it builds for.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull
+request, and can be started by hand. On Windows, Linux and macOS it runs
+`cargo test`, the doc tests and clippy, and checks that the examples are
+formatted; then it builds `kstar`, runs the VS Code extension's tests and
+packages the `.vsix`.
 
 ## Releases
 
