@@ -170,7 +170,7 @@ docs/
   internals.md       how the interpreter works, stage by stage, and how releases are made
 editors/vscode/      the VS Code extension
 installer/           the Windows installer (Inno Setup); install.ps1 and install.sh at the root
-.github/workflows/   release.yml builds and publishes releases; ci.yml is switched off for now
+.github/workflows/   ci.yml tests every push and pull request; release.yml publishes releases
 ```
 
 `automata/` stays separate from `lang/` so the export stage and any future VM reuse it.
