@@ -29,6 +29,28 @@ function referencedFiles(value, found = new Set()) {
 
 const files = [...referencedFiles(manifest)];
 
+/// A .vscodeignore pattern as a regular expression: `**/` is any folders,
+/// `**` anything, `*` anything within one folder.
+function globToRegExp(glob) {
+  let source = "";
+  for (let i = 0; i < glob.length; i++) {
+    if (glob.startsWith("**/", i)) {
+      source += "(.*/)?";
+      i += 2;
+    } else if (glob.startsWith("**", i)) {
+      source += ".*";
+      i += 1;
+    } else if (glob[i] === "*") {
+      source += "[^/]*";
+    } else if (/[\w\/-]/.test(glob[i])) {
+      source += glob[i];
+    } else {
+      source += "\\" + glob[i];
+    }
+  }
+  return new RegExp("^" + source + "$");
+}
+
 test("package.json refers to files", () => {
   for (const expected of ["extension.js", path.normalize("images/icon.png"), path.normalize("images/kstar-file.svg")]) {
     assert.ok(files.includes(expected), `${expected} not found among ${files.join(", ")}`);
@@ -55,9 +77,7 @@ test("no file package.json refers to is excluded from the package", () => {
   for (const file of files) {
     const unix = file.split(path.sep).join("/");
     for (const pattern of ignore) {
-      const regex = new RegExp(
-        "^" + pattern.replace(/[.+^${}()|[\]\]/g, "\$&").replace(/\*\*\//g, "(.*/)?").replace(/\*\*/g, ".*").replace(/\*/g, "[^/]*") + "$",
-      );
+      const regex = globToRegExp(pattern);
       assert.ok(!regex.test(unix), `${unix} is excluded by "${pattern}" in .vscodeignore`);
     }
   }
