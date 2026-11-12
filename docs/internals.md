@@ -471,8 +471,11 @@ packages the `.vsix`.
 `.github/workflows/release.yml` runs when a `v*` tag is pushed. Each platform
 runs `cargo test`, then builds `kstar` and `kstar-lsp` in release mode and
 packages them with `.github/scripts/package.sh`. The Windows installer is
-built from `installer/kstar.iss` with Inno Setup and tested by
-`installer/test-installer.ps1` (install, check, uninstall, check again);
+built from `installer/kstar.iss` with Inno Setup. It carries the `.vsix`
+and, when VS Code is installed, installs the extension through VS Code's
+`code` command (and removes it on uninstall). It is tested by
+`installer/test-installer.ps1` on a runner with VS Code installed (install,
+check, uninstall, check again);
 `install.ps1` and `install.sh` are tested against the freshly built archives
 through `KSTAR_INSTALL_FROM`. Only a plain `vX.Y.Z` tag that matches the
 version in `Cargo.toml` publishes; any other tag is a dry run whose files stay

@@ -70,9 +70,10 @@ Every file has a `.sha256` checksum beside it, and `SHA256SUMS` lists them all.
 
 Download and run `kstar-setup-x64.exe`. It installs for your user, so it
 needs no administrator rights. It adds `kstar` to the PATH (a ticked option),
-gives `.kstar` files the K* icon, and adds a Start Menu entry for the REPL.
-Uninstall it from Settings > Apps; that also removes the PATH entry and the
-file association.
+gives `.kstar` files the K* icon, adds a Start Menu entry for the REPL, and,
+if VS Code is installed, installs the Kleene Star extension in it (also a
+ticked option). Uninstall it from Settings > Apps; that also removes the
+PATH entry, the file association and the extension.
 
 ### With a script
 
@@ -91,7 +92,7 @@ curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.
 The scripts pick the build for your system, check its SHA-256 checksum,
 install it in your user folder (`%LOCALAPPDATA%\Programs\Kleene Star\bin`
 or `~/.kstar/bin`), add that folder to the PATH and print how to
-uninstall. `KSTAR_VERSION=v0.2.2` installs a particular release.
+uninstall. `KSTAR_VERSION=v0.2.3` installs a particular release.
 
 ### From source
 
@@ -107,7 +108,7 @@ installing, use `cargo run -- <command>` instead of `kstar <command>`.
 ### The editor extension
 
 ```bash
-code --install-extension kleene-star-0.2.2.vsix
+code --install-extension kleene-star-0.2.3.vsix
 ```
 
 It finds `kstar-lsp` on the PATH or in any of the folders above, and gives
