@@ -4,3 +4,5 @@
 *.svg
 # The logo is hand-written, not the output of `draw`.
 !/assets/logo.svg
+# The VS Code extension's file icon.
+!/editors/vscode/images/*.svg
