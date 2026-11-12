@@ -2,7 +2,7 @@
   "name": "kleene-star",
   "displayName": "Kleene Star",
   "description": "Kleene Star (.kstar) files: highlighting, snippets, errors and warnings as you type, hover, go to definition, outline, formatting, and commands to run, check and trace.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "kleene-star",
   "private": true,
   "license": "MIT",
@@ -87,6 +87,10 @@
         { "command": "kstar.format", "when": "editorLangId == kstar" }
       ]
     },
+    "keybindings": [
+      { "command": "kstar.run", "key": "f5", "when": "editorLangId == kstar && !inDebugMode" },
+      { "command": "kstar.run", "key": "ctrl+f5", "mac": "cmd+f5", "when": "editorLangId == kstar && !inDebugMode" }
+    ],
     "configuration": {
       "title": "Kleene Star",
       "properties": {
@@ -99,6 +103,16 @@
           "type": "string",
           "default": "",
           "markdownDescription": "Full path to the `kstar` command, used by **Run**, **Check** and **Trace**. Leave empty to look on your PATH and in the usual install folders."
+        },
+        "kstar.runIn": {
+          "type": "string",
+          "enum": ["terminal", "output"],
+          "enumDescriptions": [
+            "Run in a terminal, as on the command line, with colours.",
+            "Show what kstar prints in the Kleene Star output panel."
+          ],
+          "default": "terminal",
+          "markdownDescription": "Where **Run File** and **Trace a Machine** run `kstar`."
         }
       }
     },
