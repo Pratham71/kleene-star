@@ -19,21 +19,24 @@ Support for Kleene Star (`.kstar`) files:
   `.kstar` file): *Kleene Star: Run File*, *Check File*, *Trace a
   Machine...* (pick a machine, type a word, see every step), *Format File*,
   and *Restart Language Server*. Output appears in the Kleene Star panel.
-- The K\* icon for `.kstar` files.
+- The K\* icon for `.kstar` files (see [file icons](#file-icons) if you use
+  an icon theme such as Material Icon Theme).
 
 The extension is not on the Marketplace; install it from a `.vsix` file.
 
 ## Install
 
 1. **Install Kleene Star itself**, which provides the `kstar` command and the
-   `kstar-lsp` language server. From the repository root:
+   `kstar-lsp` language server: with the Windows installer or an install
+   script from the [main README](../../README.md#installing), or from the
+   repository root with:
 
    ```bash
    cargo install --path .
    ```
 
-   This puts both in `~/.cargo/bin`. The extension looks there, on your
-   PATH, in `~/.kstar/bin`, and (on Windows) in
+   The extension looks on your PATH, in `~/.cargo/bin`, in
+   `~/.kstar/bin`, and (on Windows) in
    `%LOCALAPPDATA%\Programs\Kleene Star\bin`. If they are somewhere else,
    set `kstar.path` and `kstar.serverPath` to their full paths.
 
@@ -43,19 +46,34 @@ The extension is not on the Marketplace; install it from a `.vsix` file.
    ```bash
    cd editors/vscode
    npm ci
-   npx vsce package --skip-license
+   cp ../../LICENSE LICENSE
+   npx vsce package
    ```
 
 3. **Install it**:
 
    ```bash
-   code --install-extension kleene-star-0.2.0.vsix
+   code --install-extension kleene-star-0.2.1.vsix
    ```
 
    or, in VS Code, *Extensions* → `...` → *Install from VSIX...*.
 
 Open any `.kstar` file to start. If `kstar-lsp` cannot be found, a message
 says so, with buttons to open the setting or this page.
+
+## File icons
+
+The extension gives `.kstar` files the K\* icon, which VS Code shows with
+its built-in icon themes. Icon themes that draw their own icons, such as
+Material Icon Theme, ignore it. To get it with Material Icon Theme, copy
+`images/kstar-file.svg` to `~/.vscode/extensions/icons/kstar.svg` and add
+this to your settings:
+
+```json
+"material-icon-theme.files.associations": {
+  "*.kstar": "../../icons/kstar"
+}
+```
 
 ## Settings
 
