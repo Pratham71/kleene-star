@@ -2,7 +2,7 @@
   "name": "kleene-star",
   "displayName": "Kleene Star",
   "description": "Kleene Star (.kstar) files: highlighting, snippets, errors and warnings as you type, hover, go to definition, outline, formatting, and commands to run, check and trace.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "kleene-star",
   "private": true,
   "license": "MIT",

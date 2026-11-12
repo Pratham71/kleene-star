@@ -69,7 +69,7 @@ jobs:
 
   installer:
     name: Windows installer
-    needs: build
+    needs: [build, vscode]
     runs-on: windows-latest
     permissions:
       contents: read
@@ -79,6 +79,11 @@ jobs:
         with:
           name: build-x86_64-pc-windows-msvc
           path: files
+      # The installer carries the extension and installs it in VS Code.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: build-vsix
+          path: vsix
       - name: find or install Inno Setup
         shell: pwsh
         run: |
@@ -96,11 +101,17 @@ jobs:
         run: |
           Expand-Archive files\kstar-x86_64-pc-windows-msvc.zip -DestinationPath programs
           $version = (& programs\kstar.exe version | Select-Object -First 1) -replace '^kstar ', ''
-          & $env:ISCC "/DAppVersion=$version" "/DSourceDir=$PWD\programs" "/O$PWD\dist" installer\kstar.iss
+          $vsix = (Get-ChildItem vsix\*.vsix | Select-Object -First 1).FullName
+          & $env:ISCC "/DAppVersion=$version" "/DSourceDir=$PWD\programs" "/DVsixFile=$vsix" "/O$PWD\dist" installer\kstar.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+      # So the test can check that the installer adds the extension to VS
+      # Code and that the uninstaller removes it.
+      - name: install VS Code
+        shell: pwsh
+        run: choco install vscode --yes --no-progress
       - name: install, check and uninstall
         shell: pwsh
-        run: installer\test-installer.ps1 -Setup dist\kstar-setup-x64.exe
+        run: installer\test-installer.ps1 -Setup dist\kstar-setup-x64.exe -ExpectVSCode
       - name: checksum
         shell: bash
         run: cd dist && sha256sum kstar-setup-x64.exe > kstar-setup-x64.exe.sha256

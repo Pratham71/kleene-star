@@ -1,12 +1,14 @@
 ; The Windows installer, kstar-setup-x64.exe, built with Inno Setup 6 by
 ; the release workflow:
 ;
-;   iscc /DAppVersion=0.2.0 /DSourceDir=<folder with kstar.exe> /O<output> installer\kstar.iss
+;   iscc /DAppVersion=0.2.3 /DSourceDir=<folder with kstar.exe> /DVsixFile=<the .vsix> /O<output> installer\kstar.iss
 ;
 ; It installs kstar.exe and kstar-lsp.exe into "<install folder>\bin", by
 ; default %LOCALAPPDATA%\Programs\Kleene Star (or Program Files when run as
-; administrator), optionally adds that folder to the PATH, and associates
-; .kstar files with the K* icon. The uninstaller removes all three.
+; administrator), optionally adds that folder to the PATH, associates
+; .kstar files with the K* icon, and, if VS Code is installed and VsixFile
+; was given, installs the Kleene Star extension in it. The uninstaller
+; removes all of these.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
@@ -44,6 +46,10 @@ SolidCompression=yes
 [Tasks]
 Name: addtopath; Description: "Add Kleene Star to the PATH, so ""kstar"" works in any terminal"
 Name: associate; Description: "Associate .kstar files with Kleene Star (and show the K* icon)"
+#ifdef VsixFile
+; Only offered when VS Code is installed.
+Name: vscode; Description: "Install the Kleene Star extension in VS Code"; Check: VSCodeFound
+#endif
 
 [Files]
 Source: "{#SourceDir}\kstar.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
@@ -51,6 +57,10 @@ Source: "{#SourceDir}\kstar-lsp.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "..\assets\kstar.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
+#ifdef VsixFile
+; Kept after installing, so the uninstaller knows to remove the extension.
+Source: "{#VsixFile}"; DestDir: "{app}\vscode"; DestName: "kleene-star.vsix"; Flags: ignoreversion; Tasks: vscode
+#endif
 
 [Icons]
 Name: "{group}\Kleene Star REPL"; Filename: "{app}\bin\kstar.exe"; Parameters: "repl"; IconFilename: "{app}\kstar.ico"; Comment: "Try Kleene Star interactively"
@@ -132,15 +142,63 @@ begin
     RegWriteExpandStringValue(EnvironmentRoot, EnvironmentKey, 'Path', PathWithout(Paths));
 end;
 
+{ VS Code's command-line script, code.cmd: on the PATH, or where the user
+  and the system installers of VS Code put it. Empty if VS Code is not
+  installed. }
+function VSCodeCommand: String;
+begin
+  Result := FileSearch('code.cmd', GetEnv('PATH'));
+  if Result = '' then
+  begin
+    Result := ExpandConstant('{localappdata}\Programs\Microsoft VS Code\bin\code.cmd');
+    if not FileExists(Result) then Result := ExpandConstant('{commonpf}\Microsoft VS Code\bin\code.cmd');
+    if not FileExists(Result) then Result := '';
+  end;
+end;
+
+function VSCodeFound: Boolean;
+begin
+  Result := VSCodeCommand <> '';
+end;
+
+{ Runs code.cmd with Arguments, hidden, and says whether it succeeded. A .cmd
+  file has to be run through cmd.exe; /C with the whole command in quotes
+  keeps the quotes around paths with spaces. }
+function RunVSCode(Arguments: String): Boolean;
+var
+  Code: String;
+  ResultCode: Integer;
+begin
+  Code := VSCodeCommand;
+  Result := (Code <> '') and
+    Exec(ExpandConstant('{cmd}'), '/C ""' + Code + '" ' + Arguments + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and
+    (ResultCode = 0);
+  Log('VS Code ' + Arguments + ': ' + IntToStr(ResultCode));
+end;
+
+function VsixPath: String;
+begin
+  Result := ExpandConstant('{app}\vscode\kleene-star.vsix');
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
     if WizardIsTaskSelected('addtopath') then AddToPath else RemoveFromPath;
+#ifdef VsixFile
+    if WizardIsTaskSelected('vscode') then
+      if not RunVSCode('--install-extension "' + VsixPath + '" --force') then
+        SuppressibleMsgBox('The Kleene Star extension could not be installed in VS Code. You can install it later from ' + VsixPath + ' (Extensions, "...", Install from VSIX).', mbInformation, MB_OK, IDOK);
+#endif
   end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
+  { The extension is removed only if this installer put it there, which the
+    .vsix it left behind shows. }
+  if (CurUninstallStep = usUninstall) and FileExists(VsixPath) then
+    RunVSCode('--uninstall-extension kleene-star.kleene-star');
   if CurUninstallStep = usPostUninstall then RemoveFromPath;
 end;

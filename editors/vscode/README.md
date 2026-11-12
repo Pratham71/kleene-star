@@ -31,6 +31,10 @@ The extension is not on the Marketplace; install it from a `.vsix` file.
 
 ## Install
 
+On Windows, the Kleene Star installer (`kstar-setup-x64.exe`) does all of
+this for you: it installs `kstar` and `kstar-lsp`, and if VS Code is
+installed, it installs this extension too. Otherwise:
+
 1. **Install Kleene Star itself**, which provides the `kstar` command and the
    `kstar-lsp` language server: with the Windows installer or an install
    script from the [main README](../../README.md#installing), or from the
@@ -58,7 +62,7 @@ The extension is not on the Marketplace; install it from a `.vsix` file.
 3. **Install it**:
 
    ```bash
-   code --install-extension kleene-star-0.2.2.vsix
+   code --install-extension kleene-star-0.2.3.vsix
    ```
 
    or, in VS Code, *Extensions* → `...` → *Install from VSIX...*.
