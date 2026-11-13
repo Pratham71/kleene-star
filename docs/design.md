@@ -3,9 +3,10 @@
 > Status: version 0.2.3 (2026-11-12), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
-> Version 0.3 (in progress) adds imports between files, `export` to Rust and a standard
-> library. This is the design as agreed on 2026-11-10, with the layout,
-> error format and test sections updated to match the code.
+> Version 0.3 (in progress, not yet released) adds imports between files, `export` to Rust
+> and a standard library. All three are on `main`; `std.math` is the first library module, and
+> `std.string` and `std.collections` come next. This is the design as agreed on 2026-11-10,
+> with the layout, error format and test sections updated to match the code.
 
 ## Context
 
@@ -174,7 +175,7 @@ source-line-and-caret format without a call chain, and stop the program before i
 Cargo.toml  build.rs           build.rs records the commit and date, and puts the icon in kstar.exe
 src/
   lib.rs             Session: feeds text through the stages; shared by CLI, REPL, tests and the LSP
-  main.rs            CLI: run, check, fmt, trace, new, explain, repl, version, update
+  main.rs            CLI: run, check, fmt, trace, export, new, explain, repl, version, update
   repl.rs  update.rs the REPL; `kstar version` and `kstar update --check`
   ide.rs             analysis for editors: problems, hover, definitions, completion, outline
   bin/kstar-lsp.rs   the language server (tower-lsp-server)
