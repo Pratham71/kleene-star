@@ -672,9 +672,11 @@ prints, and on Windows embeds the K* icon in the executables.
 programs (`crt-static`), so they need no Visual C++ Redistributable; a test
 in `tests/cli.rs` fails if either program imports `VCRUNTIME140.dll`.
 
-To release: bump the version in `Cargo.toml` and
-`editors/vscode/package.json`, merge, then `git tag vX.Y.Z` (or
-`vX.Y.Z-beta` for a pre-release) and push the tag.
+A release's notes are its version's section of `CHANGELOG.md`, which
+`.github/scripts/release-notes.sh` extracts and follows with how to install
+and check the download; CI fails if the version in `Cargo.toml` has no
+section. The steps to make a release are in
+[CONTRIBUTING.md](../CONTRIBUTING.md#making-a-release).
 
 New machine types belong in `src/automata/` as plain Rust first, with tests,
 and get syntax in `src/lang/` second.

@@ -44,6 +44,12 @@ jobs:
       - name: examples are formatted
         shell: bash
         run: cargo run --quiet -- fmt --check examples
+      # A release's notes come from CHANGELOG.md, so the version in
+      # Cargo.toml must always have a section there.
+      - name: CHANGELOG.md has a section for this version
+        if: runner.os == 'Linux'
+        shell: bash
+        run: .github/scripts/release-notes.sh "v$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)" > /dev/null
 
   vscode:
     name: VS Code extension

@@ -1,12 +1,28 @@
 <p align="center"><img src="assets/logo.svg" alt="Kleene Star logo: a K with a raised star" width="96"></p>
 
-# Kleene Star
+<h1 align="center">Kleene Star</h1>
 
-A small language for Theory of Computation, named after the star in `a*`.
-The command is `kstar` and programs live in `.kstar` files. You describe
-machines the way you draw them on paper, then ask questions about them.
+<p align="center">
+A small language for Theory of Computation: draw machines in text, then ask questions about them.
+</p>
+
+<p align="center">
+<a href="https://github.com/Pratham71/kleene-star/actions/workflows/ci.yml"><img src="https://github.com/Pratham71/kleene-star/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status"></a>
+<a href="https://github.com/Pratham71/kleene-star/releases/latest"><img src="https://img.shields.io/github/v/release/Pratham71/kleene-star?label=release" alt="Latest release"></a>
+<a href="LICENSE"><img src="https://img.shields.io/github/license/Pratham71/kleene-star" alt="MIT licence"></a>
+</p>
+
+Kleene Star is named after the star in `a*`. You write DFAs, NFAs, regular
+expressions, grammars, pushdown automata and Turing machines the way you
+draw them on paper, and the language converts, combines, compares, traces
+and tests them. The command is `kstar` and programs live in `.kstar` files.
 
 <p align="center"><img src="assets/demo.gif" width="960" alt="An animation in four stages. The regular expression /(ab)*/ appears; to_nfa turns it into an eps-NFA with 6 states by Thompson's construction; to_dfa turns that into a DFA with 4 states named after sets of NFA states; minimize merges the two equivalent accepting states, {q0,q1,q2} and {q1,q2,q5}, which slide together into one, leaving a minimal DFA with 3 states."></p>
+
+## A first program
+
+An NFA for binary strings that end in `01`, made deterministic and minimal,
+then checked against the regular expression for the same language:
 
 ```kstar
 alphabet B = {0, 1}
@@ -26,6 +42,9 @@ test d accepts "1101"
 test equivalent(d, /(0|1)*01/)
 ```
 
+`kstar run ends_in_01.kstar` prints the minimal DFA as a table (`->` marks
+the start state, `*` the accepting ones) and the result of the tests:
+
 ```text
 DFA with 3 states over {0, 1}
           | 0     | 1
@@ -35,158 +54,46 @@ DFA with 3 states over {0, 1}
 tests: 2 passed, 0 failed
 ```
 
+## Install
+
+| On | Run |
+|---|---|
+| Windows | Download and run `kstar-setup-x64.exe` from the [latest release](https://github.com/Pratham71/kleene-star/releases/latest), or in PowerShell: `powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 \| iex"` |
+| Linux, macOS | `curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh \| sh` |
+| From source | `cargo install --path . --locked` in a clone of this repository |
+
+Then open a new terminal and run `kstar version`. The installer and the
+scripts check the download's SHA-256 checksum and need no administrator
+rights. The [installation guide](docs/install.md) covers every option:
+checking a download by hand, the VS Code extension, updating, beta
+releases, uninstalling and troubleshooting.
+
 ## What it can do
 
-- **Define** DFAs, NFAs, eps-NFAs, regular expressions and finite languages.
-- **Test** which strings a language accepts.
-- **Convert** between them: regex to eps-NFA to NFA to DFA to minimal DFA, and back to a regex.
-- **Combine** languages: union, intersection, difference, complement, concatenation, star, reversal.
-- **Compare** languages: equivalence and emptiness.
-- **Draw** state diagrams as Graphviz files.
-- **Trace** a run step by step: states, sets of states, or a PDA's stack.
-- **Go beyond regular languages** with context-free grammars (CNF, CYK,
-  derivations) and pushdown automata.
-- **Run Turing machines**, with a step limit that explains the halting problem
-  instead of hanging.
-- **Split programs into files** with `import "utils.kstar"` and
-  `from utils import f`, and use the standard library (`std.math`) without
-  any import.
-- **Export** a DFA, or anything regular, as a standalone Rust function with
-  `kstar export` or `to_rust`.
-- **Catch mistakes early**: a DFA that is missing a transition, a symbol outside
-  the alphabet, or a type mix-up is reported before the program runs, with the
-  exact place underlined and a hint.
+**Regular languages.** Define DFAs, NFAs (with eps moves), regular
+expressions and finite languages. Convert between them: regex to eps-NFA to
+DFA to minimal DFA, and back to a regex. Combine them with union,
+intersection, difference, complement, concatenation, star and reversal, and
+ask whether two are equivalent or one is empty.
 
-## Installing
+**Beyond regular.** Context-free grammars, with Chomsky normal form, CYK
+membership and derivations; pushdown automata; and Turing machines, which
+stop at a step limit with an explanation of the halting problem instead of
+hanging. Questions that cannot be answered, such as the equivalence of two
+grammars, are refused before the program runs, with the reason.
 
-Each [release](https://github.com/Pratham71/kleene-star/releases) has
-`kstar` and its language server `kstar-lsp` for these platforms, plus a
-Windows installer and the VS Code extension:
+**Seeing how it works.** `trace` runs a machine on a word step by step,
+showing states, sets of states, a PDA's stack or a Turing machine's tape.
+`draw` writes a state diagram for Graphviz. `kstar export` writes a machine
+as a standalone Rust function.
 
-| Platform | Download |
-|---|---|
-| Windows x64 | `kstar-setup-x64.exe` (installer) or `kstar-x86_64-pc-windows-msvc.zip` |
-| Linux x64 | `kstar-x86_64-unknown-linux-gnu.tar.gz` |
-| macOS, Intel | `kstar-x86_64-apple-darwin.tar.gz` |
-| macOS, Apple Silicon | `kstar-aarch64-apple-darwin.tar.gz` |
-| VS Code | `kleene-star-<version>.vsix` |
+**Programs that grow.** Functions, loops and `test` statements; `import` to
+split a program over several files; a standard library, starting with
+`std.math`; a formatter (`kstar fmt`) and a REPL (`kstar repl`).
 
-Every file has a `.sha256` checksum beside it, and `SHA256SUMS` lists them all.
-Nothing else is needed: the programs are self-contained (no Rust, and on
-Windows, from 0.2.5-beta on, no Visual C++ Redistributable).
-
-The newest build is **0.2.5-beta**, a pre-release with imports between files,
-the `std.math` library and `kstar export`. GitHub's "latest release" (and so
-the scripts below, by default) is still 0.2.3; download the beta from its
-release page or install it with `KSTAR_VERSION=v0.2.5-beta`.
-
-### With the Windows installer
-
-Download and run `kstar-setup-x64.exe`. It installs for your user, so it
-needs no administrator rights. It adds `kstar` to the PATH (a ticked option),
-gives `.kstar` files the K* icon, adds a Start Menu entry for the REPL, and,
-if VS Code is installed, installs the Kleene Star extension in it (also a
-ticked option). Uninstall it from Settings > Apps; that also removes the
-PATH entry, the file association and the extension.
-
-### With a script
-
-On Windows, in PowerShell:
-
-```bash
-powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex"
-```
-
-On Linux or macOS:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | sh
-```
-
-The scripts pick the build for your system, check its SHA-256 checksum,
-install it in your user folder (`%LOCALAPPDATA%\Programs\Kleene Star\bin`
-or `~/.kstar/bin`), add that folder to the PATH and print how to
-uninstall. They install the latest stable release; `KSTAR_VERSION=v0.2.5-beta`
-installs a particular one, such as the beta.
-
-### From source
-
-You need [Rust](https://rustup.rs). Then, in this folder:
-
-```bash
-cargo install --path .
-```
-
-That puts `kstar` and `kstar-lsp` in `~/.cargo/bin`. To try it without
-installing, use `cargo run -- <command>` instead of `kstar <command>`.
-
-### The editor extension
-
-```bash
-code --install-extension kleene-star-0.2.5-beta.vsix
-```
-
-It finds `kstar-lsp` on the PATH or in any of the folders above, and gives
-you errors as you type, hover, go to definition, an outline, formatting
-and commands to run, check and trace. See [its README](editors/vscode/README.md).
-
-`kstar version` shows what is installed and `kstar update --check` whether
-there is a newer release.
-
-## Quick start
-
-```bash
-kstar new hello
-```
-
-```bash
-kstar run hello.kstar
-```
-
-```bash
-kstar repl
-```
-
-`kstar new` writes a small working program to start from. `kstar run`
-runs programs, `kstar check` only looks for errors and warnings, `kstar fmt`
-tidies their layout, `kstar trace` follows one machine on one word, `kstar export` writes a
-machine as Rust code, and
-`kstar repl` gives you an interactive prompt. Each takes several files or
-folders, `kstar explain E0404` explains an error code, and `kstar help`
-lists the rest. The exit code is 0 when there were no errors and no failed
-tests. The examples in [examples/](examples) are a good next step:
-
-```bash
-kstar run examples/tour.kstar
-```
-
-## Learning the language
-
-1. [Deterministic machines](docs/tutorial/01-dfa.md)
-2. [Nondeterminism and eps moves](docs/tutorial/02-nfa.md)
-3. [Regular expressions](docs/tutorial/03-regex.md)
-4. [Combining and comparing languages](docs/tutorial/04-closure.md)
-5. [Functions and machine families](docs/tutorial/05-functions.md)
-6. [Watching a machine run](docs/tutorial/06-trace.md)
-7. [Grammars and pushdown automata](docs/tutorial/07-context-free.md)
-8. [Turing machines](docs/tutorial/08-turing.md)
-9. [Programs in several files](docs/tutorial/09-modules.md)
-
-Appendix: [tools](docs/tutorial/tools.md), including `kstar fmt` and the `kstar-lsp`
-language server ([VS Code extension](editors/vscode/README.md)).
-
-Then keep [the reference](docs/reference.md) open: every statement, type,
-built-in function and error on one page.
-
-If you want to know how the interpreter itself works, read
-[internals](docs/internals.md). The design decisions are in
-[design](docs/design.md).
-
-## When something goes wrong
-
-Errors point at the problem and usually suggest a fix. Every error in the
-file is reported at once, each with a code that `kstar explain` describes
-in full ([all codes](docs/errors.md)):
+**Mistakes caught early.** A DFA with a missing transition, a symbol outside
+the alphabet or a type mix-up is reported before anything runs, every error
+at once, each with the exact place underlined, a hint and a code:
 
 ```kstar-error
 alphabet B = {0, 1}
@@ -207,45 +114,81 @@ MachineError[E0404]: DFA `Broken` is not total: no transition from `q0` on `1`
   hint: a DFA needs a transition from every state on every symbol; add the missing ones (often to a dead state), or use `nfa`
 ```
 
-Errors that happen while running show the chain of calls, most recent last:
+`kstar explain E0404` explains any code in full; they are all in the
+[error index](docs/errors.md). Errors while running show the chain of
+calls, most recent last, like Python.
 
-```text
-Traceback (most recent call last):
-  demo.kstar, line 20, in <main>
-    test smallest(0) accepts "110"
-  demo.kstar, line 16, in smallest
-    return minimize(div_by(n))
-  demo.kstar, line 9, in div_by
-    q[i] --0--> q[(2 * i) % n]
-                  ^^^^^^^^^^^
-MathError: modulo by zero
-  hint: the right-hand side of `%` is 0 here
-```
+## Commands
 
-## Project layout
+| Command | What it does |
+|---|---|
+| `kstar new hello` | Writes `hello.kstar`, a small working program to start from |
+| `kstar run file.kstar` | Runs programs (files or folders); `kstar file.kstar` for short |
+| `kstar check file.kstar` | Reports errors and warnings without running |
+| `kstar fmt file.kstar` | Rewrites files in the standard style |
+| `kstar trace file.kstar M 0110` | Runs the file quietly, then traces machine `M` on `0110` |
+| `kstar export file.kstar M` | Writes machine `M` as a Rust function |
+| `kstar repl` | An interactive prompt |
+| `kstar explain E0404` | Explains an error code |
 
-```text
-src/automata/   the machines and algorithms, as a plain Rust library
-src/lang/       the language: lexer, parser, checker, interpreter, formatter, lints
-src/ide.rs      analysis for editors, used by the language server
-src/main.rs     the `kstar` command; src/bin/kstar-lsp.rs is the language server
-examples/       programs to read and run
-tests/          golden, property, robustness, scale, CLI and IDE tests
-docs/           tutorial, reference, error catalogue, internals, design
-editors/vscode/ the VS Code extension
-installer/      the Windows installer; install.ps1 and install.sh are the scripts
-assets/         the logo; tools/logo renders the PNG and Windows icon from it
-```
+`kstar help` lists the rest. The exit code is 0 when there were no errors
+and no failed tests. The [examples](examples) are a good next step:
+`kstar run examples/tour.kstar`.
 
-Run the tests with `cargo test`. They include every example and every code
-sample in the documentation, so the docs cannot fall out of date unnoticed.
+## Learn
 
-## Contributing
+The [tutorial](docs/tutorial/01-dfa.md) goes from a first DFA to Turing
+machines in nine short chapters:
 
-Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how
-to build and test, the house rules and how to propose a change, and
-everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
-To report a security problem, see [SECURITY.md](SECURITY.md).
+1. [Deterministic machines](docs/tutorial/01-dfa.md)
+2. [Nondeterminism and eps moves](docs/tutorial/02-nfa.md)
+3. [Regular expressions](docs/tutorial/03-regex.md)
+4. [Combining and comparing languages](docs/tutorial/04-closure.md)
+5. [Functions and machine families](docs/tutorial/05-functions.md)
+6. [Watching a machine run](docs/tutorial/06-trace.md)
+7. [Grammars and pushdown automata](docs/tutorial/07-context-free.md)
+8. [Turing machines](docs/tutorial/08-turing.md)
+9. [Programs in several files](docs/tutorial/09-modules.md)
+
+Then keep these close:
+
+- [The reference](docs/reference.md): every statement, type, built-in
+  function and command on one page.
+- [The error index](docs/errors.md): every error and warning, with an
+  example of each.
+- [Internals](docs/internals.md): how the interpreter works, in the order a
+  program travels through it. The [design notes](docs/design.md) explain
+  the decisions behind the language.
+
+Every code sample in these documents is run by the test suite, so they
+cannot fall out of date unnoticed.
+
+## Editor support
+
+The VS Code extension gives you errors and warnings as you type, hover,
+go to definition, completion, an outline, formatting, snippets, and
+commands to run, check and trace the current file (F5 runs it). The Windows
+installer can install it for you; otherwise install the `.vsix` from the
+release, as the [installation guide](docs/install.md#the-vs-code-extension)
+explains. See [the extension's README](editors/vscode/README.md).
+
+Any editor that speaks the Language Server Protocol can use `kstar-lsp`,
+which is installed next to `kstar`; see
+[editor support with `kstar-lsp`](docs/tutorial/tools.md#editor-support-with-kstar-lsp).
+
+## Status
+
+| | Version | What it has |
+|---|---|---|
+| Stable | **0.2.3** | Everything above except imports, `std.math` and `kstar export`. The install scripts and `kstar update` use it. |
+| Beta | **0.2.5-beta** | Adds imports between files, the `std.math` library and `kstar export`. A pre-release: install it with `KSTAR_VERSION=v0.2.5-beta` ([how](docs/install.md#choosing-stable-or-beta)). |
+
+What changed in each version, and how to upgrade, is in the
+[changelog](CHANGELOG.md). Next on the way to 0.3.0 are more standard-library
+modules (`std.string` and `std.collections`).
+
+Until version 0.2 the project was called TOC-Lang, with `.toc` files and a
+`toc` command.
 
 ## How this project was built
 
@@ -254,8 +197,13 @@ The code, tests and documentation were written with
 language design and the decisions about it were made by a human, and a
 human reviewer was present at each step and approved each change.
 
-Until version 0.2 the project was called TOC-Lang, with `.toc` files and a
-`toc` command.
+## Contributing
+
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how
+to build and test, where things are, the house rules, how to propose a
+change and how releases are made. Everyone taking part follows the
+[code of conduct](CODE_OF_CONDUCT.md). To report a security problem, see
+[SECURITY.md](SECURITY.md).
 
 ## Licence
 
