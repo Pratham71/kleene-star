@@ -8,6 +8,7 @@ Error in std_math_errors.kstar, line 3:
     print std.math.gdc(1, 2)
                    ^^^
 NameError[E0208]: `std.math` has no `gdc`
+  hint: it defines `abs`, `div`, `factorial`, `gcd`, `is_prime`, `lcm` and 5 more
 
 Error in std_math_errors.kstar, line 4:
     print std.math.gcd(1)
@@ -35,5 +36,6 @@ Error in std_math_errors.kstar, line 8:
     from std.math import pi
                          ^^
 NameError[E0208]: `std.math` has no `pi`
+  hint: it defines `abs`, `div`, `factorial`, `gcd`, `is_prime`, `lcm` and 5 more
 
 7 errors found
