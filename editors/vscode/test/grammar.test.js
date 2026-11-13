@@ -151,7 +151,7 @@ print p.EvenZeros accepts "0", gcd(4, 6)`);
   assert.strictEqual(scopeOf(all, "p.B"), "entity.name.type.alphabet.kstar");
   assert.strictEqual(scopeOf(all, "p", 1), "entity.name.namespace.kstar");
   assert.strictEqual(scopeOf(all, "start"), "keyword.control.state-role.kstar");
-  assert.strictEqual(scopeOf(all, "gcd"), "entity.name.function.call.kstar");
+  assert.strictEqual(scopeOf(all, "gcd", 1), "entity.name.function.call.kstar");
 });
 
 test("every example tokenizes, and no machine or grammar is left open", async () => {
