@@ -1,6 +1,6 @@
 [package]
 name = "kstar"
-version = "0.2.4-beta"
+version = "0.2.5-beta"
 edition = "2021"
 # `cargo run` runs the language, not the language server.
 default-run = "kstar"

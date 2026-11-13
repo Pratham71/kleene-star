@@ -464,6 +464,10 @@ impl Checker {
                 err = err.hint(format!("did you mean `{close}`?"));
             } else if exports.values.is_empty() && exports.functions.is_empty() {
                 err = err.hint("it defines nothing at its top level");
+            } else {
+                // No likely typo: say what is there, so a wrong guess about
+                // the module's contents is easy to correct.
+                err = err.hint(format!("it defines {}", defined_names(exports)));
             }
             return Err(err);
         };
@@ -1240,6 +1244,21 @@ pub fn bad_rust_name(span: Span, message: String) -> Diag {
     Diag::new(ErrorKind::Value, span, message)
         .code(codes::BAD_RUST_NAME)
         .hint("a Rust function name is usually written in snake_case, like `even_zeros`")
+}
+
+/// The names a module defines, for a hint: "`EvenZeros` and `div_by`", or
+/// the first few in alphabetical order and how many more there are.
+fn defined_names(exports: &Exports) -> String {
+    const SHOWN: usize = 6;
+    let mut names: Vec<&str> = exports.names().collect();
+    names.sort_unstable();
+    let quoted: Vec<String> = names.iter().map(|n| format!("`{n}`")).collect();
+    match quoted.len() {
+        0 => "nothing".into(),
+        1 => quoted[0].clone(),
+        n if n <= SHOWN => format!("{} and {}", quoted[..n - 1].join(", "), quoted[n - 1]),
+        n => format!("{} and {} more", quoted[..SHOWN].join(", "), n - SHOWN),
+    }
 }
 
 /// The error for using `std`, or a module, where a value is needed.

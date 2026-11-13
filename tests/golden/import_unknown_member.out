@@ -8,5 +8,6 @@ Error in import_unknown_member.kstar, line 3:
     print lib.nothing_like_this
               ^^^^^^^^^^^^^^^^^
 NameError[E0208]: module `lib` has no `nothing_like_this`
+  hint: it defines `B`, `EvenZeros`, `Greeting`, `double` and `wrap`
 
 2 errors found

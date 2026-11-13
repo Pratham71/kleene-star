@@ -495,8 +495,9 @@ NameError[E0207]: circular import: a.kstar -> b.kstar -> a.kstar
 ## E0208: A name a module does not have
 
 A qualified name such as `utils.Size`, or a name in `from ... import`,
-must be defined at the top level of that module. The message suggests a
-close name if there is one. The same code is used for a part after `.`
+must be defined at the top level of that module. The hint suggests a
+close name if there is one, and otherwise lists what the module does
+define. The same code is used for a part after `.`
 that is not a module at all, and for a standard-library module that does
 not exist.
 
@@ -515,6 +516,19 @@ Error in demo.kstar, line 2:
                 ^^^^
 NameError[E0208]: module `utils` has no `Sise`
   hint: did you mean `Size`?
+```
+
+```kstar-error
+import "utils.kstar"
+print utils.Width
+```
+
+```text
+Error in demo.kstar, line 2:
+    print utils.Width
+                ^^^^^
+NameError[E0208]: module `utils` has no `Width`
+  hint: it defines `Size`
 ```
 
 ## E0209: An import whose name is taken

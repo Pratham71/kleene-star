@@ -71,13 +71,12 @@ Windows installer and the VS Code extension:
 
 Every file has a `.sha256` checksum beside it, and `SHA256SUMS` lists them all.
 Nothing else is needed: the programs are self-contained (no Rust, and on
-Windows, from the release after 0.2.4-beta, no Visual C++
-Redistributable).
+Windows, from 0.2.5-beta on, no Visual C++ Redistributable).
 
-The newest build is **0.2.4-beta**, a pre-release with imports between files,
+The newest build is **0.2.5-beta**, a pre-release with imports between files,
 the `std.math` library and `kstar export`. GitHub's "latest release" (and so
 the scripts below, by default) is still 0.2.3; download the beta from its
-release page or install it with `KSTAR_VERSION=v0.2.4-beta`.
+release page or install it with `KSTAR_VERSION=v0.2.5-beta`.
 
 ### With the Windows installer
 
@@ -105,7 +104,7 @@ curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.
 The scripts pick the build for your system, check its SHA-256 checksum,
 install it in your user folder (`%LOCALAPPDATA%\Programs\Kleene Star\bin`
 or `~/.kstar/bin`), add that folder to the PATH and print how to
-uninstall. They install the latest stable release; `KSTAR_VERSION=v0.2.4-beta`
+uninstall. They install the latest stable release; `KSTAR_VERSION=v0.2.5-beta`
 installs a particular one, such as the beta.
 
 ### From source
@@ -122,7 +121,7 @@ installing, use `cargo run -- <command>` instead of `kstar <command>`.
 ### The editor extension
 
 ```bash
-code --install-extension kleene-star-0.2.4-beta.vsix
+code --install-extension kleene-star-0.2.5-beta.vsix
 ```
 
 It finds `kstar-lsp` on the PATH or in any of the folders above, and gives
