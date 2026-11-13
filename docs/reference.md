@@ -395,6 +395,21 @@ undecidable. Operations for regular languages (`minimize`, `union`,
 `equivalent` refuses Turing machines: whether two of them accept the same
 language is undecidable.
 
+### Generating Rust
+
+| Function | Returns | What it does |
+|---|---|---|
+| `to_rust(lang, name)` | `Str` | Rust source for `pub fn name(input: &str) -> bool`, which accepts exactly the words of `lang`. |
+
+`lang` is any regular language; it is converted to a DFA first. The code is
+one dependency-free function, a `match` on the state number and the symbol
+with the original state names as comments, followed by a `#[cfg(test)]`
+module that checks a few of the shortest accepted and rejected words. A
+symbol outside the alphabet makes the function return `false`. `name` must
+be a valid Rust function name and not a Rust keyword (E0308). Grammars,
+PDAs and Turing machines are refused when the program is checked. The
+command `kstar export` does the same from the command line.
+
 ### Alphabets in operations
 
 - A `Dfa` or `Nfa` has a fixed alphabet. When an operation takes two machines,
@@ -626,6 +641,7 @@ Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 | `kstar fmt -` | Formats standard input to standard output, for editors and scripts. |
 | `kstar new <name>` | Writes `<name>.kstar`, a small working program to start from. Never overwrites. |
 | `kstar trace <file> <M> <word>` | Runs the file without showing its output, then traces machine `M` (any expression) on `word`. |
+| `kstar export <file> <M> [--fn name] [-o out.rs] [--minimize]` | Runs the file without showing its output, then writes the regular language `M` as a standalone Rust function (see [`to_rust`](#generating-rust)). |
 | `kstar explain <code>` | Explains an error or warning code; `--list` lists them all. |
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
 | `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |

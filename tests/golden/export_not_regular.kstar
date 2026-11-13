@@ -1,0 +1,10 @@
+# Rust code can only be made from a regular language's DFA.
+alphabet B = {0, 1}
+grammar G over B { S -> 0 S 1 | eps }
+pda P over B { start p  accept p  p --0, eps/A--> p }
+tm M over B { start s  accept y  s --_/_,S--> y }
+print to_rust(G, "g")
+print to_rust(P, "p")
+print to_rust(M, "m")
+print to_rust(/0*/, "match")
+print to_rust(/0*/, "zeros") == ""

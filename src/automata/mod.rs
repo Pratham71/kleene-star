@@ -4,6 +4,7 @@
 //! machines go in, machines come out. The interpreter in `crate::lang` is
 //! just one user of it.
 
+pub mod codegen;
 pub mod convert;
 pub mod dfa;
 pub mod dot;

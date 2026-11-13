@@ -10,7 +10,14 @@ use kstar::Session;
 
 /// A writer that keeps what is written, so the test can read it back.
 #[derive(Clone, Default)]
-struct Capture(Rc<RefCell<Vec<u8>>>);
+pub struct Capture(Rc<RefCell<Vec<u8>>>);
+
+impl Capture {
+    /// Everything written so far.
+    pub fn text(&self) -> String {
+        String::from_utf8_lossy(&self.0.borrow()).to_string()
+    }
+}
 
 impl Write for Capture {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {

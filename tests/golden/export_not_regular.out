@@ -1,0 +1,25 @@
+Error in export_not_regular.kstar, line 6:
+    print to_rust(G, "g")
+                  ^
+TypeError[E0300]: argument 1 of `to_rust` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Grammar
+  hint: the Rust code is a DFA's fixed table of states, and a grammar's language may not be regular (like 0^n 1^n), which no finite table can recognise
+
+Error in export_not_regular.kstar, line 7:
+    print to_rust(P, "p")
+                  ^
+TypeError[E0300]: argument 1 of `to_rust` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Pda
+  hint: the Rust code is a DFA's fixed table of states, and a PDA's stack can grow without limit, so it has no such table
+
+Error in export_not_regular.kstar, line 8:
+    print to_rust(M, "m")
+                  ^
+TypeError[E0300]: argument 1 of `to_rust` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Tm
+  hint: the Rust code is a DFA's fixed table of states, and a Turing machine's tape can grow without limit (and it may never halt), so it has no such table
+
+Error in export_not_regular.kstar, line 9:
+    print to_rust(/0*/, "match")
+                        ^^^^^^^
+ValueError[E0308]: `match` is a Rust keyword, so it cannot name a function
+  hint: a Rust function name is usually written in snake_case, like `even_zeros`
+
+4 errors found

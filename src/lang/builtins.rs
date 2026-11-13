@@ -30,6 +30,7 @@ pub const NAMES: &[&str] = &[
     "to_grammar",
     "derive",
     "run",
+    "to_rust",
 ];
 
 /// What kind of argument a built-in accepts.
@@ -135,6 +136,7 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
         "to_grammar" => (&[Lang], Type::Grammar),
         "derive" => (&[Grammar, Str], Type::Str),
         "run" => (&[Tm, Str], Type::Str),
+        "to_rust" => (&[Lang, Str], Type::Str),
         _ => unreachable!("not a built-in: {name}"),
     };
     if args.len() != params.len() {
@@ -169,7 +171,16 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
                 Some(i),
                 format!("argument {} of `{name}` must be {wanted}, but this is {}", i + 1, article(arg)),
             );
-            if matches!(param, Lang) && (is_context_free(arg) || *arg == Type::Tm) {
+            if name == "to_rust" && i == 0 && (is_context_free(arg) || *arg == Type::Tm) {
+                err.hint = Some(
+                    match arg {
+                        Type::Grammar => "the Rust code is a DFA's fixed table of states, and a grammar's language may not be regular (like 0^n 1^n), which no finite table can recognise",
+                        Type::Pda => "the Rust code is a DFA's fixed table of states, and a PDA's stack can grow without limit, so it has no such table",
+                        _ => "the Rust code is a DFA's fixed table of states, and a Turing machine's tape can grow without limit (and it may never halt), so it has no such table",
+                    }
+                    .to_string(),
+                );
+            } else if matches!(param, Lang) && (is_context_free(arg) || *arg == Type::Tm) {
                 err.hint = Some(format!(
                     "`{name}` works on regular languages only; {} can describe a language that is not regular",
                     article(arg)
@@ -225,6 +236,7 @@ pub fn doc(name: &str) -> Option<BuiltinDoc> {
         "to_grammar" => ("to_grammar(lang) -> Grammar", &["lang"], "A right-linear grammar for a regular language."),
         "derive" => ("derive(grammar, word) -> Str", &["grammar", "word"], "A shortest leftmost derivation of the word, one sentential form per line."),
         "run" => ("run(tm, word) -> Str", &["tm", "word"], "Runs a Turing machine until it halts and returns what is left on the tape."),
+        "to_rust" => ("to_rust(lang, fn_name) -> Str", &["lang", "fn_name"], "Rust source for `pub fn fn_name(input: &str) -> bool`, a dependency-free matcher made from the language's DFA, with tests."),
         _ => return None,
     };
     Some(BuiltinDoc { signature, params, doc })

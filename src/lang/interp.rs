@@ -24,7 +24,7 @@ use super::machine::GrammarSpec;
 use crate::automata::grammar::{DeriveError, Grammar};
 use crate::automata::pda::{self, Outcome, Pda};
 use crate::automata::tm::{self, Halt, Tm};
-use crate::automata::{convert, dot, fmt_alphabet, minimize, ops, trace, Dfa, Nfa};
+use crate::automata::{codegen, convert, dot, fmt_alphabet, minimize, ops, trace, Dfa, Nfa};
 use std::collections::{BTreeSet, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
@@ -855,6 +855,16 @@ impl Interp {
             ("is_empty", Value::Grammar(g)) => return Ok(Value::Bool(g.is_empty())),
             ("to_cnf", Value::Grammar(g)) => return Ok(Value::Grammar(Rc::new(g.to_cnf()))),
             ("to_pda", Value::Grammar(g)) => return Ok(Value::Pda(Rc::new(Pda::from_grammar(g)))),
+            ("to_rust", lang) => {
+                let Value::Str(fn_name) = &args[1] else { unreachable!("checker ensures a Str") };
+                codegen::check_fn_name(fn_name)
+                    .map_err(|message| self.located(super::check::bad_rust_name(spans[1], message)))?;
+                let alphabet = self.common_alphabet(std::slice::from_ref(lang), &spans[..1], None)?;
+                // The comment names the machine as it was written in the call.
+                let written = self.sources.text(spans[0].file).get(spans[0].start..spans[0].end).unwrap_or("the program");
+                let title = format!("`{}`", written.lines().next().unwrap_or(written));
+                return Ok(Value::str(&codegen::dfa_to_rust(&to_dfa(lang, &alphabet), fn_name, &title)));
+            }
             ("derive", Value::Grammar(g)) => {
                 let Value::Str(word) = &args[1] else { unreachable!("checker ensures a Str") };
                 return self.derive(g, word, spans[1]);
