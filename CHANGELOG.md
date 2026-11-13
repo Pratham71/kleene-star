@@ -16,6 +16,9 @@ its GitHub release, so write it for people who use Kleene Star.
 
 - An animation at the top of the README shows a regular expression becoming
   an eps-NFA, a DFA and a minimal DFA, drawn from real `kstar` output.
+- Two more animations, in the README and the tutorial: a DFA written a line
+  at a time with its diagram growing beside it, ending with `draw`; and
+  `trace` following a word through it step by step.
 - [docs/install.md](docs/install.md), a full installation guide: every way
   to install, how to check a download, update, choose between stable and
   beta, uninstall, and fix common problems.
