@@ -667,9 +667,10 @@ A name starting with `_` is never reported as unused, and a machine that
 can never accept is not warned about at all.
 
 Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
-`dfa` `draw` `else` `eps` `false` `fn` `for` `grammar` `if` `in` `let` `nfa`
-`not` `on` `or` `over` `pda` `print` `reject` `return` `start` `test` `tm`
-`trace` `true`.
+`as` `dfa` `draw` `else` `eps` `false` `fn` `for` `from` `grammar` `if`
+`import` `in` `let` `nfa` `not` `on` `or` `over` `pda` `print` `reject`
+`return` `start` `test` `tm` `trace` `true`. `std`, the standard library,
+cannot be defined either (E0209).
 
 ## The `kstar` command
 

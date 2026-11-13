@@ -125,6 +125,67 @@ order a program travels through it.
 - A pull request says what it changes, why, and how it was tested. Keep it
   to one topic; split unrelated changes.
 
+## The changelog
+
+[CHANGELOG.md](CHANGELOG.md) lists what changed in each version, for people
+who use Kleene Star. A pull request that changes what users see (a feature,
+a fix, a new error or warning, different output) adds a line under
+`## [Unreleased]`, in the group that fits: **Added**, **Changed** or
+**Fixed**. If existing programs or setups need changing, say how under
+**Upgrading**. Write it plainly: what a user notices, not how the code
+changed.
+
+## Making a release
+
+A release is a version tag pushed from `main`. The
+[release workflow](.github/workflows/release.yml) then tests and builds
+everything and publishes the release, with the version's section of the
+changelog as its notes.
+
+1. **Write the changelog.** In `CHANGELOG.md`, turn `## [Unreleased]` into
+   `## [X.Y.Z] - YYYY-MM-DD`, add a new empty `## [Unreleased]` above it,
+   and add a link for the new version at the end of the file. Read the
+   section as a user would.
+2. **Bump the version** in `Cargo.toml` (then `cargo build` updates
+   `Cargo.lock`) and in the extension: in `editors/vscode`, run
+   `npm version X.Y.Z --no-git-tag-version`, which updates `package.json`
+   and `package-lock.json`.
+3. **Update the version where the docs show it:** the status table in the
+   README, the examples in `docs/install.md`, the `.vsix` name in
+   `editors/vscode/README.md`, and the status line in `docs/design.md`.
+4. **Check the notes** the release will get:
+
+   ```bash
+   .github/scripts/release-notes.sh vX.Y.Z
+   ```
+
+5. **Open a pull request** named "Release X.Y.Z: ..." with these changes,
+   wait for CI (it fails if the changelog has no section for the version in
+   `Cargo.toml`) and merge it.
+6. **Tag the merge on `main`** and push the tag:
+
+   ```bash
+   git switch main && git pull
+   ```
+
+   ```bash
+   git tag vX.Y.Z && git push origin vX.Y.Z
+   ```
+
+The tag must match `Cargo.toml`. A plain tag such as `v0.3.0` publishes a
+release that GitHub marks as the latest, which is what the install scripts
+and `kstar update` offer. A tag with a suffix such as `v0.3.0-beta`
+publishes a pre-release, which they skip unless asked for it. Running the
+workflow by hand from the Actions tab is a dry run that publishes nothing
+and keeps the files as artifacts.
+
+To correct the notes of a published release, fix `CHANGELOG.md` through a
+pull request, then:
+
+```bash
+.github/scripts/release-notes.sh vX.Y.Z > notes.md && gh release edit vX.Y.Z --notes-file notes.md
+```
+
 ## Reporting a bug or proposing a change
 
 - **Bugs:** open an issue with the bug report template. Include the

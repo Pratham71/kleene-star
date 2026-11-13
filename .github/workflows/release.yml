@@ -7,7 +7,10 @@
 # SHA-256 checksum, the Windows installer (tested by installing and
 # uninstalling it), the VS Code extension and a SHA256SUMS file.
 #
-# The tag must match the version in Cargo.toml. A plain version tag
+# The tag must match the version in Cargo.toml, and CHANGELOG.md must have
+# a section for that version, which becomes the release notes (see
+# .github/scripts/release-notes.sh and "Making a release" in
+# CONTRIBUTING.md). A plain version tag
 # (v1.2.3) publishes a release; a tag with a suffix (v0.2.4-beta) publishes a
 # pre-release, which GitHub does not count as the latest. Running the
 # workflow by hand does everything else and leaves the files as the run's
@@ -241,6 +244,8 @@ jobs:
               echo "::error::the tag $tag does not match the version in Cargo.toml ($version)"
               exit 1
             fi
+            # Stops here if CHANGELOG.md has no section for this version.
+            .github/scripts/release-notes.sh "$tag" > /dev/null
             echo "tag=$tag" >> "$GITHUB_OUTPUT"
             # A suffix (v0.2.4-beta) makes it a pre-release.
             if [[ "$tag" == *-* ]]; then
@@ -260,17 +265,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.publish.outputs.tag }}
           PRERELEASE: ${{ steps.publish.outputs.prerelease }}
+        # The notes are the version's section of CHANGELOG.md, followed by
+        # how to install it and how to check the download.
         run: |
-          cat > notes.md <<EOF
-          ## Installing
-
-          - **Windows:** download and run \`kstar-setup-x64.exe\`, or use \`install.ps1\` (see the README).
-          - **Linux and macOS:** use \`install.sh\` (see the README), or unpack the archive for your system and put \`kstar\` and \`kstar-lsp\` on your PATH.
-          - **VS Code:** \`code --install-extension kleene-star-${TAG#v}.vsix\`
-
-          Check a download with \`sha256sum -c SHA256SUMS --ignore-missing\`.
-          EOF
-          gh release create "$TAG" dist/* --title "Kleene Star ${TAG#v}" --notes-file notes.md --generate-notes --verify-tag $PRERELEASE
+          .github/scripts/release-notes.sh "$TAG" > notes.md
+          cat notes.md
+          gh release create "$TAG" dist/* --title "Kleene Star ${TAG#v}" --notes-file notes.md --verify-tag $PRERELEASE
 
   # The tests on a real Apple Silicon machine. The release does not wait for
   # this job, since arm64 runners are sometimes unavailable; if it fails,
