@@ -84,7 +84,7 @@ fn same_program(before: &str, after: &str) -> Result<(), Diag> {
     }
     Err(Diag::new(
         ErrorKind::Syntax,
-        Span { start: 0, end: 0, line: 1 },
+        Span::new(0, 0, 1),
         "formatting would change this program, so it was left alone",
     )
     .code(super::codes::FORMAT_UNSAFE)
@@ -139,21 +139,22 @@ impl Formatter<'_> {
     fn flush_comments(&mut self, offset: usize) {
         while let Some(comment) = self.comments.get(self.next_comment).filter(|c| c.span.start < offset) {
             self.next_comment += 1;
+            let comment_line = comment.span.line as usize;
             let last_index = self.out.len().wrapping_sub(1);
             match self.out.last_mut() {
-                Some(last) if comment.span.line == self.last_line && !last.is_empty() => {
+                Some(last) if comment_line == self.last_line && !last.is_empty() => {
                     self.trailing.push((last_index, last.len()));
                     last.push_str("  ");
                     last.push_str(&comment.text);
                 }
                 _ => {
-                    self.blank_line_before(comment.span.line);
+                    self.blank_line_before(comment_line);
                     let line = format!("{}{}", self.indent(), comment.text);
                     self.out.push(line);
                     self.block_start = false;
                 }
             }
-            self.last_line = comment.span.line;
+            self.last_line = comment_line;
         }
     }
 
@@ -579,7 +580,7 @@ mod tests {
     use super::*;
 
     fn fmt(src: &str) -> String {
-        format(src).unwrap_or_else(|d| panic!("{}", d.render("t.kstar", src)))
+        format(src).unwrap_or_else(|d| panic!("{}", d.render(&crate::lang::source::SourceMap::new("t.kstar", src))))
     }
 
     #[test]

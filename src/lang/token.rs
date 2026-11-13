@@ -1,20 +1,43 @@
 //! Tokens: the words and punctuation the lexer cuts source text into.
 
+/// Which source file a span is in: an index into the `SourceMap`
+/// (`super::source`), which holds each file's name and text.
+///
+/// A number rather than a file name keeps `Span` small and `Copy`. The file
+/// being run, or everything typed at the REPL, is always `FileId::MAIN`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
+pub struct FileId(pub u32);
+
+impl FileId {
+    /// The file being run, or the REPL's input.
+    pub const MAIN: FileId = FileId(0);
+}
+
 /// Where something is in the source text. Every token, syntax-tree node and
 /// error carries one, which is what makes precise error messages possible.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Span {
-    /// Byte offsets into the source: `start..end`.
+    /// Byte offsets into the file's text: `start..end`.
     pub start: usize,
     pub end: usize,
-    /// Line number of `start`, counting from 1.
-    pub line: usize,
+    /// Line number of `start`, counting from 1. (A `u32`, like the file id,
+    /// keeps a span at three words; errors carry several spans.)
+    pub line: u32,
+    /// The file the offsets are in.
+    pub file: FileId,
 }
 
 impl Span {
-    /// A span covering everything from the start of `self` to the end of `other`.
+    /// A span in the main file. Most code makes spans by joining the spans
+    /// of tokens; this is for the few places that start from offsets.
+    pub fn new(start: usize, end: usize, line: u32) -> Span {
+        Span { start, end, line, file: FileId::MAIN }
+    }
+
+    /// A span covering everything from the start of `self` to the end of
+    /// `other`, which must be in the same file.
     pub fn to(self, other: Span) -> Span {
-        Span { start: self.start, end: other.end.max(self.end), line: self.line }
+        Span { end: other.end.max(self.end), ..self }
     }
 }
 

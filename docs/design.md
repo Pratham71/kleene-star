@@ -157,7 +157,7 @@ src/
     builtins.rs                  built-in function names and their types
     value.rs  interp.rs  trace.rs   runtime values, evaluator, call stack, step-by-step traces
     format.rs  index.rs          the formatter; names and their places, for the editor
-    error.rs                     error kinds, traceback and caret rendering
+    error.rs  source.rs          error kinds, traceback and caret rendering; file names and texts
 examples/            *.kstar sample programs
 tests/
   golden/  format/   programs with their exact expected output
