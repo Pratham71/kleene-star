@@ -480,6 +480,70 @@ machines (one of them built from a regex, one empty), runs it on random
 words, compares every answer with the interpreter's, and runs the generated
 tests with `rustc --test`. Without `rustc` it prints that it was skipped.
 
+## 15. The standard library
+
+`src/lang/stdlib/`
+
+The standard library is a table, so that adding to it never means touching
+the checker, the interpreter or the editor support. `stdlib/mod.rs` lists
+the modules (`MODULES`); each module file (`math.rs`) holds one `Module`
+with a list of `Function`s. A function is one entry: its name, its
+parameters and result as `Ty`s (a version of `Type` that a constant table
+can write down), a one-line description, and the Rust function that runs
+it, which gets values the checker has already typed and returns a value or
+a `Failure`.
+
+From that table, `stdlib::exports` builds the same `Exports` that a checked
+file produces, with the description in each definition's `doc`. So the
+loader, the checker (`resolve_path`, `check_arguments`) and the editor
+(hover, completion after `std.` and `std.math.`, signature help) treat a
+library function exactly like a function imported from a file. The
+interpreter's `callee` finds the entry with `stdlib::function` and calls its
+`run`; a `Failure` becomes a `MathError` pointing at the argument it names.
+
+A test (`the_reference_matches_the_table`) checks that `docs/reference.md`
+has a section for each module with one row per function, giving its exact
+signature and description, so the reference cannot drift from the code.
+
+### Adding a standard-library module
+
+Say the new module is `std.string`.
+
+1. **Write the module.** Create `src/lang/stdlib/string.rs` with
+   `pub const MODULE: Module = Module { name: "string", doc: "...", functions: &[...] };`,
+   one `Function` per function. Copy the shape of `math.rs`: a one-line
+   `doc` that reads as a sentence, parameter names that say what they are
+   for, and `Ty`s for the types (`Ty::Set(&Ty::Str)` for a `Set[Str]`).
+2. **Implement each function** as `fn name(args: &[Value]) -> Result<Value, Failure>`.
+   The checker has already made sure each argument has its declared type,
+   so take them apart with `match` and `unreachable!` for the impossible
+   case. Never panic and never return a wrong answer: an argument the
+   function cannot handle is a `Failure` with a code from `codes.rs`, the
+   index of the argument (`arg: Some(i)`), a message that quotes the value,
+   and a hint that says what would work. Reuse codes where they fit
+   (`OVERFLOW`, `MATH_DOMAIN`); a new kind of mistake gets a new code, in
+   `codes.rs` and `docs/errors.md`, with an example.
+3. **Register it.** Add `pub mod string;` to `stdlib/mod.rs` and
+   `string::MODULE` to `MODULES`, keeping the list in alphabetical order.
+4. **Unit-test it** at the bottom of `string.rs`: ordinary answers, the
+   edge cases (empty input, the largest and smallest values), and every
+   `Failure`, checking its code.
+5. **Document it** in `docs/reference.md`: a `### \`std.string\`` section
+   under "The standard library", with the module's `doc` as its first
+   paragraph and a table with one row per function,
+   `` | `name(a: T) -> R` | <doc> | ``, in the same order as the code. Then
+   `cargo test lang::stdlib` tells you any row that does not match. Add a
+   runnable example under the table, then fill in its output with
+   `UPDATE_DOCS=1 cargo test --test programs`.
+6. **Show it in use**: a golden test in `tests/golden/` with ordinary calls
+   and each error, and, if it suits the tutorial, a few lines in chapter 9.
+   Regenerate with `UPDATE_GOLDEN=1 cargo test --test golden` and read the
+   diff.
+7. Run `cargo test` and `cargo clippy --all-targets -- -D warnings`.
+
+Nothing else changes: hover, completion, signature help, `from std.string
+import ...` and the checker's errors all come from the table.
+
 ## Testing
 
 ```bash

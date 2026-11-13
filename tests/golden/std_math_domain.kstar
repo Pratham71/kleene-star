@@ -1,0 +1,5 @@
+fn halve_all(n: Int) -> Int {
+    return std.math.div(n, n - n)
+}
+print std.math.factorial(20)
+print halve_all(4)

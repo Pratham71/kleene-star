@@ -91,10 +91,11 @@ impl ModuleState {
     }
 }
 
-/// A function about to be called, and the file it was written in.
-struct Callee {
-    module: FileId,
-    def: Rc<FnDef>,
+/// A function about to be called: one written in some file, or one of the
+/// standard library's.
+enum Callee {
+    User { module: FileId, def: Rc<FnDef> },
+    Std(&'static super::stdlib::Function),
 }
 
 /// What happened when a statement ran.
@@ -628,11 +629,11 @@ impl Interp {
                 for arg in args {
                     values.push(self.eval(arg)?);
                 }
+                let spans: Vec<Span> = args.iter().map(|arg| arg.span).collect();
                 if super::builtins::NAMES.contains(&name.text.as_str()) {
-                    let spans: Vec<Span> = args.iter().map(|arg| arg.span).collect();
                     self.builtin(&name.text, &values, &spans)?
                 } else {
-                    self.call(name, values, expr.span)?
+                    self.call(name, values, &spans, expr.span)?
                 }
             }
         })
@@ -777,19 +778,23 @@ impl Interp {
         } else {
             let module = &self.modules[&current];
             if let Some(def) = module.funcs.get(&name.text) {
-                return Ok(Callee { module: current, def: def.clone() });
+                return Ok(Callee::User { module: current, def: def.clone() });
             }
             match module.taken.get(&name.text) {
                 Some(taken) => taken.clone(),
                 None => (ModuleRef::File(current), name.text.clone()),
             }
         };
-        let ModuleRef::File(file) = target else {
-            unreachable!("the standard library has no functions yet")
+        let file = match target {
+            ModuleRef::File(file) => file,
+            ModuleRef::Std(module) => {
+                let function = super::stdlib::function(&module, &member);
+                return Ok(Callee::Std(function.expect("the checker found the function in the library")));
+            }
         };
         self.run_module(file, name.span)?;
         match self.modules[&file].funcs.get(&member) {
-            Some(def) => Ok(Callee { module: file, def: def.clone() }),
+            Some(def) => Ok(Callee::User { module: file, def: def.clone() }),
             None => Err(self
                 .error(
                     ErrorKind::Name,
@@ -801,9 +806,18 @@ impl Interp {
         }
     }
 
-    /// Calls a user-defined function.
-    fn call(&mut self, name: &Name, args: Vec<Value>, call_site: Span) -> Run<Value> {
-        let Callee { module, def: f } = self.callee(name)?;
+    /// Calls a user-defined or library function. `spans` are where its
+    /// arguments are, for errors about one of them.
+    fn call(&mut self, name: &Name, args: Vec<Value>, spans: &[Span], call_site: Span) -> Run<Value> {
+        let (module, f) = match self.callee(name)? {
+            Callee::User { module, def } => (module, def),
+            Callee::Std(function) => {
+                return (function.run)(&args).map_err(|failure| {
+                    let span = failure.arg.map_or(call_site, |i| spans[i]);
+                    self.error(ErrorKind::Math, span, failure.message).code(failure.code).hint(failure.hint)
+                });
+            }
+        };
         if self.frames.len() >= MAX_DEPTH {
             return Err(self
                 .error(

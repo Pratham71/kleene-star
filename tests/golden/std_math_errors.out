@@ -1,0 +1,39 @@
+Error in std_math_errors.kstar, line 2:
+    import std.maths
+           ^^^^^^^^^
+NameError[E0208]: the standard library has no module called `maths`
+  hint: did you mean `std.math`?
+
+Error in std_math_errors.kstar, line 3:
+    print std.math.gdc(1, 2)
+                   ^^^
+NameError[E0208]: `std.math` has no `gdc`
+
+Error in std_math_errors.kstar, line 4:
+    print std.math.gcd(1)
+          ^^^^^^^^^^^^^^^
+TypeError[E0301]: `std.math.gcd` takes 2 arguments, but 1 was given
+
+Error in std_math_errors.kstar, line 5:
+    print std.math.gcd(1, "2")
+                          ^^^
+TypeError[E0300]: argument 2 of `std.math.gcd` must be an Int, but this is a Str
+
+Error in std_math_errors.kstar, line 6:
+    let x = std.math
+            ^^^^^^^^
+NameError[E0211]: `std.math` is a module, not a value
+  hint: use one of the names inside it, like `std.math.Name`
+
+Error in std_math_errors.kstar, line 7:
+    print m.abs(1)
+          ^
+NameError[E0200]: `m` is not defined
+  hint: to use a module, import it first: `import "m.kstar"`
+
+Error in std_math_errors.kstar, line 8:
+    from std.math import pi
+                         ^^
+NameError[E0208]: `std.math` has no `pi`
+
+7 errors found

@@ -1,0 +1,8 @@
+# Mistakes the checker finds before anything runs.
+import std.maths
+print std.math.gdc(1, 2)
+print std.math.gcd(1)
+print std.math.gcd(1, "2")
+let x = std.math
+print m.abs(1)
+from std.math import pi

@@ -20,7 +20,7 @@ Error in import_misplaced.kstar, line 6:
     from std.nothing import x
          ^^^^^^^^^^^
 NameError[E0208]: the standard library has no module called `nothing`
-  hint: the standard library has no modules yet
+  hint: its modules are `std.math`
 
 Error in import_misplaced.kstar, line 8:
     print m
@@ -32,7 +32,7 @@ Error in import_misplaced.kstar, line 9:
     print std.math2.gcd(1, 2)
               ^^^^^
 NameError[E0208]: the standard library has no module called `math2`
-  hint: the standard library has no modules yet
+  hint: did you mean `std.math`?
 
 Error in import_misplaced.kstar, line 10:
     print m.double.x

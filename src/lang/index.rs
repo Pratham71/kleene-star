@@ -52,6 +52,9 @@ pub struct Def {
     /// For a name imported with `from`, where the module defines it, so
     /// "go to definition" can go all the way there.
     pub origin: Option<Span>,
+    /// A longer description, for definitions that have one: the
+    /// standard library's functions.
+    pub doc: Option<String>,
 }
 
 /// The names a module offers, for completing `alias.`.

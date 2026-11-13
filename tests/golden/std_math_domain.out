@@ -1,0 +1,9 @@
+2432902008176640000
+Traceback (most recent call last):
+  std_math_domain.kstar, line 5, in <main>
+    print halve_all(4)
+  std_math_domain.kstar, line 2, in halve_all
+    return std.math.div(n, n - n)
+                           ^^^^^
+MathError[E0609]: division by zero
+  hint: the second argument of `div` is 0 here

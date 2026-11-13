@@ -218,6 +218,22 @@ as m`, or `from std.math import gcd`. The name `std` always means the
 standard library, so nothing else can be called that. The modules are
 described in [the reference](../reference.md#the-standard-library).
 
+`std.math` fills in the arithmetic the language leaves out, such as
+division, which comes in handy when building machine families:
+
+```kstar
+from std.math import div, gcd
+
+# The numbers divisible by both 4 and 6 are the multiples of lcm(4, 6).
+print std.math.lcm(4, 6), div(4 * 6, gcd(4, 6))
+print std.math.is_prime(97), std.math.pow(2, 10)
+```
+
+```text
+12 12
+true 1024
+```
+
 ## Summary
 
 | You write | You get |

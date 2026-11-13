@@ -249,8 +249,53 @@ imported by another; it is then called a **module**.
 
 The standard library comes with Kleene Star. A module of it is reached by
 its full name with no import (`std.math.gcd(12, 18)`), or imported like a
-file: `import std.math`, `import std.math as m`, `from std.math import gcd`.
-There are no modules in it yet; they are listed here as they are added.
+file: `import std.math` (bound as `math`), `import std.math as m`, or
+`from std.math import gcd`. The name `std` always means the standard
+library. Hovering over a library function in an editor shows the same
+descriptions as below.
+
+### `std.math`
+
+Whole-number arithmetic: division, powers, roots, divisors and primes.
+
+| Function | What it does |
+|---|---|
+| `abs(n: Int) -> Int` | The size of `n`, without its sign. |
+| `div(a: Int, b: Int) -> Int` | `a` divided by `b` as a whole number: the `q` with `a == b * q + a % b`. |
+| `factorial(n: Int) -> Int` | `n! = 1 * 2 * ... * n`, for `n` from 0 to 20. |
+| `gcd(a: Int, b: Int) -> Int` | The greatest common divisor of `a` and `b`; never negative, and `gcd(0, 0)` is 0. |
+| `is_prime(n: Int) -> Bool` | Whether `n` is a prime number: greater than 1, with no divisors but 1 and itself. |
+| `lcm(a: Int, b: Int) -> Int` | The least common multiple of `a` and `b`; never negative, and 0 if either is 0. |
+| `log2(n: Int) -> Int` | The base-2 logarithm of `n`, rounded down; `n` must be positive. |
+| `max(a: Int, b: Int) -> Int` | The larger of `a` and `b`. |
+| `min(a: Int, b: Int) -> Int` | The smaller of `a` and `b`. |
+| `pow(base: Int, exp: Int) -> Int` | `base` to the power `exp`; `exp` must not be negative. |
+| `sqrt(n: Int) -> Int` | The square root of `n`, rounded down; `n` must not be negative. |
+
+Every function works on `Int`s. A result too large for an Int is a
+`MathError` (E0600), and an argument a function does not accept, such as a
+negative number for `sqrt`, is a `MathError` with code E0609 and a hint.
+`div` goes with `%`: since `a % b` is never negative, `div` rounds down
+when `b` is positive (`div(-17, 5)` is -4, with remainder 3), and
+`a == b * div(a, b) + a % b` holds for every `a` and every `b` that is not 0.
+
+```kstar
+print std.math.div(17, 5), 17 % 5
+print std.math.div(-17, 5), -17 % 5
+print std.math.gcd(84, 36), std.math.lcm(4, 6)
+print std.math.pow(2, 10), std.math.sqrt(99), std.math.log2(1000)
+print std.math.factorial(10), std.math.is_prime(1000000007)
+print std.math.abs(-3), std.math.min(3, -2), std.math.max(3, -2)
+```
+
+```text
+3 2
+-4 3
+12 12
+1024 9 9
+3628800 true
+3 -2 3
+```
 
 ## Types
 

@@ -78,6 +78,10 @@ My calls:
   by its file name.
 - Errors inside an imported file are reported with the file; warnings about it are not (they
   appear when that file is checked by itself).
+- The standard library is a table of functions (`src/lang/stdlib/`), each with its types, a
+  one-line description and its code; everything else (checking, hover, completion, the
+  reference test) reads the table. `std.math` came first. Its `div` goes with `%` (Euclid's
+  division), so `a == b * div(a, b) + a % b` always holds.
 
 ## Design principles and where they come from
 
