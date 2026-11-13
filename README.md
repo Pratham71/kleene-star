@@ -6,6 +6,8 @@ A small language for Theory of Computation, named after the star in `a*`.
 The command is `kstar` and programs live in `.kstar` files. You describe
 machines the way you draw them on paper, then ask questions about them.
 
+<p align="center"><img src="assets/demo.gif" width="960" alt="An animation in four stages. The regular expression /(ab)*/ appears; to_nfa turns it into an eps-NFA with 6 states by Thompson's construction; to_dfa turns that into a DFA with 4 states named after sets of NFA states; minimize merges the two equivalent accepting states, {q0,q1,q2} and {q1,q2,q5}, which slide together into one, leaving a minimal DFA with 3 states."></p>
+
 ```kstar
 alphabet B = {0, 1}
 
