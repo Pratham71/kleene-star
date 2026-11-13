@@ -289,3 +289,22 @@ fn export_writes_rust() {
     let usage = kstar(&dir, &["export", "m.kstar"]);
     assert_eq!(usage.status.code(), Some(2));
 }
+
+/// The Windows programs link the C runtime in (see `.cargo/config.toml`), so
+/// they start on a machine without the Visual C++ Redistributable. A program
+/// built without it names `VCRUNTIME140.dll` and the `api-ms-win-crt-*`
+/// libraries in its import table; a program built with it names none of them.
+#[test]
+#[cfg(all(windows, target_env = "msvc"))]
+fn windows_programs_need_no_vc_runtime() {
+    for exe in [env!("CARGO_BIN_EXE_kstar"), env!("CARGO_BIN_EXE_kstar-lsp")] {
+        let bytes = std::fs::read(exe).unwrap().to_ascii_lowercase();
+        for dll in [&b"vcruntime140"[..], b"msvcp140", b"api-ms-win-crt"] {
+            assert!(
+                !bytes.windows(dll.len()).any(|w| w == dll),
+                "{exe} needs {}, which a fresh Windows may lack",
+                String::from_utf8_lossy(dll)
+            );
+        }
+    }
+}

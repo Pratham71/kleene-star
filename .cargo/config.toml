@@ -1,0 +1,9 @@
+# Link the C runtime into the Windows programs, so kstar.exe and
+# kstar-lsp.exe run on any Windows 10 or 11 machine without the Visual C++
+# Redistributable (VCRUNTIME140.dll). The test `windows_programs_need_no_vc_runtime`
+# in tests/cli.rs checks it.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
