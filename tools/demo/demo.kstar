@@ -1,0 +1,16 @@
+# The program behind assets/demo.gif. tools/demo/machines.mjs runs it and
+# draws the animation from what it prints, so the GIF shows real output.
+
+let r = /(ab)*/
+let n = to_nfa(r)
+let d = to_dfa(r)
+let m = minimize(d)
+
+print n
+print d
+print m
+
+test equivalent(n, r)
+test equivalent(m, r)
+test m accepts "abab"
+test not (m accepts "aba")

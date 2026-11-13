@@ -6,3 +6,4 @@
 !/assets/logo.svg
 # The VS Code extension's file icon.
 !/editors/vscode/images/*.svg
+/tools/demo/node_modules

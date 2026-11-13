@@ -1,0 +1,16 @@
+{
+  "name": "kstar-demo",
+  "private": true,
+  "description": "Renders assets/demo.gif: a regex becoming an eps-NFA, a DFA and a minimal DFA, from real kstar output.",
+  "type": "module",
+  "scripts": {
+    "build": "node render.mjs"
+  },
+  "devDependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "gifenc": "1.0.3",
+    "pngjs": "7.0.0",
+    "puppeteer-core": "25.17.0"
+  }
+}
