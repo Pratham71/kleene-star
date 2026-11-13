@@ -11,6 +11,9 @@ pub struct FileId(pub u32);
 impl FileId {
     /// The file being run, or the REPL's input.
     pub const MAIN: FileId = FileId(0);
+    /// Where the standard library's definitions "are": it has no source
+    /// text, so editors cannot go to it.
+    pub const STD: FileId = FileId(u32::MAX);
 }
 
 /// Where something is in the source text. Every token, syntax-tree node and
@@ -80,6 +83,9 @@ pub enum Tok {
     Or,
     Not,
     Accepts,
+    Import,
+    From,
+    As,
 
     // Punctuation
     LBrace,
@@ -102,6 +108,7 @@ pub enum Tok {
     Star,      // *
     Percent,   // %
     DotDot,    // ..
+    Dot,       // .    between the parts of a qualified name: `utils.B`
     DashDash,  // --   opens a transition label
     LongArrow, // -->  closes a transition label
     Arrow,     // ->   return type, grammar rules
@@ -116,7 +123,7 @@ impl Tok {
     pub const KEYWORDS: &'static [&'static str] = &[
         "alphabet", "dfa", "nfa", "pda", "tm", "grammar", "over", "start", "accept", "reject", "eps", "fn",
         "let", "return", "if", "else", "for", "in", "print", "test", "draw", "trace", "on", "true", "false",
-        "and", "or", "not", "accepts",
+        "and", "or", "not", "accepts", "import", "from", "as",
     ];
 
     pub fn keyword(word: &str) -> Option<Tok> {
@@ -150,6 +157,9 @@ impl Tok {
             "or" => Tok::Or,
             "not" => Tok::Not,
             "accepts" => Tok::Accepts,
+            "import" => Tok::Import,
+            "from" => Tok::From,
+            "as" => Tok::As,
             _ => return None,
         })
     }
@@ -197,6 +207,9 @@ impl Tok {
             Tok::Or => "or",
             Tok::Not => "not",
             Tok::Accepts => "accepts",
+            Tok::Import => "import",
+            Tok::From => "from",
+            Tok::As => "as",
             Tok::LBrace => "{",
             Tok::RBrace => "}",
             Tok::LParen => "(",
@@ -217,6 +230,7 @@ impl Tok {
             Tok::Star => "*",
             Tok::Percent => "%",
             Tok::DotDot => "..",
+            Tok::Dot => ".",
             Tok::DashDash => "--",
             Tok::LongArrow => "-->",
             Tok::Arrow => "->",

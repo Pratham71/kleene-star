@@ -1,0 +1,2 @@
+# A type error, in a module nobody uses.
+let Size = 1 + "two"

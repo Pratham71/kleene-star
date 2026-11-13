@@ -1,0 +1,4 @@
+# Both modules import shared.kstar; it runs once, keeping its own globals.
+import "modules/user_a.kstar"
+from "modules/user_b.kstar" import from_b
+print user_a.from_a(), from_b()

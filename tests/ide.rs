@@ -13,10 +13,13 @@ fn diagnostics_match_the_command_line() {
         let src = std::fs::read_to_string(&program).unwrap().replace("\r\n", "\n");
         let expected = std::fs::read_to_string(program.with_extension("out")).unwrap().replace("\r\n", "\n");
         // Only errors found before running: they start with "Error in NAME, line N:".
-        let Some(first) = expected.lines().next().filter(|l| l.starts_with("Error in ")) else { continue };
+        // (An error inside an imported file is shown at the import in the
+        // editor, so those are left out.)
+        let own = format!("Error in {}, ", program.file_name().unwrap().to_string_lossy());
+        let Some(first) = expected.lines().next().filter(|l| l.starts_with(&own)) else { continue };
         let line: u32 = first.rsplit("line ").next().unwrap().trim_end_matches(':').parse().unwrap();
         let message = expected.lines().find(|l| l.contains("Error[")).unwrap();
-        let analysis = Analysis::new(&src);
+        let analysis = Analysis::open(&src, Some(&program), None);
         let problem = analysis.errors().next().unwrap_or_else(|| panic!("{program:?}: no problem reported"));
         assert_eq!(problem.message, message, "{program:?}");
         assert_eq!(position_of(&src, problem.span.start).0 + 1, line, "{program:?}");
@@ -29,7 +32,7 @@ fn diagnostics_match_the_command_line() {
 fn every_example_analyses_cleanly() {
     for example in files_in(&project_dir().join("examples"), "kstar") {
         let src = std::fs::read_to_string(&example).unwrap();
-        let analysis = Analysis::new(&src);
+        let analysis = Analysis::open(&src, Some(&example), None);
         assert_eq!(analysis.problems, vec![], "{example:?}");
         assert!(!analysis.index.defs.is_empty());
     }

@@ -1,0 +1,5 @@
+Error in modules/cycle_b.kstar, line 1:
+    import "cycle_a.kstar"
+           ^^^^^^^^^^^^^^^
+NameError[E0207]: circular import: modules/cycle_a.kstar -> modules/cycle_b.kstar -> modules/cycle_a.kstar
+  hint: modules cannot import each other in a circle; move what both need into a third file that both import

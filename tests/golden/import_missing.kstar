@@ -1,0 +1,2 @@
+import "modules/nowhere.kstar"
+print 1

@@ -1,0 +1,3 @@
+# The module is never used, but its mistake is still reported.
+import "modules/broken.kstar"
+print "never printed"

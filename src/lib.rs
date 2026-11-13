@@ -14,11 +14,12 @@ use lang::check::Checker;
 use lang::error::{Diag, Paint};
 use lang::interp::Interp;
 use lang::lexer::lex;
+use lang::module::{Loader, Reader};
 use lang::parser::Parser;
 use lang::source::SourceMap;
 use lang::token::FileId;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// At most this many errors are shown for one run; the rest are counted.
 const MAX_ERRORS_SHOWN: usize = 20;
@@ -30,6 +31,8 @@ const MAX_ERRORS_SHOWN: usize = 20;
 /// typed several REPL entries ago.
 pub struct Session {
     sources: SourceMap,
+    /// Finds, reads and checks the files the program imports.
+    loader: Loader,
     checker: Checker,
     interp: Interp,
     repl: bool,
@@ -41,9 +44,15 @@ pub struct Session {
 impl Session {
     /// `file` is the name shown in error messages; `out` receives everything
     /// the program prints; `out_dir` is where `draw` puts its files.
+    ///
+    /// Outside the REPL, `file` is also taken as the main file's path, which
+    /// imports are relative to; `set_path` changes that. The REPL's imports
+    /// are relative to the current folder.
     pub fn new(file: &str, out: Box<dyn Write>, out_dir: PathBuf, repl: bool) -> Session {
+        let path = (!repl).then(|| PathBuf::from(file));
         Session {
             sources: SourceMap::new(file, ""),
+            loader: Loader::from_disk(path),
             checker: Checker::new(repl),
             interp: Interp::new(out, out_dir),
             repl,
@@ -55,6 +64,23 @@ impl Session {
     /// Shows errors and warnings in colour (for a terminal).
     pub fn color(&mut self, enabled: bool) {
         self.color = enabled;
+    }
+
+    /// Sets where the main file is, when that is not the name it is shown
+    /// with. Imports are relative to its folder.
+    pub fn set_path(&mut self, path: &Path) {
+        self.loader.set_main_path(Some(path.to_path_buf()));
+    }
+
+    /// Reads imported files with `read` instead of from the disk.
+    pub fn set_reader(&mut self, read: Reader) {
+        self.loader.set_reader(read);
+    }
+
+    /// Runs each imported module at its `import` statement rather than
+    /// when one of its names is first used (`kstar run --eager-imports`).
+    pub fn eager_imports(&mut self, enabled: bool) {
+        self.interp.eager_imports = enabled;
     }
 
     /// Sends what the program prints somewhere else from now on, for
@@ -96,11 +122,21 @@ impl Session {
 
         // Check on a copy, so a rejected entry leaves no trace behind.
         let mut checker = self.checker.clone();
-        let src = self.sources.text(FileId::MAIN);
-        let checked = lang::check_source(FileId::MAIN, src, from, first_line, self.repl, &mut checker);
+        let checked = lang::check_source(
+            FileId::MAIN,
+            &mut self.sources,
+            from,
+            first_line,
+            self.repl,
+            &mut checker,
+            &mut self.loader,
+        );
         self.warnings = checked.warnings.iter().map(|w| w.render_styled(&self.sources, self.color)).collect();
         if checked.errors.is_empty() {
             self.checker = checker;
+            for (file, program) in self.loader.programs() {
+                self.interp.add_module(file, program);
+            }
             Ok(checked.program)
         } else {
             Err(self.render_errors(&checked.errors))

@@ -1,0 +1,25 @@
+Error in import_clash.kstar, line 2:
+    import "modules/lib.kstar"
+           ^^^^^^^^^^^^^^^^^^^
+NameError[E0209]: `lib` is already defined in this file
+  hint: import it under another name with `as`: `... as lib2`, or rename the other one
+
+Error in import_clash.kstar, line 3:
+    import "modules/lib.kstar" as std
+                                  ^^^
+NameError[E0209]: `std` is the name of the standard library and cannot be defined
+  hint: choose another name
+
+Error in import_clash.kstar, line 4:
+    from "modules/lib.kstar" import Greeting, B as lib
+                                                   ^^^
+NameError[E0209]: `lib` is already defined in this file
+  hint: import it under another name with `as`: `... as lib2`, or rename the other one
+
+Error in import_clash.kstar, line 5:
+    let Greeting = "again"
+        ^^^^^^^^
+NameError[E0201]: `Greeting` is already defined
+  hint: values cannot be changed once defined; choose a new name
+
+4 errors found

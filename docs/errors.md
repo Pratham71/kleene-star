@@ -280,6 +280,52 @@ walks the program recursively, and the limit turns what would be a crash
 into this error. Real programs stay far below it; when one does not, split
 it into pieces with `let` or a function.
 
+## E0114: An import inside a block
+
+`import` and `from ... import` are statements of the whole file, so they
+must be written at its top level, not inside a function, `if` or `for`.
+Move them to the top of the file; their names can then be used anywhere
+below.
+
+```kstar file=utils.kstar
+let Size = 2
+```
+
+```kstar-error
+fn size() -> Int {
+    import "utils.kstar"
+    return utils.Size
+}
+```
+
+```text
+Error in demo.kstar, line 2:
+    import "utils.kstar"
+    ^^^^^^
+SyntaxError[E0114]: `import` can only be used at the top level
+  hint: move the import to the top of the file; its names can then be used everywhere below it
+```
+
+## E0115: An import that cannot be named or found
+
+The thing after `import` or `from` must be a file name in quotes, ending in
+`.kstar` and written relative to the importing file, or a standard-library
+module like `std.math`. `import` without `as` names the module after its
+file, so the file name must also be usable as a name: `my-lib.kstar` needs
+`import "my-lib.kstar" as my_lib`.
+
+```kstar-error
+import "utils"
+```
+
+```text
+Error in demo.kstar, line 1:
+    import "utils"
+           ^^^^^^^
+SyntaxError[E0115]: an imported file must be a `.kstar` file, but this is `utils`
+  hint: write the whole file name, such as `import "utils.kstar"`
+```
+
 ## E0200: A name that is not defined
 
 The name is used but never defined, or defined further down the file.
@@ -396,6 +442,154 @@ Error in demo.kstar, line 3:
            ^
 NameError[E0205]: variable `T` has no rules
   hint: add a rule such as `T -> ...`
+```
+
+## E0206: An imported file that does not exist
+
+The file named in an import could not be found or read. The path is
+relative to the folder of the file that contains the import, not to the
+folder you run `kstar` from.
+
+```kstar-error
+import "helpers.kstar"
+print helpers.Size
+```
+
+```text
+Error in demo.kstar, line 1:
+    import "helpers.kstar"
+           ^^^^^^^^^^^^^^^
+NameError[E0206]: cannot find the file `helpers.kstar`
+  hint: a path in an import is relative to the folder of the file that contains the import
+```
+
+## E0207: Files that import each other in a circle
+
+If `a.kstar` imports `b.kstar` and `b.kstar` imports `a.kstar`, neither can
+be checked first. The message shows the whole circle. Move what both files
+need into a third file that both import.
+
+```kstar file=a.kstar
+import "b.kstar"
+let A = 1
+```
+
+```kstar file=b.kstar
+import "a.kstar"
+let B = 2
+```
+
+```kstar-error
+import "a.kstar"
+print a.A
+```
+
+```text
+Error in b.kstar, line 1:
+    import "a.kstar"
+           ^^^^^^^^^
+NameError[E0207]: circular import: a.kstar -> b.kstar -> a.kstar
+  hint: modules cannot import each other in a circle; move what both need into a third file that both import
+```
+
+## E0208: A name a module does not have
+
+A qualified name such as `utils.Size`, or a name in `from ... import`,
+must be defined at the top level of that module. The message suggests a
+close name if there is one. The same code is used for a part after `.`
+that is not a module at all, and for a standard-library module that does
+not exist.
+
+```kstar file=utils.kstar
+let Size = 2
+```
+
+```kstar-error
+import "utils.kstar"
+print utils.Sise
+```
+
+```text
+Error in demo.kstar, line 2:
+    print utils.Sise
+                ^^^^
+NameError[E0208]: module `utils` has no `Sise`
+  hint: did you mean `Size`?
+```
+
+## E0209: An import whose name is taken
+
+A module bound by `import`, and each name taken by `from ... import`,
+becomes a name of the file, so it cannot be the same as another one. Pick
+another with `as`. `std` always means the standard library, so it cannot be
+used for anything else.
+
+```kstar file=utils.kstar
+let Size = 2
+```
+
+```kstar-error
+let Size = 10
+from "utils.kstar" import Size
+```
+
+```text
+Error in demo.kstar, line 2:
+    from "utils.kstar" import Size
+                              ^^^^
+NameError[E0209]: `Size` is already defined in this file
+  hint: import it under another name with `as`: `... as Size2`, or rename the other one
+```
+
+## E0210: Reaching through another module's import
+
+A module offers only what it defines itself. If `shapes.kstar` imports
+`utils.kstar`, a file importing `shapes.kstar` cannot reach `utils` through
+it, as `shapes.utils.Size` or `from "shapes.kstar" import utils`. Import
+`utils.kstar` directly, so that every file says what it depends on.
+
+```kstar file=utils.kstar
+let Size = 2
+```
+
+```kstar file=shapes.kstar
+import "utils.kstar"
+let Sides = 4
+```
+
+```kstar-error
+import "shapes.kstar"
+print shapes.utils.Size
+```
+
+```text
+Error in demo.kstar, line 2:
+    print shapes.utils.Size
+                 ^^^^^
+NameError[E0210]: `utils` is a module that module `shapes` imports, and imports are not passed on
+  hint: import it here yourself: `import "utils.kstar"`
+```
+
+## E0211: A module used as a value
+
+A module is a collection of names, not a value: it cannot be printed,
+passed to a function or stored with `let`. Use one of the names inside it.
+
+```kstar file=utils.kstar
+let Size = 2
+```
+
+```kstar-error
+import "utils.kstar"
+print utils
+```
+
+```text
+Error in demo.kstar, line 2:
+    print utils
+          ^^^^^
+NameError[E0211]: `utils` is a module, not a value
+  hint: use one of the names inside it, like `utils.Name`
 ```
 
 ## E0300: A value of the wrong type
@@ -1176,6 +1370,31 @@ Warning[W0201]: function `helper` is never used
   hint: remove it, or start its name with `_` (`_helper`) to keep it quietly
 
 done
+```
+
+## W0202: An import that is never used
+
+A module imported with `import`, or a name taken with `from ... import`,
+that the file never uses. The file is still read and checked, so an unused
+import slows things down and misleads the reader. Remove it.
+
+```kstar file=utils.kstar
+let Size = 2
+```
+
+```kstar
+import "utils.kstar"
+print "hello"
+```
+
+```text
+Warning in demo.kstar, line 1:
+    import "utils.kstar"
+           ^^^^^^^^^^^^^
+Warning[W0202]: module `utils` is never used
+  hint: remove the import; an import that is never used costs a file read and a check
+
+hello
 ```
 
 ## W0300: A test that always gives the same answer

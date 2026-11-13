@@ -3,6 +3,7 @@
 > Status: version 0.2.3 (2026-11-12), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
+> Version 0.3 (in progress) adds imports between files and a standard library.
 > `export` is still to do. This is the design as agreed on 2026-11-10, with the layout,
 > error format and test sections updated to match the code.
 
@@ -26,7 +27,8 @@ Decided by the user:
 - **Simple first, both goals**: a working tool first, clean enough to add a compile backend later.
 - **Arrow syntax** for machines.
 - **Functions and types**: user-defined functions, static types with inference, `if/else`,
-  `for` loops. No modules, structs or pattern matching.
+  `for` loops. No structs or pattern matching. (Modules were left out at first; v0.3 adds
+  them, see below.)
 - **Python-like tracebacks**, **Rust-like speed and safety**, **good docs**.
 - Claude writes the code in small readable stages; the user guides and learns along.
 
@@ -50,6 +52,32 @@ My calls (open to change):
 - **"min-NFA"**: true NFA minimisation is PSPACE-hard, so `reduce(nfa)` merges equivalent
   states (smaller, not guaranteed smallest). `minimize` is exact and DFA-only.
 - **Finite languages** are a set of strings, `{"a", "ab"}`, usable wherever a language is expected.
+
+### Modules (v0.3, agreed 2026-11-13)
+
+Decided by the user:
+- `import "file.kstar" [as name]` binds a module as a namespace; `from "file.kstar" import a,
+  b as c` takes single names. No `import *`. Paths are relative to the importing file.
+- Qualified names (`utils.B`) work wherever a name does, including `over`, `trace` and `draw`.
+- Everything a module defines at its top level is public; there is no re-exporting.
+- Loading is **safe**: a module's top-level `print`, `test`, `draw` and `trace` are checked
+  but not run. It is **lazy**: checked up front, run at the first use of one of its names
+  (`--eager-imports` runs it at the import). Each module runs once and keeps its own globals.
+- Circular imports are an error showing the chain.
+- `std` is the standard library, always reachable by its full name (`std.math.gcd`) and
+  importable like a file. No list type yet.
+
+My calls:
+- A qualified name is one `Name` whose text keeps the dots, rather than a new kind of syntax
+  node, so every place that takes a name takes a qualified one for free; the parser requires
+  the dots to touch their neighbours, so each part's position follows from the text.
+- The loader fills each import statement's `target` before checking, so the checker and the
+  interpreter never see a path. A module's interface is a table of types (`Exports`) read off
+  its checker; the standard library supplies the same table.
+- `import std.math` with no `as` binds `math`, the module's own name, the way a file is bound
+  by its file name.
+- Errors inside an imported file are reported with the file; warnings about it are not (they
+  appear when that file is checked by itself).
 
 ## Design principles and where they come from
 
@@ -157,6 +185,7 @@ src/
     builtins.rs                  built-in function names and their types
     value.rs  interp.rs  trace.rs   runtime values, evaluator, call stack, step-by-step traces
     format.rs  index.rs          the formatter; names and their places, for the editor
+    module.rs  stdlib/           the loader: finds, reads and checks imported files; std
     error.rs  source.rs          error kinds, traceback and caret rendering; file names and texts
 examples/            *.kstar sample programs
 tests/

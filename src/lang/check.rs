@@ -9,10 +9,12 @@ use super::ast::*;
 use super::builtins::{self, article, is_context_free, is_lang};
 use super::codes;
 use super::error::{did_you_mean, Diag, ErrorKind};
-use super::index::{Body, Call, Def, DefKind, Index};
+use super::index::{Body, Call, Def, DefKind, Index, Namespace};
 use super::machine::{self, GrammarSpec, MachineSpec, Transition};
-use super::token::Span;
+use super::module::{ExportedFn, ExportedValue, Exports};
+use super::token::{FileId, Span};
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 #[derive(Clone)]
 struct Var {
@@ -31,8 +33,33 @@ struct Signature {
     def: usize,
 }
 
+/// A module bound to a name in this file by `import`.
+#[derive(Clone)]
+struct Alias {
+    target: ModuleRef,
+    /// Its entry in the index.
+    def: usize,
+}
+
+/// Something a module offers.
+enum Member {
+    Value(ExportedValue),
+    Function(ExportedFn),
+}
+
+impl Member {
+    fn def(&self) -> &Def {
+        match self {
+            Member::Value(v) => &v.def,
+            Member::Function(f) => &f.def,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Checker {
+    /// The file being checked: the main file, or a module being loaded.
+    file: FileId,
     /// Innermost scope last. `scopes[0]` holds the globals.
     scopes: Vec<HashMap<String, Var>>,
     funcs: HashMap<String, Signature>,
@@ -53,6 +80,17 @@ pub struct Checker {
     broken: HashSet<String>,
     /// Warnings about machines, found while checking them.
     machine_warnings: Vec<Diag>,
+    /// What every module loaded so far offers.
+    modules: HashMap<ModuleRef, Rc<Exports>>,
+    /// The modules this file binds to a name with `import`.
+    aliases: HashMap<String, Alias>,
+    /// The names this file took from modules with `from ... import`, each
+    /// with the statement that imports it. They are not passed on to files
+    /// that import this one.
+    imported: HashMap<String, String>,
+    /// Definitions in other files that this file's index has a copy of, by
+    /// where they are, so each is copied once.
+    mirrored: HashMap<(FileId, usize, String), usize>,
 }
 
 type Check<T> = Result<T, Diag>;
@@ -68,6 +106,7 @@ fn type_error(span: Span, message: impl Into<String>) -> Diag {
 impl Checker {
     pub fn new(repl: bool) -> Checker {
         Checker {
+            file: FileId::MAIN,
             scopes: vec![HashMap::new()],
             funcs: HashMap::new(),
             ret: None,
@@ -77,7 +116,43 @@ impl Checker {
             errors: Vec::new(),
             broken: HashSet::new(),
             machine_warnings: Vec::new(),
+            modules: HashMap::new(),
+            aliases: HashMap::new(),
+            imported: HashMap::new(),
+            mirrored: HashMap::new(),
         }
+    }
+
+    /// A checker for a module being loaded, which is the file `file` and
+    /// can use the modules in `modules`.
+    pub fn for_module(file: FileId, modules: HashMap<ModuleRef, Rc<Exports>>) -> Checker {
+        Checker { file, modules, ..Checker::new(false) }
+    }
+
+    /// Tells the checker what every module loaded so far offers.
+    pub fn set_modules(&mut self, modules: HashMap<ModuleRef, Rc<Exports>>) {
+        self.modules = modules;
+    }
+
+    /// What this file offers to files that import it: every name defined at
+    /// its top level, except the ones it imported itself.
+    pub fn exports(&self) -> Exports {
+        let mut exports = Exports::default();
+        for (name, var) in &self.scopes[0] {
+            if !self.imported.contains_key(name) {
+                let def = self.index.defs[var.def].clone();
+                exports.values.insert(name.clone(), ExportedValue { ty: var.ty.clone(), alphabet: var.alphabet.clone(), def });
+            }
+        }
+        for (name, sig) in &self.funcs {
+            if !self.imported.contains_key(name) {
+                let def = self.index.defs[sig.def].clone();
+                exports.functions.insert(name.clone(), ExportedFn { params: sig.params.clone(), ret: sig.ret.clone(), def });
+            }
+        }
+        exports.imported = self.imported.clone();
+        exports.broken = self.broken.clone();
+        exports
     }
 
     /// Checks a whole program (or, in the REPL, one more piece of it) and
@@ -104,7 +179,7 @@ impl Checker {
     /// The warnings for a program that `check_all` found no errors in.
     pub fn warnings(&mut self, program: &[Stmt]) -> Vec<Diag> {
         let mut warnings = std::mem::take(&mut self.machine_warnings);
-        warnings.extend(super::lint::program(program, &self.index, self.repl));
+        warnings.extend(super::lint::program(program, &self.index, self.repl, self.file));
         warnings.sort_by_key(|w| w.span.start);
         warnings
     }
@@ -118,7 +193,8 @@ impl Checker {
 
     /// Every name defined at the top level so far, values and functions.
     pub fn global_names(&self) -> Vec<String> {
-        let mut names: Vec<String> = self.scopes[0].keys().chain(self.funcs.keys()).cloned().collect();
+        let mut names: Vec<String> =
+            self.scopes[0].keys().chain(self.funcs.keys()).chain(self.aliases.keys()).cloned().collect();
         names.sort();
         names
     }
@@ -127,6 +203,10 @@ impl Checker {
     fn declare_functions(&mut self, program: &[Stmt]) {
         for stmt in program {
             if let StmtKind::Fn(f) = &stmt.kind {
+                if f.name.text == "std" {
+                    self.errors.push(std_reserved(f.name.span));
+                    continue;
+                }
                 if builtins::NAMES.contains(&f.name.text.as_str()) {
                     self.errors.push(
                         Diag::new(
@@ -147,6 +227,7 @@ impl Checker {
                     span: f.name.span,
                     visible: (0, usize::MAX),
                     detail: format!("fn {}({}) -> {}", f.name.text, params.join(", "), f.ret),
+                    origin: None,
                 });
                 let signature = Signature {
                     params: f.params.iter().map(|(_, ty)| ty.clone()).collect(),
@@ -181,6 +262,14 @@ impl Checker {
         detail: String,
     ) -> Check<()> {
         let top_level = self.scopes.len() == 1;
+        if name.text == "std" {
+            return Err(std_reserved(name.span));
+        }
+        if top_level && !self.repl && self.aliases.contains_key(&name.text) {
+            return Err(Diag::new(ErrorKind::Name, name.span, format!("`{}` is already the name of a module", name.text))
+                .code(codes::ALREADY_DEFINED)
+                .hint("choose another name, or import the module under another name with `as`"));
+        }
         if self.scopes.last().unwrap().contains_key(&name.text) && !(self.repl && top_level) {
             return Err(Diag::new(
                 ErrorKind::Name,
@@ -197,6 +286,7 @@ impl Checker {
             span: name.span,
             visible: (name.span.end, self.block_end),
             detail,
+            origin: None,
         });
         self.scopes.last_mut().unwrap().insert(name.text.clone(), Var { ty, alphabet, def });
         Ok(())
@@ -214,6 +304,13 @@ impl Checker {
     }
 
     fn lookup(&mut self, name: &str, span: Span) -> Check<Var> {
+        if name.contains('.') {
+            return match self.resolve_path(name, span)? {
+                (Member::Value(value), def) => Ok(Var { ty: value.ty, alphabet: value.alphabet, def }),
+                (Member::Function(_), _) => Err(Diag::new(ErrorKind::Name, span, format!("`{name}` is not defined"))
+                    .hint(format!("`{name}` is a function; call it as `{name}(...)`"))),
+            };
+        }
         if let Some(var) = self.scopes.iter().rev().find_map(|scope| scope.get(name)) {
             let var = var.clone();
             self.index.add_ref(span, var.def);
@@ -221,6 +318,13 @@ impl Checker {
         }
         if self.broken.contains(name) {
             return Err(Diag::new(ErrorKind::Name, span, "").code(CONSEQUENCE));
+        }
+        if let Some(alias) = self.aliases.get(name) {
+            self.index.add_ref(span, alias.def);
+            return Err(module_as_value(name, span));
+        }
+        if name == "std" {
+            return Err(module_as_value(name, span));
         }
         let mut err = Diag::new(ErrorKind::Name, span, format!("`{name}` is not defined"));
         if self.funcs.contains_key(name) || builtins::NAMES.contains(&name) {
@@ -230,6 +334,235 @@ impl Checker {
             if let Some(close) = did_you_mean(name, visible) {
                 err = err.hint(format!("did you mean `{close}`?"));
             }
+        }
+        Err(err)
+    }
+
+    // ---- modules ----
+
+    /// `import lib as alias`: binds the module to a name.
+    fn import(&mut self, lib: &Lib, alias: Option<&Name>, target: Option<&ModuleRef>, end: usize) -> Check<()> {
+        let name = match alias {
+            Some(alias) => alias.clone(),
+            None => Name { text: lib.default_name(), span: lib.span },
+        };
+        // When the module could not be loaded, the loader said why; uses of
+        // the name are not reported again.
+        let Some(target) = target else {
+            self.broken.insert(name.text);
+            return Ok(());
+        };
+        self.check_binding(&name)?;
+        let exports = self.modules.get(target).cloned().unwrap_or_default();
+        let visible = (end, self.block_end);
+        let def = self.index.add_def(Def {
+            name: name.text.clone(),
+            kind: DefKind::Module,
+            ty: None,
+            span: name.span,
+            visible,
+            detail: format!("import {}", lib.shown()),
+            origin: None,
+        });
+        let mut members: Vec<Def> = exports.values.values().map(|v| v.def.clone()).collect();
+        members.extend(exports.functions.values().map(|f| f.def.clone()));
+        members.sort_by(|a, b| a.name.cmp(&b.name));
+        self.index.namespaces.push(Namespace { name: name.text.clone(), visible, members });
+        self.imported.insert(name.text.clone(), format!("import {}", lib.shown()));
+        self.aliases.insert(name.text, Alias { target: target.clone(), def });
+        Ok(())
+    }
+
+    /// `from lib import a, b as c`: defines each name in this file. A
+    /// mistake with one name is reported and the others are still imported.
+    fn import_names(&mut self, lib: &Lib, names: &[(Name, Option<Name>)], target: Option<&ModuleRef>, end: usize) {
+        for (name, alias) in names {
+            let local = alias.as_ref().unwrap_or(name);
+            let Some(target) = target else {
+                self.broken.insert(local.text.clone());
+                continue;
+            };
+            let exports = self.modules.get(target).cloned().unwrap_or_default();
+            let result = self.member(&exports, &lib.shown(), name).and_then(|member| {
+                self.check_binding(local)?;
+                let def = self.index.add_def(Def {
+                    name: local.text.clone(),
+                    kind: DefKind::Imported,
+                    ty: match &member {
+                        Member::Value(v) => Some(v.ty.clone()),
+                        Member::Function(_) => None,
+                    },
+                    span: local.span,
+                    visible: (end, self.block_end),
+                    detail: member.def().detail.clone(),
+                    origin: Some(member.def().span).filter(|s| s.file != FileId::STD),
+                });
+                match member {
+                    Member::Value(v) => {
+                        self.scopes[0].insert(local.text.clone(), Var { ty: v.ty, alphabet: v.alphabet, def });
+                    }
+                    Member::Function(f) => {
+                        self.funcs.insert(local.text.clone(), Signature { params: f.params, ret: f.ret, def });
+                    }
+                }
+                self.imported.insert(local.text.clone(), format!("from {} import {}", lib.shown(), name.text));
+                Ok(())
+            });
+            if let Err(error) = result {
+                self.broken.insert(local.text.clone());
+                self.errors.push(error);
+            }
+        }
+    }
+
+    /// Checks that a module, or a name taken from one, can be called `name`
+    /// in this file.
+    fn check_binding(&self, name: &Name) -> Check<()> {
+        if name.text == "std" {
+            return Err(std_reserved(name.span));
+        }
+        let taken = self.scopes[0].contains_key(&name.text)
+            || self.funcs.contains_key(&name.text)
+            || self.aliases.contains_key(&name.text);
+        if taken && !self.repl {
+            return Err(Diag::new(ErrorKind::Name, name.span, format!("`{}` is already defined in this file", name.text))
+                .code(codes::IMPORT_CLASH)
+                .hint(format!("import it under another name with `as`: `... as {}2`, or rename the other one", name.text)));
+        }
+        Ok(())
+    }
+
+    /// The member `name` of a module, described as `module` in messages,
+    /// and a reference to its definition in the index.
+    fn member(&mut self, exports: &Exports, module: &str, name: &Name) -> Check<Member> {
+        let member = if let Some(value) = exports.values.get(&name.text) {
+            Member::Value(value.clone())
+        } else if let Some(function) = exports.functions.get(&name.text) {
+            Member::Function(function.clone())
+        } else if exports.broken.contains(&name.text) {
+            return Err(Diag::new(ErrorKind::Name, name.span, "").code(CONSEQUENCE));
+        } else if let Some(how) = exports.imported.get(&name.text) {
+            return Err(Diag::new(
+                ErrorKind::Name,
+                name.span,
+                format!("`{}` is not defined in {module}, only imported there", name.text),
+            )
+            .code(codes::REEXPORT)
+            .hint(format!("a module passes on only what it defines; import it from where it comes from: `{how}`")));
+        } else {
+            let mut err = Diag::new(ErrorKind::Name, name.span, format!("{module} has no `{}`", name.text))
+                .code(codes::UNKNOWN_MEMBER);
+            if let Some(close) = did_you_mean(&name.text, exports.names()) {
+                err = err.hint(format!("did you mean `{close}`?"));
+            } else if exports.values.is_empty() && exports.functions.is_empty() {
+                err = err.hint("it defines nothing at its top level");
+            }
+            return Err(err);
+        };
+        let def = self.mirror(member.def());
+        self.index.add_ref(name.span, def);
+        Ok(member)
+    }
+
+    /// The index entry for a definition in another file, made the first
+    /// time it is needed. Editors use it to show and find that definition.
+    fn mirror(&mut self, def: &Def) -> usize {
+        let key = (def.span.file, def.span.start, def.name.clone());
+        if let Some(&index) = self.mirrored.get(&key) {
+            return index;
+        }
+        // Not visible anywhere in this file by its bare name.
+        let copy = Def { visible: (usize::MAX, usize::MAX), ..def.clone() };
+        let index = self.index.add_def(copy);
+        self.mirrored.insert(key, index);
+        index
+    }
+
+    /// What a qualified name like `utils.EvenZeros` or `std.math.gcd`
+    /// refers to, and its definition's index entry.
+    fn resolve_path(&mut self, text: &str, span: Span) -> Check<(Member, usize)> {
+        let parts = parts_of(text, span);
+        let (exports, module, used) = self.namespace(&parts)?;
+        match &parts[used..] {
+            [] => Err(module_as_value(text, span)),
+            [member] => {
+                let member = self.member(&exports, &module, member)?;
+                let def = self.mirror(member.def());
+                Ok((member, def))
+            }
+            [first, ..] => {
+                if let Some(how) = exports.imported.get(&first.text) {
+                    return Err(Diag::new(
+                        ErrorKind::Name,
+                        first.span,
+                        format!("`{}` is a module that {module} imports, and imports are not passed on", first.text),
+                    )
+                    .code(codes::REEXPORT)
+                    .hint(format!("import it here yourself: `{how}`")));
+                }
+                let member = self.member(&exports, &module, first)?;
+                let what = match &member {
+                    Member::Value(v) => article(&v.ty),
+                    Member::Function(_) => "a function".to_string(),
+                };
+                Err(Diag::new(ErrorKind::Name, parts[used + 1].span, format!("`{}` is {what}, which has no names inside it", first.text))
+                    .code(codes::UNKNOWN_MEMBER)
+                    .hint("only a module has names written after a `.`"))
+            }
+        }
+    }
+
+    /// The module that the first part (or two, for `std.math`) of a
+    /// qualified name refers to: its exports, how to describe it, and how
+    /// many parts named it.
+    fn namespace(&mut self, parts: &[Name]) -> Check<(Rc<Exports>, String, usize)> {
+        let first = &parts[0];
+        if let Some(alias) = self.aliases.get(&first.text).cloned() {
+            self.index.add_ref(first.span, alias.def);
+            let exports = self.modules.get(&alias.target).cloned().unwrap_or_default();
+            return Ok((exports, format!("module `{}`", first.text), 1));
+        }
+        if first.text == "std" {
+            let module = &parts[1];
+            let target = ModuleRef::Std(module.text.clone());
+            if let Some(exports) = self.modules.get(&target) {
+                return Ok((exports.clone(), format!("`std.{}`", module.text), 2));
+            }
+            let Some(exports) = super::stdlib::exports(&module.text) else {
+                let mut err = Diag::new(
+                    ErrorKind::Name,
+                    module.span,
+                    format!("the standard library has no module called `{}`", module.text),
+                )
+                .code(codes::UNKNOWN_MEMBER);
+                err = match did_you_mean(&module.text, super::stdlib::MODULES.iter().map(|m| m.name)) {
+                    Some(close) => err.hint(format!("did you mean `std.{close}`?")),
+                    None => err.hint(super::stdlib::modules_hint()),
+                };
+                return Err(err);
+            };
+            let exports = Rc::new(exports);
+            self.modules.insert(target, exports.clone());
+            return Ok((exports, format!("`std.{}`", module.text), 2));
+        }
+        let what = if let Some(var) = self.scopes.iter().rev().find_map(|scope| scope.get(&first.text)) {
+            Some(article(&var.ty))
+        } else {
+            self.funcs.contains_key(&first.text).then(|| "a function".to_string())
+        };
+        if what.is_none() && self.broken.contains(&first.text) {
+            return Err(Diag::new(ErrorKind::Name, first.span, "").code(CONSEQUENCE));
+        }
+        if let Some(what) = what {
+            return Err(Diag::new(ErrorKind::Name, first.span, format!("`{}` is {what}, not a module", first.text))
+                .code(codes::UNKNOWN_MEMBER)
+                .hint("only a module has names written after a `.`; import one with `import \"file.kstar\"`"));
+        }
+        let mut err = Diag::new(ErrorKind::Name, first.span, format!("`{}` is not defined", first.text));
+        if let Some(close) = did_you_mean(&first.text, self.aliases.keys().map(String::as_str)) {
+            err = err.hint(format!("did you mean `{close}`?"));
+        } else {
+            err = err.hint(format!("to use a module, import it first: `import \"{}.kstar\"`", first.text));
         }
         Err(err)
     }
@@ -365,6 +698,11 @@ impl Checker {
                     }
                     return Err(err);
                 }
+                Ok(())
+            }
+            StmtKind::Import { lib, alias, target } => self.import(lib, alias.as_ref(), target.as_ref(), stmt.span.end),
+            StmtKind::FromImport { lib, names, target } => {
+                self.import_names(lib, names, target.as_ref(), stmt.span.end);
                 Ok(())
             }
             StmtKind::Trace { machine, word } => {
@@ -512,6 +850,7 @@ impl Checker {
                         span: state.span,
                         visible: (m.body.start, m.body.end),
                         detail: String::new(),
+                        origin: None,
                     });
                     defs.push((state.name.clone(), def, if role.is_empty() { vec![] } else { vec![role] }));
                 }
@@ -539,6 +878,7 @@ impl Checker {
                         span: rule.head.span,
                         visible: (g.body.start, g.body.end),
                         detail: format!("variable {} of {owner}{start}", rule.head.text),
+                        origin: None,
                     });
                     defs.push((rule.head.text.clone(), def));
                 }
@@ -793,6 +1133,21 @@ impl Checker {
 
     fn call(&mut self, name: &Name, args: &[Expr], span: Span) -> Check<Type> {
         self.index.calls.push(Call { name: name.text.clone(), name_span: name.span, span });
+        if name.is_qualified() {
+            let signature = match self.resolve_path(&name.text, name.span)? {
+                (Member::Function(f), def) => Signature { params: f.params, ret: f.ret, def },
+                (Member::Value(v), _) => {
+                    return Err(Diag::new(
+                        ErrorKind::Name,
+                        name.span,
+                        format!("`{}` is {}, not a function", name.text, article(&v.ty)),
+                    )
+                    .code(codes::UNKNOWN_FUNCTION));
+                }
+            };
+            let types = args.iter().map(|arg| self.expr(arg)).collect::<Check<Vec<Type>>>()?;
+            return check_arguments(&name.text, &signature, &types, args, span);
+        }
         if let Some(signature) = self.funcs.get(&name.text) {
             self.index.add_ref(name.span, signature.def);
         }
@@ -826,37 +1181,57 @@ impl Checker {
             });
         }
 
-        let signature = &self.funcs[&name.text];
-        if types.len() != signature.params.len() {
-            let n = signature.params.len();
-            return Err(type_error(
-                span,
-                format!(
-                    "`{}` takes {n} argument{}, but {} {} given",
-                    name.text,
-                    if n == 1 { "" } else { "s" },
-                    types.len(),
-                    if types.len() == 1 { "was" } else { "were" }
-                ),
-            )
-            .code(codes::ARGUMENT_COUNT));
-        }
-        for (i, (wanted, actual)) in signature.params.iter().zip(&types).enumerate() {
-            if !fits(wanted, actual) {
-                return Err(type_error(
-                    args[i].span,
-                    format!(
-                        "argument {} of `{}` must be {}, but this is {}",
-                        i + 1,
-                        name.text,
-                        article(wanted),
-                        article(actual)
-                    ),
-                ));
-            }
-        }
-        Ok(signature.ret.clone())
+        check_arguments(&name.text, &self.funcs[&name.text], &types, args, span)
     }
+}
+
+/// Checks the arguments of a call to a user-defined (or imported) function
+/// and returns the type of its result.
+fn check_arguments(name: &str, signature: &Signature, types: &[Type], args: &[Expr], span: Span) -> Check<Type> {
+    if types.len() != signature.params.len() {
+        let n = signature.params.len();
+        return Err(type_error(
+            span,
+            format!(
+                "`{}` takes {n} argument{}, but {} {} given",
+                name,
+                if n == 1 { "" } else { "s" },
+                types.len(),
+                if types.len() == 1 { "was" } else { "were" }
+            ),
+        )
+        .code(codes::ARGUMENT_COUNT));
+    }
+    for (i, (wanted, actual)) in signature.params.iter().zip(types).enumerate() {
+        if !fits(wanted, actual) {
+            return Err(type_error(
+                args[i].span,
+                format!(
+                    "argument {} of `{}` must be {}, but this is {}",
+                    i + 1,
+                    name,
+                    article(wanted),
+                    article(actual)
+                ),
+            ));
+        }
+    }
+    Ok(signature.ret.clone())
+}
+
+/// The error for using `std`, or a module, where a value is needed.
+fn module_as_value(name: &str, span: Span) -> Diag {
+    let example = if name == "std" { "std.math.gcd(12, 18)".to_string() } else { format!("{name}.Name") };
+    Diag::new(ErrorKind::Name, span, format!("`{name}` is a module, not a value"))
+        .code(codes::MODULE_AS_VALUE)
+        .hint(format!("use one of the names inside it, like `{example}`"))
+}
+
+/// The error for defining `std`, which always means the standard library.
+fn std_reserved(span: Span) -> Diag {
+    Diag::new(ErrorKind::Name, span, "`std` is the name of the standard library and cannot be defined")
+        .code(codes::IMPORT_CLASH)
+        .hint("choose another name")
 }
 
 /// The name a definition statement defines, if it is one.

@@ -121,6 +121,20 @@
     ],
     "description": "Loop over a set, a range like 0..n, a string or an alphabet."
   },
+  "Import": {
+    "prefix": "import",
+    "body": [
+      "import \"${1:utils}.kstar\"$0"
+    ],
+    "description": "Use another file as a module: its names are written `utils.Name`."
+  },
+  "From import": {
+    "prefix": "from",
+    "body": [
+      "from \"${1:utils}.kstar\" import ${2:Size}$0"
+    ],
+    "description": "Take names out of another file, to use them without the module's name."
+  },
   "Test": {
     "prefix": "test",
     "body": [

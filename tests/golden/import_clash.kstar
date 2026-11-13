@@ -1,0 +1,5 @@
+let lib = 1
+import "modules/lib.kstar"
+import "modules/lib.kstar" as std
+from "modules/lib.kstar" import Greeting, B as lib
+let Greeting = "again"

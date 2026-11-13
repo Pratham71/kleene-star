@@ -1,0 +1,5 @@
+Error in modules/broken.kstar, line 2:
+    let Size = 1 + "two"
+               ^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is an Int and the right side is a Str
+  hint: an Int is not turned into a Str by itself; `print` can show both: `print "n =", n`

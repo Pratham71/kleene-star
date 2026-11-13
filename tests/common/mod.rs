@@ -30,11 +30,60 @@ pub struct Outcome {
     pub ok: bool,
 }
 
+/// Where a program's imports come from.
+#[derive(Clone)]
+pub enum Files {
+    /// No other files: an import fails as "not found".
+    None,
+    /// Files that exist only in the test, by path (`lib/utils.kstar`),
+    /// relative to the program.
+    Virtual(Vec<(String, String)>),
+    /// The disk: the program is at this path, and imports are relative to it.
+    Disk(PathBuf),
+}
+
+/// Options for `run_with`.
+#[derive(Clone)]
+pub struct Run {
+    pub files: Files,
+    pub eager_imports: bool,
+}
+
 pub fn run_program(shown_name: &str, text: &str) -> Outcome {
+    run_with(shown_name, text, Run { files: Files::None, eager_imports: false })
+}
+
+/// Runs `text` as the file `shown_name`, which lives on disk at `path`.
+pub fn run_at(path: &Path, shown_name: &str, text: &str) -> Outcome {
+    run_with(shown_name, text, Run { files: Files::Disk(path.to_path_buf()), eager_imports: false })
+}
+
+/// Runs `text` as the file `shown_name`, with other files it can import.
+pub fn run_with_files(shown_name: &str, text: &str, files: &[(&str, &str)]) -> Outcome {
+    let files = files.iter().map(|(name, text)| (name.to_string(), text.to_string())).collect();
+    run_with(shown_name, text, Run { files: Files::Virtual(files), eager_imports: false })
+}
+
+pub fn run_with(shown_name: &str, text: &str, options: Run) -> Outcome {
     let (shown_name, text) = (shown_name.to_string(), text.replace("\r\n", "\n"));
     kstar::with_big_stack(move || {
         let capture = Capture::default();
         let mut session = Session::new(&shown_name, Box::new(capture.clone()), scratch_dir(), false);
+        session.eager_imports(options.eager_imports);
+        match options.files {
+            Files::None => session.set_reader(Box::new(|path| {
+                Err(std::io::Error::new(std::io::ErrorKind::NotFound, path.display().to_string()))
+            })),
+            Files::Virtual(files) => session.set_reader(Box::new(move |path| {
+                let wanted = path.to_string_lossy().replace('\\', "/");
+                files
+                    .iter()
+                    .find(|(name, _)| *name == wanted)
+                    .map(|(_, text)| text.clone())
+                    .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, wanted))
+            })),
+            Files::Disk(path) => session.set_path(&path),
+        }
         let result = session.run(&text);
         // Warnings come first, as on the command line, where they are shown
         // before the program runs.

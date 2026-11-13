@@ -11,7 +11,12 @@ use crate::lang::check::Checker;
 use crate::lang::error::Diag;
 use crate::lang::index::{DefKind, Index};
 use crate::lang::lexer::lex;
+use crate::lang::module::{Loader, Reader};
+use crate::lang::source::SourceMap;
+use crate::lang::stdlib;
 use crate::lang::token::{FileId, Span, Tok};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// An error or a warning in a program.
 #[derive(Debug, Clone, PartialEq)]
@@ -39,6 +44,7 @@ pub enum CompletionKind {
     Variable,
     State,
     Symbol,
+    Module,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -90,6 +96,11 @@ pub struct Symbol {
 /// Everything known about one version of a file.
 pub struct Analysis {
     pub src: String,
+    /// The file and every file it imports. A definition in another file
+    /// has a span in one of them.
+    pub sources: SourceMap,
+    /// Where each imported file is, for editors to open it.
+    pub paths: HashMap<FileId, PathBuf>,
     /// Every error, then (only if there are no errors) every warning.
     pub problems: Vec<Problem>,
     pub index: Index,
@@ -104,14 +115,52 @@ pub struct Analysis {
 impl Analysis {
     /// Lexes, parses and checks `src`, exactly as `kstar check` does. The
     /// index holds whatever the checker learned, even from a program with
-    /// errors.
+    /// errors. Imports are relative to the current folder.
     pub fn new(src: &str) -> Analysis {
+        Analysis::open(src, None, None)
+    }
+
+    /// Like `new`, for the file at `path`, whose imports are relative to its
+    /// folder. `read`, if given, reads the imported files (an editor knows
+    /// the text of the files it has open); otherwise they are read from disk.
+    ///
+    /// An error inside an imported file is shown at the import in this file
+    /// that leads to it, since that is the file being edited.
+    pub fn open(src: &str, path: Option<&Path>, read: Option<Reader>) -> Analysis {
         let src = src.replace("\r\n", "\n");
+        let mut loader = Loader::from_disk(path.map(Path::to_path_buf));
+        if let Some(read) = read {
+            loader.set_reader(read);
+        }
+        // The file is called by its own name, so imported files are named
+        // relative to it: `lib/utils.kstar`.
+        let name = path.and_then(Path::file_name).map_or("<editor>".into(), |n| n.to_string_lossy().to_string());
+        let mut sources = SourceMap::new(&name, &src);
         let mut checker = Checker::new(false);
-        let checked = crate::lang::check_source(FileId::MAIN, &src, 0, 1, false, &mut checker);
-        let problems = checked.errors.into_iter().chain(checked.warnings).map(Problem::from).collect();
+        let checked = crate::lang::check_source(FileId::MAIN, &mut sources, 0, 1, false, &mut checker, &mut loader);
+        let sites = loader.import_sites(&checked.program);
+        let problems = checked
+            .errors
+            .into_iter()
+            .chain(checked.warnings)
+            .map(|diag| {
+                let file = diag.span.file;
+                if file == FileId::MAIN {
+                    return Problem::from(diag);
+                }
+                let place = format!("{}, line {}", sources.name(file), diag.span.line);
+                let mut problem = Problem::from(diag);
+                problem.message = format!("in {place}: {}", problem.message);
+                problem.span = sites.get(&file).copied().unwrap_or_default();
+                problem
+            })
+            .collect();
         let outline = outline(&checked.program, &checker.index);
-        Analysis { src, problems, index: checker.index, outline, stale: false }
+        let paths = (1..sources.len() as u32)
+            .map(FileId)
+            .filter_map(|file| loader.path(file).map(|p| (file, p.to_path_buf())))
+            .collect();
+        Analysis { src, sources, paths, problems, index: checker.index, outline, stale: false }
     }
 
     /// The file in the standard style, as `kstar fmt` writes it, or `None`
@@ -128,7 +177,17 @@ impl Analysis {
     /// Like `new`, but if the text does not parse, keeps the names from
     /// `previous` so completion keeps working while the user is typing.
     pub fn with_fallback(src: &str, previous: Option<&Analysis>) -> Analysis {
-        let mut analysis = Analysis::new(src);
+        Analysis::open_with_fallback(src, previous, None, None)
+    }
+
+    /// `open` and `with_fallback` together, for the language server.
+    pub fn open_with_fallback(
+        src: &str,
+        previous: Option<&Analysis>,
+        path: Option<&Path>,
+        read: Option<Reader>,
+    ) -> Analysis {
+        let mut analysis = Analysis::open(src, path, read);
         if analysis.index.defs.is_empty() {
             if let Some(previous) = previous.filter(|p| !p.index.defs.is_empty()) {
                 analysis.index = previous.index.clone();
@@ -146,7 +205,8 @@ impl Analysis {
         if self.stale {
             return None;
         }
-        let touches = |span: &Span| span.start <= offset && offset <= span.end;
+        // Every use is in this file; a definition may be in another one.
+        let touches = |span: &Span| span.file == FileId::MAIN && span.start <= offset && offset <= span.end;
         self.index
             .refs
             .iter()
@@ -155,9 +215,27 @@ impl Analysis {
             .or_else(|| self.index.defs.iter().position(|d| touches(&d.span)))
     }
 
-    /// Where the thing under `offset` is defined.
+    /// Where the thing under `offset` is defined. The span may be in an
+    /// imported file: `file_path` says where that is. For a name taken with
+    /// `from ... import`, this is where its module defines it.
     pub fn definition(&self, offset: usize) -> Option<Span> {
-        self.symbol_at(offset).map(|def| self.index.defs[def].span)
+        let def = &self.index.defs[self.symbol_at(offset)?];
+        let span = def.origin.unwrap_or(def.span);
+        (span.file != FileId::STD).then_some(span)
+    }
+
+    /// Where file `file` (from a span) is, or `None` for this file.
+    pub fn file_path(&self, file: FileId) -> Option<&Path> {
+        self.paths.get(&file).map(PathBuf::as_path)
+    }
+
+    /// The text of file `file`, to turn its spans into lines and columns.
+    pub fn file_text(&self, file: FileId) -> &str {
+        if file == FileId::MAIN {
+            &self.src
+        } else {
+            self.sources.text(file)
+        }
     }
 
     /// Every place the thing under `offset` is used, in order, optionally
@@ -167,7 +245,7 @@ impl Analysis {
         let mut spans: Vec<Span> = self.index.refs.iter().filter(|(_, d)| *d == def).map(|&(s, _)| s).collect();
         let definition = self.index.defs[def].span;
         spans.retain(|s| *s != definition);
-        if include_definition {
+        if include_definition && definition.file == FileId::MAIN {
             spans.push(definition);
         }
         spans.sort_by_key(|s| s.start);
@@ -228,6 +306,9 @@ impl Analysis {
     pub fn completions(&self, offset: usize) -> Vec<Completion> {
         let offset = char_boundary(&self.src, offset);
         let inside = |(start, end): (usize, usize)| start <= offset && offset <= end;
+        if let Some(path) = self.qualifier_before(offset) {
+            return self.members(&path, offset);
+        }
         let mut out: Vec<Completion> = Vec::new();
         let push = |out: &mut Vec<Completion>, c: Completion| {
             if !out.iter().any(|o| o.label == c.label) {
@@ -258,8 +339,9 @@ impl Analysis {
             }
         }
 
-        // Names that can be seen here, innermost first.
-        for def in self.index.defs.iter().rev() {
+        // Names that can be seen here, innermost first. (Definitions in
+        // other files are only reachable through their module's name.)
+        for def in self.index.defs.iter().rev().filter(|d| d.span.file == FileId::MAIN) {
             let usable = match def.kind {
                 DefKind::State | DefKind::GrammarVariable => false,
                 DefKind::Function => true,
@@ -267,10 +349,17 @@ impl Analysis {
                 _ => inside(def.visible),
             };
             if usable {
-                let kind = if def.kind == DefKind::Function { CompletionKind::Function } else { CompletionKind::Variable };
+                let kind = completion_kind(def.kind, &def.detail);
                 push(&mut out, Completion { label: def.name.clone(), kind, detail: def.detail.clone(), doc: None });
             }
         }
+        let std = Completion {
+            label: "std".into(),
+            kind: CompletionKind::Module,
+            detail: "the standard library".into(),
+            doc: None,
+        };
+        push(&mut out, std);
         for name in builtins::NAMES {
             let doc = builtins::doc(name).expect("every built-in is documented");
             let c = Completion {
@@ -287,6 +376,65 @@ impl Analysis {
         out
     }
 
+    /// When the cursor is just after `name.` (or `name.par`), the qualified
+    /// name before the last dot: `utils`, or `std.math`.
+    fn qualifier_before(&self, offset: usize) -> Option<String> {
+        let is_word = |c: char| c.is_alphanumeric() || c == '_';
+        let before = &self.src[..offset];
+        let partial = before.trim_end_matches(is_word);
+        let path = partial.strip_suffix('.')?;
+        let start = path.trim_end_matches(|c: char| is_word(c) || c == '.').len();
+        let path = &path[start..];
+        (!path.is_empty() && !path.starts_with('.') && !path.contains("..")).then(|| path.to_string())
+    }
+
+    /// The names inside the module `path` (`utils` or `std.math`), or the
+    /// modules of the standard library for `std`.
+    fn members(&self, path: &str, offset: usize) -> Vec<Completion> {
+        if path == "std" {
+            return stdlib::MODULES
+                .iter()
+                .map(|m| Completion {
+                    label: m.name.to_string(),
+                    kind: CompletionKind::Module,
+                    detail: format!("std.{}", m.name),
+                    doc: Some(m.doc.to_string()),
+                })
+                .collect();
+        }
+        if let Some(exports) = path.strip_prefix("std.").and_then(stdlib::exports) {
+            let mut found: Vec<Completion> = exports
+                .functions
+                .values()
+                .map(|f| Completion {
+                    label: f.def.name.clone(),
+                    kind: CompletionKind::Function,
+                    detail: f.def.detail.clone(),
+                    doc: None,
+                })
+                .collect();
+            found.sort_by(|a, b| a.label.cmp(&b.label));
+            return found;
+        }
+        let namespace = self
+            .index
+            .namespaces
+            .iter()
+            .rev()
+            .find(|n| n.name == path && (self.stale || (n.visible.0 <= offset && offset <= n.visible.1)));
+        let Some(namespace) = namespace else { return Vec::new() };
+        namespace
+            .members
+            .iter()
+            .map(|def| Completion {
+                label: def.name.clone(),
+                kind: completion_kind(def.kind, &def.detail),
+                detail: def.detail.clone(),
+                doc: None,
+            })
+            .collect()
+    }
+
     // ---- signature help ----
 
     /// The function being called around `offset`, and which argument the
@@ -299,10 +447,18 @@ impl Analysis {
         // and how many commas have been passed.
         let mut open: Vec<Option<(String, usize)>> = Vec::new();
         let mut previous: Option<&Tok> = None;
+        // The qualified name just read, like `utils.double`.
+        let mut name_so_far = String::new();
         for token in tokens.iter().take_while(|t| t.span.end <= offset && t.tok != Tok::Eof) {
             match &token.tok {
+                Tok::Ident(part) if previous == Some(&Tok::Dot) => name_so_far = format!("{name_so_far}.{part}"),
+                Tok::Ident(part) => name_so_far = part.clone(),
+                Tok::Dot => {}
+                _ => {}
+            }
+            match &token.tok {
                 Tok::LParen => open.push(match previous {
-                    Some(Tok::Ident(name)) => Some((name.clone(), 0)),
+                    Some(Tok::Ident(_)) => Some((name_so_far.clone(), 0)),
                     _ => None,
                 }),
                 Tok::LBrace | Tok::LBracket => open.push(None),
@@ -327,11 +483,54 @@ impl Analysis {
                 doc: Some(doc.doc.to_string()),
             });
         }
-        let def = self.index.defs.iter().find(|d| d.kind == DefKind::Function && d.name == name)?;
+        let (detail, doc) = self.function_detail(&name)?;
         // The detail is `fn name(a: Int, b: Str) -> Dfa`.
-        let inside = def.detail.split_once('(')?.1.rsplit_once(')')?.0;
+        let inside = detail.split_once('(')?.1.rsplit_once(')')?.0;
         let params = if inside.is_empty() { Vec::new() } else { inside.split(", ").map(String::from).collect() };
-        Some(SignatureHelp { label: def.detail.trim_start_matches("fn ").to_string(), params, active, doc: None })
+        Some(SignatureHelp { label: detail.trim_start_matches("fn ").to_string(), params, active, doc })
+    }
+
+    /// The description (`fn name(...) -> T`) and documentation of the
+    /// function that `name` calls: one in this file, one taken from a module
+    /// with `from`, or a qualified `module.name`.
+    fn function_detail(&self, name: &str) -> Option<(String, Option<String>)> {
+        if let Some((path, member)) = name.rsplit_once('.') {
+            if let Some(exports) = path.strip_prefix("std.").and_then(stdlib::exports) {
+                return exports.functions.get(member).map(|f| (f.def.detail.clone(), None));
+            }
+            let namespace = self.index.namespaces.iter().rev().find(|n| n.name == path)?;
+            let def = namespace.members.iter().find(|d| d.name == member && d.detail.starts_with("fn "))?;
+            return Some((def.detail.clone(), None));
+        }
+        let is_function = |kind: DefKind, detail: &str| {
+            kind == DefKind::Function || (kind == DefKind::Imported && detail.starts_with("fn "))
+        };
+        let def = self
+            .index
+            .defs
+            .iter()
+            .filter(|d| d.span.file == FileId::MAIN)
+            .find(|d| is_function(d.kind, &d.detail) && d.name == name)?;
+        // A function taken under a new name (`from m import double as
+        // twice`) shows the name it is called by.
+        let detail = match def.kind {
+            DefKind::Imported => {
+                let rest = def.detail.split_once('(').map_or("", |(_, rest)| rest);
+                format!("fn {name}({rest}")
+            }
+            _ => def.detail.clone(),
+        };
+        Some((detail, None))
+    }
+}
+
+/// How a definition is shown in a completion list.
+fn completion_kind(kind: DefKind, detail: &str) -> CompletionKind {
+    match kind {
+        DefKind::Function => CompletionKind::Function,
+        DefKind::Module => CompletionKind::Module,
+        DefKind::Imported if detail.starts_with("fn ") => CompletionKind::Function,
+        _ => CompletionKind::Variable,
     }
 }
 
@@ -654,5 +853,74 @@ print Even accepts \"00\", count
         assert_eq!(Analysis::new(PROGRAM).formatted(), None, "already formatted");
         assert_eq!(Analysis::new("let x=1\nprint   x\n").formatted().as_deref(), Some("let x = 1\nprint x\n"));
         assert_eq!(Analysis::new("let x = (\n").formatted(), None, "does not parse");
+    }
+
+    // ---- imports ----
+
+    const LIB: &str = "alphabet B = {0, 1}\nlet Size = 2\nfn double(n: Int) -> Int {\n    return n * 2\n}\n";
+
+    /// `main` analysed as `dir/main.kstar`, next to `lib.kstar` holding `lib`.
+    fn with_lib(main: &str, lib: &'static str) -> Analysis {
+        let read: Reader = Box::new(move |path| match path.to_string_lossy().replace('\\', "/").as_str() {
+            "dir/lib.kstar" => Ok(lib.to_string()),
+            other => Err(std::io::Error::new(std::io::ErrorKind::NotFound, other.to_string())),
+        });
+        Analysis::open(main, Some(Path::new("dir/main.kstar")), Some(read))
+    }
+
+    #[test]
+    fn goes_to_definitions_in_other_files() {
+        let main = "import \"lib.kstar\"\nfrom \"lib.kstar\" import double as twice\nprint lib.Size, twice(lib.double(1))\n";
+        let a = with_lib(main, LIB);
+        assert_eq!(a.problems, vec![]);
+        let def = a.definition(at(main, "Size", 0, 1)).unwrap();
+        assert_ne!(def.file, FileId::MAIN);
+        assert_eq!(text(a.file_text(def.file), def), "Size");
+        assert_eq!(a.file_path(def.file), Some(Path::new("dir/lib.kstar")));
+        // A renamed function goes to where its module defines it.
+        let def = a.definition(at(main, "twice(", 0, 1)).unwrap();
+        assert_eq!(text(a.file_text(def.file), def), "double");
+        // The module's name goes to the import.
+        let def = a.definition(at(main, "lib.Size", 0, 1)).unwrap();
+        assert_eq!(def.file, FileId::MAIN);
+        assert_eq!(text(main, def), "\"lib.kstar\"");
+    }
+
+    #[test]
+    fn hover_and_completion_after_a_module_name() {
+        let main = "import \"lib.kstar\"\nprint lib.double(lib.Size)\nprint lib.\n";
+        let a = with_lib(main, LIB);
+        assert_eq!(a.hover(at(main, "double", 0, 1)).unwrap().1, "```kstar\nfn double(n: Int) -> Int\n```");
+        assert_eq!(a.hover(at(main, "lib.d", 0, 1)).unwrap().1, "```kstar\nimport \"lib.kstar\"\n```");
+        let labels: Vec<String> = a.completions(main.len() - 1).into_iter().map(|c| c.label).collect();
+        assert_eq!(labels, ["B", "Size", "double"]);
+        let kinds: Vec<CompletionKind> = a.completions(main.len() - 1).into_iter().map(|c| c.kind).collect();
+        assert_eq!(kinds[2], CompletionKind::Function);
+        // Elsewhere, the module's names are not offered on their own.
+        let everywhere: Vec<String> = a.completions(at(main, "print lib.d", 0, 0)).into_iter().map(|c| c.label).collect();
+        assert!(everywhere.contains(&"lib".to_string()) && !everywhere.contains(&"Size".to_string()));
+    }
+
+    #[test]
+    fn signature_help_for_imported_functions() {
+        let main = "import \"lib.kstar\"\nfrom \"lib.kstar\" import double as twice\nprint lib.double(1), twice(2)\n";
+        let a = with_lib(main, LIB);
+        let help = a.signature_help(at(main, "(1", 0, 1)).unwrap();
+        assert_eq!(help.label, "double(n: Int) -> Int");
+        let help = a.signature_help(at(main, "(2", 0, 1)).unwrap();
+        assert_eq!(help.label, "twice(n: Int) -> Int");
+    }
+
+    #[test]
+    fn errors_in_an_imported_file_are_shown_at_the_import() {
+        let main = "import \"lib.kstar\"\nprint lib.Size\n";
+        let a = with_lib(main, "let Size = 1 + true\n");
+        assert_eq!(a.problems.len(), 1, "{:?}", a.problems);
+        let problem = &a.problems[0];
+        assert!(problem.message.starts_with("in lib.kstar, line 1: TypeError[E0302]"), "{}", problem.message);
+        assert_eq!(text(main, problem.span), "\"lib.kstar\"");
+        // An unused import is a warning in the file itself.
+        let a = with_lib("import \"lib.kstar\"\n", LIB);
+        assert_eq!(a.problems[0].code, "W0202");
     }
 }

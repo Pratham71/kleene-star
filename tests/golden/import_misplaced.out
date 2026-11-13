@@ -1,0 +1,49 @@
+Error in import_misplaced.kstar, line 2:
+    import "modules/lib.kstar"
+    ^^^^^^
+SyntaxError[E0114]: `import` can only be used at the top level
+  hint: move the import to the top of the file; its names can then be used everywhere below it
+
+Error in import_misplaced.kstar, line 4:
+    import "modules/lib"
+           ^^^^^^^^^^^^^
+SyntaxError[E0115]: an imported file must be a `.kstar` file, but this is `modules/lib`
+  hint: write the whole file name, such as `import "utils.kstar"`
+
+Error in import_misplaced.kstar, line 5:
+    import "modules/my-lib.kstar"
+           ^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError[E0115]: this module needs a name: `my-lib` cannot be used as one
+  hint: name it with `as`: `import "modules/my-lib.kstar" as my_lib`
+
+Error in import_misplaced.kstar, line 6:
+    from std.nothing import x
+         ^^^^^^^^^^^
+NameError[E0208]: the standard library has no module called `nothing`
+  hint: the standard library has no modules yet
+
+Error in import_misplaced.kstar, line 8:
+    print m
+          ^
+NameError[E0211]: `m` is a module, not a value
+  hint: use one of the names inside it, like `m.Name`
+
+Error in import_misplaced.kstar, line 9:
+    print std.math2.gcd(1, 2)
+              ^^^^^
+NameError[E0208]: the standard library has no module called `math2`
+  hint: the standard library has no modules yet
+
+Error in import_misplaced.kstar, line 10:
+    print m.double.x
+                   ^
+NameError[E0208]: `double` is a function, which has no names inside it
+  hint: only a module has names written after a `.`
+
+Error in import_misplaced.kstar, line 12:
+    print x.y
+          ^
+NameError[E0208]: `x` is an Int, not a module
+  hint: only a module has names written after a `.`; import one with `import "file.kstar"`
+
+8 errors found

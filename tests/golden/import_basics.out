@@ -1,0 +1,14 @@
+true hello from lib
+42 8
+true
+Input: 010
+
+Step  Symbol  From  To
+0     —       —     q0
+1     0       q0    q1
+2     1       q1    q1
+3     0       q1    q0
+Result: ACCEPTED
+Reason: Ended in accepting state q0
+
+tests: 1 passed, 0 failed

@@ -27,6 +27,11 @@ pub enum DefKind {
     State,
     /// A variable of a grammar, inside one grammar.
     GrammarVariable,
+    /// A module bound to a name by `import`.
+    Module,
+    /// A name brought in by `from ... import`; `origin` is where the
+    /// module defines it.
+    Imported,
 }
 
 /// One definition: a name and everything known about it.
@@ -44,6 +49,19 @@ pub struct Def {
     pub visible: (usize, usize),
     /// A one-line description, like `fn twice(n: Int) -> Int`.
     pub detail: String,
+    /// For a name imported with `from`, where the module defines it, so
+    /// "go to definition" can go all the way there.
+    pub origin: Option<Span>,
+}
+
+/// The names a module offers, for completing `alias.`.
+#[derive(Debug, Clone)]
+pub struct Namespace {
+    /// The name the module is bound to, like `utils`.
+    pub name: String,
+    /// Where that name can be used.
+    pub visible: (usize, usize),
+    pub members: Vec<Def>,
 }
 
 /// A call `name(args)`.
@@ -71,6 +89,8 @@ pub struct Index {
     pub exprs: Vec<(Span, Type)>,
     pub calls: Vec<Call>,
     pub bodies: Vec<Body>,
+    /// Every module bound by `import`, with its names.
+    pub namespaces: Vec<Namespace>,
 }
 
 impl Index {

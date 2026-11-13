@@ -40,7 +40,12 @@ Options:
   --out <dir>        where `draw` writes its files (default: the current folder)
   --watch            run again whenever a file changes; stop with Ctrl-C
   --trace-calls      print every function call and return
+  --eager-imports    run each imported module at its import, not at first use
   --color <when>     auto (default), always or never
+
+Imported files are checked before anything runs. A module's top level runs
+the first time one of its names is used, without its print, test, draw and
+trace statements.
 
 The exit code is 0 when every program ran without errors and no test failed.";
 
@@ -179,13 +184,20 @@ struct Options {
     out_dir: String,
     watch: bool,
     trace_calls: bool,
+    eager_imports: bool,
     color: bool,
 }
 
 impl Options {
     fn parse(args: &[&str], allow_out: bool) -> Result<Options, String> {
-        let mut options =
-            Options { files: Vec::new(), out_dir: ".".into(), watch: false, trace_calls: false, color: false };
+        let mut options = Options {
+            files: Vec::new(),
+            out_dir: ".".into(),
+            watch: false,
+            trace_calls: false,
+            eager_imports: false,
+            color: false,
+        };
         let mut color = "auto";
         let mut args = args.iter();
         while let Some(&arg) = args.next() {
@@ -194,6 +206,7 @@ impl Options {
                     options.out_dir = args.next().ok_or("`--out` needs a folder")?.to_string();
                 }
                 "--watch" if allow_out => options.watch = true,
+                "--eager-imports" if allow_out => options.eager_imports = true,
                 "--trace-calls" => options.trace_calls = true,
                 "--color" => color = args.next().ok_or("`--color` needs auto, always or never")?,
                 _ if arg.starts_with("--color=") => color = &arg["--color=".len()..],
@@ -360,10 +373,11 @@ fn run_file(file: &Path, options: &Options, check_only: bool) -> bool {
     };
     let name = shown(file);
     let out_dir = PathBuf::from(&options.out_dir);
-    let (color, trace_calls) = (options.color, options.trace_calls);
+    let (color, trace_calls, eager) = (options.color, options.trace_calls, options.eager_imports);
     kstar::with_big_stack(move || {
         let paint = Paint(color);
         let mut session = Session::new(&name, Box::new(std::io::stdout()), out_dir, false);
+        session.eager_imports(eager);
         session.render_svg(true);
         session.ascii_only(console_needs_ascii());
         session.color(color);
@@ -459,6 +473,7 @@ fn trace_command(args: &[&str]) -> ExitCode {
     let color = options.color;
     kstar::with_big_stack(move || {
         let mut session = Session::new(&name, Box::new(std::io::sink()), PathBuf::from("."), true);
+        session.set_path(Path::new(&name));
         session.ascii_only(console_needs_ascii());
         session.color(color);
         let result = session.run(&text).and_then(|()| {

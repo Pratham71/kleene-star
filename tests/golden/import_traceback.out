@@ -1,0 +1,11 @@
+0
+Traceback (most recent call last):
+  import_traceback.kstar, line 6, in <main>
+    print go(1)
+  import_traceback.kstar, line 3, in go
+    return lib.wrap(n - 1)
+  modules/lib.kstar, line 22, in wrap
+    return 10 % n
+           ^^^^^^
+MathError[E0601]: modulo by zero
+  hint: the right-hand side of `%` is 0 here

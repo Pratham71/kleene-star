@@ -1,0 +1,31 @@
+# A small library of machines over binary strings, for 10_modules.kstar to
+# import. Run by itself, it checks its own machines.
+
+alphabet B = {0, 1}
+
+# Words with an even number of 0s.
+dfa EvenZeros over B {
+    start  even
+    accept even
+    even --0--> odd
+    even --1--> even
+    odd  --0--> even
+    odd  --1--> odd
+}
+
+# Binary numbers divisible by n: state q[i] means "the number so far is i mod n".
+fn div_by(n: Int) -> Dfa {
+    return dfa over B {
+        start  q[0]
+        accept q[0]
+        for i in 0..n {
+            q[i] --0--> q[(2 * i) % n]
+            q[i] --1--> q[(2 * i + 1) % n]
+        }
+    }
+}
+
+# These run only when this file is run by itself, not when it is imported.
+print "binary.kstar: checking its machines"
+test EvenZeros accepts "1001"
+test div_by(3) accepts "110"

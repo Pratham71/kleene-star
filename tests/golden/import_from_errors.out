@@ -1,0 +1,19 @@
+Error in import_from_errors.kstar, line 1:
+    from "modules/lib.kstar" import double, doubel, Greeting as hello
+                                            ^^^^^^
+NameError[E0208]: "modules/lib.kstar" has no `doubel`
+  hint: did you mean `double`?
+
+Error in import_from_errors.kstar, line 2:
+    from "modules/reexporter.kstar" import lib, Mine
+                                           ^^^
+NameError[E0210]: `lib` is not defined in "modules/reexporter.kstar", only imported there
+  hint: a module passes on only what it defines; import it from where it comes from: `import "lib.kstar"`
+
+Error in import_from_errors.kstar, line 4:
+    print reexporter.lib.B
+                     ^^^
+NameError[E0210]: `lib` is a module that module `reexporter` imports, and imports are not passed on
+  hint: import it here yourself: `import "lib.kstar"`
+
+3 errors found

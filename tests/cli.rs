@@ -218,3 +218,47 @@ fn explain_prints_the_documentation() {
     assert!(list.contains("W0300: A test that always gives the same answer"));
     assert_eq!(kstar(&dir, &["explain", "E9999"]).status.code(), Some(1));
 }
+
+#[test]
+fn imports_lazy_eager_check_and_folders() {
+    let dir = scratch("imports");
+    std::fs::create_dir_all(dir.join("lib")).unwrap();
+    std::fs::write(dir.join("lib/top.kstar"), "let Zero = 0\nlet Broken = 1 % Zero\nlet Fine = 1\n").unwrap();
+    std::fs::write(
+        dir.join("main.kstar"),
+        "import \"lib/top.kstar\"\nprint \"start\"\nprint top.Fine\n",
+    )
+    .unwrap();
+
+    // Lazy: the module runs at its first use, on line 3.
+    let lazy = kstar(&dir, &["run", "main.kstar"]);
+    assert_eq!(lazy.status.code(), Some(1));
+    assert_eq!(stdout(&lazy), "start\n");
+    let err = stderr(&lazy);
+    assert!(err.contains("main.kstar, line 3, in <main>\n    print top.Fine"), "{err}");
+    assert!(err.contains("lib/top.kstar, line 2, in <module>"), "{err}");
+
+    // Eager: it runs at the import, on line 1, before anything is printed.
+    let eager = kstar(&dir, &["run", "--eager-imports", "main.kstar"]);
+    assert_eq!(eager.status.code(), Some(1));
+    assert_eq!(stdout(&eager), "");
+    assert!(stderr(&eager).contains("main.kstar, line 1, in <main>\n    import \"lib/top.kstar\""), "{}", stderr(&eager));
+
+    // `check` reports a type error in a module that is never used.
+    std::fs::write(dir.join("lib/bad.kstar"), "let Size = 1 + \"two\"\n").unwrap();
+    std::fs::write(dir.join("uses_bad.kstar"), "import \"lib/bad.kstar\"\nprint 1\n").unwrap();
+    let check = kstar(&dir, &["check", "uses_bad.kstar"]);
+    assert_eq!(check.status.code(), Some(1));
+    assert!(stderr(&check).contains("Error in lib/bad.kstar, line 1:"), "{}", stderr(&check));
+
+    // A folder of files that import each other still runs file by file,
+    // and `kstar trace` finds the imports of the file it runs.
+    std::fs::write(dir.join("lib/ok.kstar"), "alphabet B = {0, 1}\ndfa M over B { start a  accept a  a --0,1--> a }\n").unwrap();
+    std::fs::write(dir.join("lib/user.kstar"), "import \"ok.kstar\"\nprint ok.M accepts \"01\"\n").unwrap();
+    let folder = kstar(&dir, &["run", "lib"]);
+    let out = stdout(&folder);
+    assert!(out.contains("--- lib/user.kstar\ntrue\n"), "{out}");
+    let trace = kstar(&dir, &["trace", "lib/user.kstar", "ok.M", "01"]);
+    assert!(trace.status.success(), "{}", stderr(&trace));
+    assert!(stdout(&trace).contains("Result: ACCEPTED"), "{}", stdout(&trace));
+}

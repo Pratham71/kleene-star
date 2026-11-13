@@ -1,0 +1,6 @@
+# Imported by two files; its top level must run once.
+fn announce() -> Int {
+    print "shared is running"
+    return 7
+}
+let Seven = announce()

@@ -96,6 +96,7 @@ impl<'a> Parser<'a> {
                     token.tok,
                     Tok::Alphabet | Tok::Dfa | Tok::Nfa | Tok::Pda | Tok::Tm | Tok::Grammar | Tok::Let | Tok::Fn
                         | Tok::Print | Tok::Test | Tok::Draw | Tok::Trace | Tok::If | Tok::For | Tok::Return
+                        | Tok::Import | Tok::From
                 );
                 let unindented = self.column(i) == 0;
                 if i >= self.pos && i > start && begins && (depth <= 0 || unindented) || token.tok == Tok::Eof {
@@ -219,7 +220,7 @@ impl<'a> Parser<'a> {
     // ---- statements ----
 
     // statement := alphabet | machine-def | let | fn | return | if | for
-    //            | print | test | draw | trace
+    //            | print | test | draw | trace | import | from-import
     fn statement(&mut self) -> Parse<Stmt> {
         let start = self.span();
         let kind = match self.peek() {
@@ -288,6 +289,7 @@ impl<'a> Parser<'a> {
                 StmtKind::Draw(self.expr()?)
             }
             Tok::Trace => self.trace()?,
+            Tok::Import | Tok::From => self.import()?,
             Tok::Ident(_) if *self.peek_next() == Tok::Assign => {
                 return Err(self.error("assignment needs `let`").code(codes::NEEDS_LET).hint(
                     "write `let x = ...`; values cannot be changed once defined, so pick a new name",
@@ -297,7 +299,7 @@ impl<'a> Parser<'a> {
             other => {
                 return Err(self
                     .error(format!("expected a statement, found {}", other.describe()))
-                    .hint("a statement starts with one of: alphabet, dfa, nfa, pda, tm, grammar, let, fn, return, if, for, print, test, draw, trace"));
+                    .hint("a statement starts with one of: alphabet, dfa, nfa, pda, tm, grammar, let, fn, return, if, for, print, test, draw, trace, import, from"));
             }
         };
         Ok(Stmt { kind, span: start.to(self.prev()) })
@@ -346,6 +348,140 @@ impl<'a> Parser<'a> {
         }
         self.advance();
         Ok(StmtKind::Trace { machine, word: self.expr()? })
+    }
+
+    // import      := 'import' lib ('as' NAME)?
+    // from-import := 'from' lib 'import' NAME ('as' NAME)? (',' NAME ('as' NAME)?)*
+    //
+    // Only the syntax is read here. Finding the file is the loader's job
+    // (`module.rs`), and checking the names is the checker's.
+    fn import(&mut self) -> Parse<StmtKind> {
+        let keyword = self.advance();
+        let word = if keyword.tok == Tok::Import { "import" } else { "from" };
+        if self.depth > 0 {
+            return Err(Diag::new(ErrorKind::Syntax, keyword.span, format!("`{word}` can only be used at the top level"))
+                .code(codes::IMPORT_NOT_TOP)
+                .hint("move the import to the top of the file; its names can then be used everywhere below it"));
+        }
+        let lib = self.lib()?;
+        if keyword.tok == Tok::Import {
+            // `import "x.kstar" import name`: probably meant `from`.
+            if *self.peek() == Tok::Import && self.span().line == lib.span.line {
+                return Err(self
+                    .error("expected `as` or the end of the line, found `import`")
+                    .hint(format!("to take names out of a module, write `from {} import name`", lib.shown())));
+            }
+            let alias = if self.eat(Tok::As) { Some(self.name("a name for the module after `as`")?) } else { None };
+            // Without `as`, the module is named after its file, which must
+            // then be usable as a name.
+            let default = lib.default_name();
+            if alias.is_none() && !is_name(&default) {
+                let mut suggestion: String = default.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect();
+                if !suggestion.starts_with(char::is_alphabetic) {
+                    suggestion = format!("m_{suggestion}");
+                }
+                return Err(Diag::new(
+                    ErrorKind::Syntax,
+                    lib.span,
+                    format!("this module needs a name: `{default}` cannot be used as one"),
+                )
+                .code(codes::BAD_IMPORT_PATH)
+                .hint(format!("name it with `as`: `import {} as {suggestion}`", lib.shown())));
+            }
+            return Ok(StmtKind::Import { lib, alias, target: None });
+        }
+        if *self.peek() != Tok::Import {
+            return Err(self
+                .error(format!("expected `import` after the module, found {}", self.peek().describe()))
+                .hint(format!("write `from {} import name, other`", lib.shown())));
+        }
+        self.advance();
+        if *self.peek() == Tok::Star {
+            return Err(self
+                .error("`import *` is not allowed")
+                .hint("list the names you want, so a reader can see where each one comes from: `from ... import a, b`"));
+        }
+        let mut names = Vec::new();
+        loop {
+            let name = self.name("a name to import")?;
+            let alias = if self.eat(Tok::As) { Some(self.name("a new name after `as`")?) } else { None };
+            names.push((name, alias));
+            if !self.eat(Tok::Comma) {
+                break;
+            }
+        }
+        Ok(StmtKind::FromImport { lib, names, target: None })
+    }
+
+    // lib := STRING | 'std' '.' NAME
+    fn lib(&mut self) -> Parse<Lib> {
+        let span = self.span();
+        match self.peek().clone() {
+            Tok::Str(path) => {
+                self.advance();
+                let bad_path = |message: String, hint: &str| {
+                    Diag::new(ErrorKind::Syntax, span, message).code(codes::BAD_IMPORT_PATH).hint(hint.to_string())
+                };
+                if !path.ends_with(".kstar") {
+                    return Err(bad_path(
+                        format!("an imported file must be a `.kstar` file, but this is `{path}`"),
+                        "write the whole file name, such as `import \"utils.kstar\"`",
+                    ));
+                }
+                if path.starts_with(['/', '\\']) || std::path::Path::new(&path).is_absolute() {
+                    return Err(bad_path(
+                        format!("`{path}` is an absolute path"),
+                        "write the path relative to the file that imports it, so the files can be moved together",
+                    ));
+                }
+                Ok(Lib { kind: LibKind::File(path), span })
+            }
+            Tok::Ident(word) if word == "std" => {
+                let name = self.qualified_name("a module")?;
+                let parts = name.parts();
+                match &parts[..] {
+                    [_, module] => Ok(Lib { kind: LibKind::Std(module.text.clone()), span: name.span }),
+                    [_] => Err(Diag::new(ErrorKind::Syntax, name.span, "expected a standard-library module after `std`")
+                        .hint("write `import std.math`, for example")),
+                    _ => Err(Diag::new(ErrorKind::Syntax, parts[2].span, "a module is named by `std` and one more name")
+                        .hint(format!("import the module, `import std.{}`, then use its names", parts[1].text))),
+                }
+            }
+            other => Err(self
+                .error(format!("expected a file name in quotes or a standard-library module, found {}", other.describe()))
+                .hint("write `import \"utils.kstar\"`, or `import std.math`")),
+        }
+    }
+
+    // qualified-name := NAME ('.' NAME)*        with no spaces around the dots
+    //
+    // `utils.EvenZeros` and `std.math.gcd` are read as one `Name` whose text
+    // keeps the dots. The checker works out what each part means.
+    fn qualified_name(&mut self, what: &str) -> Parse<Name> {
+        let mut name = self.name(what)?;
+        while *self.peek() == Tok::Dot {
+            let dot = self.span();
+            let next = self.tokens[(self.pos + 1).min(self.tokens.len() - 1)].clone();
+            let Tok::Ident(part) = &next.tok else {
+                self.advance();
+                let mut err = self.error(format!("expected a name after `.`, found {}", next.tok.describe()));
+                if Tok::keyword(self.text(next.span)).is_some() {
+                    err = err.code(codes::KEYWORD_AS_NAME).hint(format!(
+                        "`{}` is a keyword, so no module can define it",
+                        self.text(next.span)
+                    ));
+                }
+                return Err(err);
+            };
+            if dot.start != name.span.end || next.span.start != dot.end {
+                return Err(Diag::new(ErrorKind::Syntax, dot, "a qualified name is written without spaces around `.`")
+                    .hint(format!("write `{}.{part}`", name.text)));
+            }
+            self.advance();
+            self.advance();
+            name = Name { text: format!("{}.{part}", name.text), span: name.span.to(next.span) };
+        }
+        Ok(name)
     }
 
     // fn := 'fn' NAME '(' (NAME ':' type (',' NAME ':' type)*)? ')' '->' type block
@@ -465,10 +601,10 @@ impl<'a> Parser<'a> {
 
     // ---- machines ----
 
-    // machine-body := 'over' NAME '{' item* '}'
+    // machine-body := 'over' qualified-name '{' item* '}'
     fn machine_body(&mut self, kind: MachineKind, start: Span) -> Parse<MachineExpr> {
         self.expect(Tok::Over, "`over` and an alphabet")?;
-        let alphabet = self.name("the name of an alphabet")?;
+        let alphabet = self.qualified_name("the name of an alphabet")?;
         let header = start.to(self.prev());
         let open = self.span();
         let errors_before = self.recovered.len();
@@ -700,7 +836,7 @@ impl<'a> Parser<'a> {
         self.label().map_err(|e| e.hint(hint))
     }
 
-    // grammar-body := 'over' NAME '{' rule* '}'
+    // grammar-body := 'over' qualified-name '{' rule* '}'
     // rule         := NAME '->' alternative ('|' alternative)*
     // alternative  := 'eps' | gsymbol gsymbol*
     // gsymbol      := NAME starting with a capital letter (a variable)
@@ -710,7 +846,7 @@ impl<'a> Parser<'a> {
     // at a name followed by `->`, or at the closing `}`.
     fn grammar_body(&mut self, start: Span) -> Parse<GrammarExpr> {
         self.expect(Tok::Over, "`over` and an alphabet")?;
-        let alphabet = self.name("the name of an alphabet")?;
+        let alphabet = self.qualified_name("the name of an alphabet")?;
         let header = start.to(self.prev());
         let open = self.expect(Tok::LBrace, "`{`")?;
         let mut rules = Vec::new();
@@ -977,7 +1113,7 @@ impl<'a> Parser<'a> {
     }
 
     // primary := INT | STRING | REGEX | 'true' | 'false'
-    //          | NAME | NAME '(' (expr (',' expr)*)? ')'
+    //          | qualified-name | qualified-name '(' (expr (',' expr)*)? ')'
     //          | '(' expr ')' | '{' (expr (',' expr)*)? '}'
     //          | ('dfa' | 'nfa') machine-body
     fn primary(&mut self) -> Parse<Expr> {
@@ -1004,8 +1140,8 @@ impl<'a> Parser<'a> {
                 })?;
                 ExprKind::Regex(parsed)
             }
-            Tok::Ident(text) => {
-                let name = Name { text, span: self.advance().span };
+            Tok::Ident(_) => {
+                let name = self.qualified_name("a name")?;
                 if self.eat(Tok::LParen) {
                     let mut args = Vec::new();
                     while *self.peek() != Tok::RParen {
@@ -1083,7 +1219,14 @@ impl<'a> Parser<'a> {
     }
 }
 
-/// The kind of machine a `dfa`, `nfa`, `pda` or `tm` keyword introduces.
+/// True if `text` can be used as a name: letters, digits and `_`, not
+/// starting with a digit, and not a keyword.
+fn is_name(text: &str) -> bool {
+    text.starts_with(|c: char| c.is_alphabetic() || c == '_')
+        && text.chars().all(|c| c.is_alphanumeric() || c == '_')
+        && Tok::keyword(text).is_none()
+}
+
 /// The error for a `{` with no matching `}`.
 fn unclosed(open: Span) -> Diag {
     Diag::new(ErrorKind::Syntax, open, "this `{` is never closed")
@@ -1091,6 +1234,7 @@ fn unclosed(open: Span) -> Diag {
         .hint("add the missing `}`; the block that starts here runs to the end of the file")
 }
 
+/// The kind of machine a `dfa`, `nfa`, `pda` or `tm` keyword introduces.
 fn machine_kind(tok: &Tok) -> MachineKind {
     match tok {
         Tok::Dfa => MachineKind::Dfa,

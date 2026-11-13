@@ -1,0 +1,7 @@
+Warning in import_lazy_unused.kstar, line 2:
+    import "modules/fails_at_top.kstar"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning[W0202]: module `fails_at_top` is never used
+  hint: remove the import; an import that is never used costs a file read and a check
+
+fine

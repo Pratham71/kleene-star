@@ -1,0 +1,4 @@
+from "shared.kstar" import Seven
+fn from_b() -> Int {
+    return Seven + 2
+}

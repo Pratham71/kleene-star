@@ -1,0 +1,2 @@
+import "modules/cycle_a.kstar"
+print cycle_a.A

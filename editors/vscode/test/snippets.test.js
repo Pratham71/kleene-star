@@ -41,6 +41,8 @@ const contexts = {
 test("every snippet expands to a valid program", { skip: !fs.existsSync(kstar) && `no ${kstar}` }, () => {
   const snippets = JSON.parse(fs.readFileSync(path.join(root, "snippets", "kstar.json"), "utf8"));
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kstar-snippets-"));
+  // The import snippets import this file.
+  fs.writeFileSync(path.join(dir, "utils.kstar"), "let Size = 1\n");
   for (const [name, snippet] of Object.entries(snippets)) {
     const body = expand(snippet.body);
     const wrapped = (contexts[name] || ((s) => s))(body);

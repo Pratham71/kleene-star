@@ -1,0 +1,15 @@
+# Run by itself, this prints, draws, traces and fails a test. Imported, all
+# of that is skipped.
+alphabet B = {0, 1}
+dfa Ones over B {
+    start a
+    accept a
+    a --1--> a
+    a --0--> z
+    z --0,1--> z
+}
+let Count = 3
+print "noisy was run"
+test Count == 4
+trace Ones on "11"
+draw Ones

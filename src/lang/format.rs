@@ -287,6 +287,25 @@ impl Formatter<'_> {
                 self.push(" on ");
                 self.expr(word);
             }
+            StmtKind::Import { lib, alias, .. } => {
+                let lib = self.text(lib.span).to_string();
+                self.push(&format!("import {lib}"));
+                if let Some(alias) = alias {
+                    self.push(&format!(" as {}", alias.text));
+                }
+            }
+            StmtKind::FromImport { lib, names, .. } => {
+                // The path is copied from the source, so escapes survive.
+                let lib = self.text(lib.span).to_string();
+                let names: Vec<String> = names
+                    .iter()
+                    .map(|(name, alias)| match alias {
+                        Some(alias) => format!("{} as {}", name.text, alias.text),
+                        None => name.text.clone(),
+                    })
+                    .collect();
+                self.push(&format!("from {lib} import {}", names.join(", ")));
+            }
         }
         self.end_line(stmt.span.end);
     }

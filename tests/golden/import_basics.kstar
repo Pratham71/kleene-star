@@ -1,0 +1,16 @@
+# Both kinds of import, qualified names everywhere a name can go.
+import "modules/lib.kstar"
+import "modules/lib.kstar" as l
+from "modules/lib.kstar" import EvenZeros, double as twice
+
+print lib.EvenZeros accepts "00", l.Greeting
+print twice(21), lib.double(4)
+test EvenZeros accepts "0110"
+
+dfa D over lib.B {
+    start q
+    accept q
+    q --0,1--> q
+}
+print equivalent(D, /(0|1)*/)
+trace l.EvenZeros on "010"
