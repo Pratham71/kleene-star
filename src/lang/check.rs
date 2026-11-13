@@ -1172,13 +1172,19 @@ impl Checker {
         let types = args.iter().map(|arg| self.expr(arg)).collect::<Check<Vec<Type>>>()?;
 
         if builtin {
-            return builtins::result_type(&name.text, &types).map_err(|e| {
+            let ty = builtins::result_type(&name.text, &types).map_err(|e| {
                 let err = type_error(e.arg.map_or(span, |i| args[i].span), e.message).code(e.code);
                 match e.hint {
                     Some(hint) => err.hint(hint),
                     None => err,
                 }
-            });
+            })?;
+            // A function name written out can be checked now; one that is
+            // computed is checked when the program runs.
+            if let ("to_rust", Some(Expr { kind: ExprKind::Str(fn_name), span })) = (name.text.as_str(), args.get(1)) {
+                crate::automata::codegen::check_fn_name(fn_name).map_err(|message| bad_rust_name(*span, message))?;
+            }
+            return Ok(ty);
         }
 
         check_arguments(&name.text, &self.funcs[&name.text], &types, args, span)
@@ -1217,6 +1223,13 @@ fn check_arguments(name: &str, signature: &Signature, types: &[Type], args: &[Ex
         }
     }
     Ok(signature.ret.clone())
+}
+
+/// The error for a function name that Rust would not accept, in `to_rust`.
+pub fn bad_rust_name(span: Span, message: String) -> Diag {
+    Diag::new(ErrorKind::Value, span, message)
+        .code(codes::BAD_RUST_NAME)
+        .hint("a Rust function name is usually written in snake_case, like `even_zeros`")
 }
 
 /// The error for using `std`, or a module, where a value is needed.

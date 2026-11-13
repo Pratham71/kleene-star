@@ -187,6 +187,7 @@ is one whose expression contains nothing but literals.
 | `ops.rs` | The product construction, complement, concatenation, star, reversal, emptiness, equivalence. |
 | `dot.rs` | Graphviz output. |
 | `trace.rs` | Running a machine step by step and recording each move. |
+| `codegen.rs` | Writing a DFA as a standalone Rust function. |
 | `grammar.rs` | Context-free grammars: CNF, CYK, emptiness, derivations, grammars from DFAs. |
 | `pda.rs` | Pushdown automata: the configuration search, PDAs from grammars. |
 | `tm.rs` | Turing machines: the tape, running with a step limit. |
@@ -443,6 +444,42 @@ when its `import` statement executes.
 error in a module is shown with the module's name and line, and a
 traceback whose frames are in different files shows each frame's file.
 
+## 14. Generating Rust
+
+`src/automata/codegen.rs`, `to_rust` in `src/lang/interp.rs`, `kstar export`
+in `src/main.rs`
+
+This is the one place where a compile step pays: a DFA is a fixed table, and
+written out as code it runs at full speed with nothing else installed. The
+generator is part of the automata library and knows nothing about the
+language: a `Dfa` goes in, a `String` of Rust comes out.
+
+- States are numbered in breadth-first order from the start state
+  (`Dfa::reachable`), so the start state is always `0` and unreachable
+  states are left out. Their names survive in a doc comment and in a
+  comment on every arm.
+- The function is a loop over `input.chars()` with
+  `state = match (state, symbol) { ... }`. The transitions of one state that
+  go to the same target are joined into one arm (`'0' | '1'`), and a final
+  `_ => return false` arm rejects symbols outside the alphabet.
+  Characters and strings are written with Rust's own `{:?}` escaping, so any
+  symbol is a valid literal.
+- The accepting states become `matches!(state, 0 | 2)`.
+- `sample_words` walks the words breadth first, shortest first, and keeps
+  the first few that are accepted and rejected, plus one word with a symbol
+  outside the alphabet. They become the generated `#[cfg(test)]` module.
+
+`to_rust` converts its argument to a DFA like every other built-in on
+languages (`to_dfa`), and checks the function name against Rust's rules and
+keywords: at check time when the name is written as a string, otherwise
+when it runs. `kstar export` runs the file quietly and then evaluates
+`print to_rust(M, "name")`, like `kstar trace` does with `trace`.
+
+`tests/export.rs` compiles the generated code with `rustc` for several
+machines (one of them built from a regex, one empty), runs it on random
+words, compares every answer with the interpreter's, and runs the generated
+tests with `rustc --test`. Without `rustc` it prints that it was skipped.
+
 ## Testing
 
 ```bash
@@ -525,8 +562,6 @@ UPDATE_GOLDEN=1 cargo test --test golden --test format
 
 Ideas that fit the current design, roughly in order of size:
 
-- `export`: write a DFA out as a standalone Rust function. This is where a
-  compile step makes sense, since the result would run without Kleene Star.
 - `kstar update` that replaces the installed program itself. Today it only
   says whether a newer release exists and prints the install command; doing
   the replacement safely means renaming the running `.exe` on Windows and

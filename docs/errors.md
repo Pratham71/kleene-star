@@ -747,6 +747,25 @@ TypeError[E0307]: `==` cannot compare machines or regexes
   hint: to ask whether two of them describe the same language, use `equivalent(a, b)`
 ```
 
+## E0308: A function name Rust cannot use
+
+`to_rust` and `kstar export` write a Rust function, so its name must be one
+Rust accepts: letters, digits and `_`, not starting with a digit, and not a
+Rust keyword such as `fn`, `match` or `type`. A name written as a string is
+checked before the program runs; one that is computed, when it runs.
+
+```kstar-error
+let code = to_rust(/0*1/, "match")
+```
+
+```text
+Error in demo.kstar, line 1:
+    let code = to_rust(/0*1/, "match")
+                              ^^^^^^^
+ValueError[E0308]: `match` is a Rust keyword, so it cannot name a function
+  hint: a Rust function name is usually written in snake_case, like `even_zeros`
+```
+
 ## E0400: A machine that breaks the rules
 
 A machine definition is checked before the program runs. The codes below

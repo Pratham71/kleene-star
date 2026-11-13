@@ -229,7 +229,7 @@
     "call": {
       "patterns": [
         {
-          "match": "\\b(to_dfa|to_nfa|to_regex|minimize|reduce|remove_eps|rename|union|intersect|difference|complement|concat|star|reverse|equivalent|is_empty|states|len|to_cnf|to_pda|to_grammar|derive|run)(?=\\s*\\()",
+          "match": "\\b(to_dfa|to_nfa|to_regex|minimize|reduce|remove_eps|rename|union|intersect|difference|complement|concat|star|reverse|equivalent|is_empty|states|len|to_cnf|to_pda|to_grammar|derive|run|to_rust)(?=\\s*\\()",
           "name": "support.function.builtin.kstar"
         },
         { "match": "\\b([A-Za-z_]\\w*)(?=\\s*\\()", "name": "entity.name.function.call.kstar" }

@@ -3,8 +3,8 @@
 > Status: version 0.2.3 (2026-11-12), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
-> Version 0.3 (in progress) adds imports between files and a standard library.
-> `export` is still to do. This is the design as agreed on 2026-11-10, with the layout,
+> Version 0.3 (in progress) adds imports between files, `export` to Rust and a standard
+> library. This is the design as agreed on 2026-11-10, with the layout,
 > error format and test sections updated to match the code.
 
 ## Context
@@ -177,6 +177,7 @@ src/
   automata/          pure library, no knowledge of the language
     dfa.rs  nfa.rs  regex.rs  convert.rs  minimize.rs  ops.rs  dot.rs
     grammar.rs  pda.rs  tm.rs  trace.rs
+    codegen.rs       a DFA as a standalone Rust function (`kstar export`, `to_rust`)
   lang/
     token.rs  lexer.rs  ast.rs  parser.rs     with error recovery, so every error is reported
     check.rs  machine.rs         type checker; the rules for a valid DFA/NFA/PDA/TM
@@ -228,7 +229,7 @@ short walkthrough of what was built and why.
 9. **DFA -> regex** (state elimination); finish tutorial and reference.
 
 Later, each as its own design: `export` to Rust source, `kstar fmt`, context-free grammars and
-PDAs, Turing machines. All but `export` are built, along with the language server
+PDAs, Turing machines. All are built (`export` in v0.3), along with the language server
 (`kstar-lsp`), the VS Code extension and the release workflow (version 0.2.0).
 
 ## Verification

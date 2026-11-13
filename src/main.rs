@@ -22,6 +22,7 @@ Commands:
   fmt <files>...        rewrite files in the standard style
   new <name>            start a new program from a template
   trace <file> <M> <w>  run a file quietly, then trace machine M on word w
+  export <file> <M>     write machine M as a standalone Rust function
   explain <code>        explain an error code, such as E0200
   repl                  try things out interactively
   version               show the version, commit, build date and target
@@ -85,6 +86,21 @@ Runs the file without showing its output, then shows every step of
 the file. <machine> may be any expression, such as `to_dfa(r)`. Use \"\" for
 the empty word.";
 
+const EXPORT_HELP: &str = "\
+Usage: kstar export [options] <file> <machine>
+
+Runs the file without showing its output, then writes <machine> as Rust: one
+dependency-free function `pub fn name(input: &str) -> bool` that accepts
+exactly the machine's words, with a `#[cfg(test)]` module of sample words.
+<machine> may be any regular language (Dfa, Nfa, Regex or Set[Str]), such as
+`EvenZeros` or `to_dfa(r)`; it is turned into a DFA first.
+
+Options:
+  --fn <name>        the function's name (default: <machine> in snake_case)
+  -o, --out <file>   write to <file> instead of standard output
+  --minimize         minimize the DFA first, for the smallest table
+  --color <when>     auto (default), always or never";
+
 const EXPLAIN_HELP: &str = "\
 Usage: kstar explain <code>
 
@@ -126,6 +142,7 @@ fn main() -> ExitCode {
             _ => usage_error("`kstar new` needs one name", NEW_HELP),
         },
         "trace" => trace_command(rest),
+        "export" => export_command(rest),
         "explain" => match rest {
             ["--list"] => {
                 for code in codes::ALL {
@@ -148,7 +165,8 @@ fn main() -> ExitCode {
         file if file.ends_with(".kstar") => run_command(&args, false),
         other => {
             let mut message = format!("unknown command `{other}`");
-            let commands = ["run", "check", "fmt", "new", "trace", "explain", "repl", "version", "update", "help"];
+            let commands =
+                ["run", "check", "fmt", "new", "trace", "export", "explain", "repl", "version", "update", "help"];
             if let Some(close) = kstar::lang::error::did_you_mean(other, commands.into_iter()) {
                 message.push_str(&format!("; did you mean `{close}`?"));
             }
@@ -167,6 +185,7 @@ fn help(command: Option<&str>) -> ExitCode {
         Some("explain") => EXPLAIN_HELP,
         Some("repl") => REPL_HELP,
         Some("trace") => TRACE_HELP,
+        Some("export") => EXPORT_HELP,
         Some(_) => USAGE,
     };
     println!("{text}");
@@ -486,6 +505,101 @@ fn trace_command(args: &[&str]) -> ExitCode {
                 eprintln!("{message}");
                 ExitCode::FAILURE
             }
+        }
+    })
+}
+
+/// What a program prints, kept so that it can be read back.
+#[derive(Clone, Default)]
+struct Captured(std::rc::Rc<std::cell::RefCell<Vec<u8>>>);
+
+impl std::io::Write for Captured {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0.borrow_mut().extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+/// `kstar export`: runs a file quietly, then writes one machine as Rust,
+/// by evaluating `to_rust(machine, "name")` at the end of the file.
+fn export_command(args: &[&str]) -> ExitCode {
+    let mut fn_name = None;
+    let mut out_file = None;
+    let mut minimize = false;
+    let mut rest = Vec::new();
+    let mut iter = args.iter();
+    while let Some(&arg) = iter.next() {
+        match arg {
+            "--fn" => match iter.next() {
+                Some(name) => fn_name = Some(name.to_string()),
+                None => return usage_error("`--fn` needs a function name", EXPORT_HELP),
+            },
+            "-o" | "--out" => match iter.next() {
+                Some(file) => out_file = Some(file.to_string()),
+                None => return usage_error("`-o` needs a file name", EXPORT_HELP),
+            },
+            "--minimize" => minimize = true,
+            other => rest.push(other),
+        }
+    }
+    let options = match Options::parse(&rest, false) {
+        Ok(options) => options,
+        Err(message) => return usage_error(&message, EXPORT_HELP),
+    };
+    let [file, machine] = &options.files[..] else {
+        return usage_error("`kstar export` needs a file and a machine", EXPORT_HELP);
+    };
+    let text = match std::fs::read_to_string(file) {
+        Ok(text) => text.replace("\r\n", "\n"),
+        Err(e) => {
+            eprintln!("kstar: cannot read {file}: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    // The default name is the machine's, in Rust's style: EvenZeros -> even_zeros.
+    let is_name = machine.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '.');
+    let fn_name = fn_name.unwrap_or_else(|| {
+        let base = if is_name { machine.rsplit('.').next().unwrap_or(machine) } else { "accepts" };
+        kstar::automata::codegen::snake_case(base)
+    });
+    let target = if minimize { format!("minimize({machine})") } else { machine.clone() };
+    let quoted = fn_name.replace('\\', "\\\\").replace('"', "\\\"");
+    let entry = format!("print to_rust({target}, \"{quoted}\")");
+    let name = shown(Path::new(file));
+    let color = options.color;
+    kstar::with_big_stack(move || {
+        let mut session = Session::new(&name, Box::new(std::io::sink()), PathBuf::from("."), true);
+        session.set_path(Path::new(&name));
+        session.color(color);
+        let code = Captured::default();
+        let result = session.run(&text).and_then(|()| {
+            session.set_output(Box::new(code.clone()));
+            session.run(&entry)
+        });
+        if let Err(message) = result {
+            eprintln!("{message}");
+            return ExitCode::FAILURE;
+        }
+        let mut code = String::from_utf8_lossy(&code.0.borrow()).to_string();
+        code.pop(); // the newline `print` adds
+        match out_file {
+            None => {
+                print!("{code}");
+                ExitCode::SUCCESS
+            }
+            Some(out) => match std::fs::write(&out, code) {
+                Ok(()) => {
+                    eprintln!("wrote {out}: `pub fn {fn_name}(input: &str) -> bool`");
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("kstar: cannot write {out}: {e}");
+                    ExitCode::FAILURE
+                }
+            },
         }
     })
 }
