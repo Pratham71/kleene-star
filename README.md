@@ -46,6 +46,11 @@ tests: 2 passed, 0 failed
   derivations) and pushdown automata.
 - **Run Turing machines**, with a step limit that explains the halting problem
   instead of hanging.
+- **Split programs into files** with `import "utils.kstar"` and
+  `from utils import f`, and use the standard library (`std.math`) without
+  any import.
+- **Export** a DFA, or anything regular, as a standalone Rust function with
+  `kstar export` or `to_rust`.
 - **Catch mistakes early**: a DFA that is missing a transition, a symbol outside
   the alphabet, or a type mix-up is reported before the program runs, with the
   exact place underlined and a hint.
@@ -134,7 +139,8 @@ kstar repl
 
 `kstar new` writes a small working program to start from. `kstar run`
 runs programs, `kstar check` only looks for errors and warnings, `kstar fmt`
-tidies their layout, `kstar trace` follows one machine on one word, and
+tidies their layout, `kstar trace` follows one machine on one word, `kstar export` writes a
+machine as Rust code, and
 `kstar repl` gives you an interactive prompt. Each takes several files or
 folders, `kstar explain E0404` explains an error code, and `kstar help`
 lists the rest. The exit code is 0 when there were no errors and no failed
