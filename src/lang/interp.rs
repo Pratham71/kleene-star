@@ -7,6 +7,7 @@ use super::ast::*;
 use super::codes;
 use super::error::{Diag, ErrorKind, TraceFrame};
 use super::machine::{self, Built, MachineSpec, Transition};
+use super::source::SourceMap;
 use super::token::Span;
 use super::value::Value;
 use super::trace as show_trace;
@@ -61,9 +62,8 @@ pub struct Interp {
     pub passed: usize,
     pub failed: usize,
     drawings: usize,
-    // The program text, only needed to quote a failing `test` line.
-    file: String,
-    src: String,
+    /// The program's files, only needed to quote a failing `test` line.
+    sources: SourceMap,
 }
 
 type Run<T> = Result<T, Diag>;
@@ -74,7 +74,7 @@ impl Interp {
             funcs: HashMap::new(),
             frames: vec![Frame {
                 func: "<main>".into(),
-                call_site: Span { start: 0, end: 0, line: 1 },
+                call_site: Span::new(0, 0, 1),
                 scopes: vec![HashMap::new()],
             }],
             out,
@@ -85,8 +85,7 @@ impl Interp {
             passed: 0,
             failed: 0,
             drawings: 0,
-            file: String::new(),
-            src: String::new(),
+            sources: SourceMap::default(),
         }
     }
 
@@ -95,10 +94,10 @@ impl Interp {
         self.out = out;
     }
 
-    /// Runs a program (or, in the REPL, one more piece of it).
-    pub fn run(&mut self, program: &[Stmt], file: &str, src: &str) -> Run<()> {
-        self.file = file.to_string();
-        self.src = src.to_string();
+    /// Runs a program (or, in the REPL, one more piece of it). `sources`
+    /// holds the text of its files.
+    pub fn run(&mut self, program: &[Stmt], sources: &SourceMap) -> Run<()> {
+        self.sources = sources.clone();
         let result = self.block(program);
         // After an error, forget any calls and blocks that were in progress.
         self.frames.truncate(1);
@@ -220,12 +219,15 @@ impl Interp {
                     self.passed += 1;
                 } else {
                     self.failed += 1;
-                    let text = self.src[stmt.span.start..stmt.span.end].to_string();
+                    let file = stmt.span.file;
+                    let text = self.sources.text(file).get(stmt.span.start..stmt.span.end).unwrap_or("");
                     let first_line = text.lines().next().unwrap_or("");
                     let _ = writeln!(
                         self.out,
                         "test failed: {}, line {}\n    {}",
-                        self.file, stmt.span.line, first_line
+                        self.sources.name(file),
+                        stmt.span.line,
+                        first_line
                     );
                 }
             }

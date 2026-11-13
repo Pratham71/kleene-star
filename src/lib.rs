@@ -15,6 +15,8 @@ use lang::error::{Diag, Paint};
 use lang::interp::Interp;
 use lang::lexer::lex;
 use lang::parser::Parser;
+use lang::source::SourceMap;
+use lang::token::FileId;
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -23,11 +25,11 @@ const MAX_ERRORS_SHOWN: usize = 20;
 
 /// One program being run: a file, or a whole REPL conversation.
 ///
-/// All the text ever fed in is kept in `src`, so an error can always quote
-/// the line it is about, even one typed several REPL entries ago.
+/// The text is kept in `sources`, as the main file. All the text ever fed in
+/// stays there, so an error can always quote the line it is about, even one
+/// typed several REPL entries ago.
 pub struct Session {
-    file: String,
-    src: String,
+    sources: SourceMap,
     checker: Checker,
     interp: Interp,
     repl: bool,
@@ -41,8 +43,7 @@ impl Session {
     /// the program prints; `out_dir` is where `draw` puts its files.
     pub fn new(file: &str, out: Box<dyn Write>, out_dir: PathBuf, repl: bool) -> Session {
         Session {
-            file: file.to_string(),
-            src: String::new(),
+            sources: SourceMap::new(file, ""),
             checker: Checker::new(repl),
             interp: Interp::new(out, out_dir),
             repl,
@@ -84,22 +85,20 @@ impl Session {
     pub fn run(&mut self, text: &str) -> Result<(), String> {
         let program = self.check(text)?;
         self.interp
-            .run(&program, &self.file, &self.src)
-            .map_err(|diag| diag.render_styled(&self.file, &self.src, self.color))
+            .run(&program, &self.sources)
+            .map_err(|diag| diag.render_styled(&self.sources, self.color))
     }
 
     /// Lexes, parses and checks `text` without running it. On failure
     /// returns every error found, formatted.
     pub fn check(&mut self, text: &str) -> Result<Vec<Stmt>, String> {
-        let from = self.src.len();
-        let first_line = self.src.matches('\n').count() + 1;
-        self.src.push_str(text);
-        self.src.push('\n');
+        let (from, first_line) = self.sources.append(FileId::MAIN, &format!("{text}\n"));
 
         // Check on a copy, so a rejected entry leaves no trace behind.
         let mut checker = self.checker.clone();
-        let checked = lang::check_source(&self.src, from, first_line, self.repl, &mut checker);
-        self.warnings = checked.warnings.iter().map(|w| w.render_styled(&self.file, &self.src, self.color)).collect();
+        let src = self.sources.text(FileId::MAIN);
+        let checked = lang::check_source(FileId::MAIN, src, from, first_line, self.repl, &mut checker);
+        self.warnings = checked.warnings.iter().map(|w| w.render_styled(&self.sources, self.color)).collect();
         if checked.errors.is_empty() {
             self.checker = checker;
             Ok(checked.program)
@@ -114,7 +113,7 @@ impl Session {
         let shown: Vec<String> = errors
             .iter()
             .take(MAX_ERRORS_SHOWN)
-            .map(|e| e.render_styled(&self.file, &self.src, self.color))
+            .map(|e| e.render_styled(&self.sources, self.color))
             .collect();
         let mut out = shown.join("\n\n");
         if errors.len() > 1 {
@@ -138,19 +137,18 @@ impl Session {
     /// The type of the expression `text`, for the REPL's `:type`; nothing
     /// is defined or run.
     pub fn type_of(&mut self, text: &str) -> Result<String, String> {
-        let mut src = self.src.clone();
-        let from = src.len();
-        let first_line = src.matches('\n').count() + 1;
-        src.push_str(text);
-        src.push('\n');
+        // On a copy of the text, so the expression is forgotten afterwards.
+        let mut sources = self.sources.clone();
+        let (from, first_line) = sources.append(FileId::MAIN, &format!("{text}\n"));
+        let src = sources.text(FileId::MAIN);
         let mut checker = self.checker.clone();
-        let result = lex(&src, from, first_line).and_then(|tokens| {
-            let mut parser = Parser::new(tokens, &src, true);
+        let result = lex(src, from, first_line).and_then(|tokens| {
+            let mut parser = Parser::new(tokens, src, true);
             let expr = parser.expr()?;
             parser.finish()?;
             checker.type_of(&expr)
         });
-        result.map(|ty| ty.to_string()).map_err(|diag| diag.render_styled("<repl>", &src, self.color))
+        result.map(|ty| ty.to_string()).map_err(|diag| diag.render_styled(&sources, self.color))
     }
 
     /// Every name defined at the top level so far, for completion.
@@ -170,7 +168,7 @@ impl Session {
 pub fn format_program(file: &str, text: &str) -> Result<String, String> {
     let windows_endings = text.contains("\r\n");
     let src = text.replace("\r\n", "\n");
-    let formatted = lang::format::format(&src).map_err(|diag| diag.render(file, &src))?;
+    let formatted = lang::format::format(&src).map_err(|diag| diag.render(&SourceMap::new(file, &src)))?;
     Ok(if windows_endings { formatted.replace('\n', "\r\n") } else { formatted })
 }
 

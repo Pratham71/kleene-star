@@ -997,7 +997,7 @@ impl<'a> Parser<'a> {
                 let parsed = regex::parse(&text).map_err(|(offset, message)| {
                     let at = start.start + 1 + offset; // +1 skips the opening slash
                     let width = self.src[at..].chars().next().map_or(1, char::len_utf8);
-                    let span = Span { start: at, end: at + width, line: start.line };
+                    let span = Span { start: at, end: at + width, ..start };
                     Diag::new(ErrorKind::Syntax, span, format!("in regex: {message}"))
                         .code(codes::BAD_REGEX)
                         .hint("a regex is made of symbols, `|` for or, `*` for repeat, and `( )` for grouping, as in /(0|1)*01/")
@@ -1262,7 +1262,7 @@ mod tests {
         assert!(parse(src).is_err());
     }
 
-    fn errors(src: &str) -> Vec<(usize, String)> {
+    fn errors(src: &str) -> Vec<(u32, String)> {
         let (_, errors) = Parser::new(lex(src, 0, 1).unwrap(), src, false).program_recovering();
         errors.into_iter().map(|e| (e.span.line, e.message)).collect()
     }
@@ -1270,7 +1270,7 @@ mod tests {
     #[test]
     fn recovers_at_the_next_statement() {
         let found = errors("let a = 1 +\nlet b = = 2\nprint a\nlet c = )\n");
-        let lines: Vec<usize> = found.iter().map(|(line, _)| *line).collect();
+        let lines: Vec<u32> = found.iter().map(|(line, _)| *line).collect();
         assert_eq!(lines, [1, 2, 4], "{found:?}");
         assert!(found[0].1.contains("after `+`"), "{found:?}");
     }
@@ -1278,7 +1278,7 @@ mod tests {
     #[test]
     fn recovers_inside_a_machine_and_after_a_missing_brace() {
         let src = "dfa M over B {\n  start q0\n  q0 -> q1\n  q1 --0-> q1\n  accept q1\n}\nfn f( -> Int {\nlet ok = 1\nlet bad = )\n";
-        let lines: Vec<usize> = errors(src).iter().map(|(line, _)| *line).collect();
+        let lines: Vec<u32> = errors(src).iter().map(|(line, _)| *line).collect();
         assert_eq!(lines, [3, 4, 7, 9]);
         // The good items of the machine are kept, and it is marked incomplete.
         let (program, _) = Parser::new(lex(src, 0, 1).unwrap(), src, false).program_recovering();

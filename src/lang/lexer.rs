@@ -2,7 +2,7 @@
 
 use super::codes;
 use super::error::{Diag, ErrorKind};
-use super::token::{Span, Tok, Token};
+use super::token::{FileId, Span, Tok, Token};
 
 /// A `# ...` comment. The parser never sees comments; only the formatter
 /// (`kstar fmt`) needs them, to put them back where they were.
@@ -16,8 +16,8 @@ pub struct Comment {
 /// Lexes `src` starting at byte `from`, which is on line `first_line`.
 /// (The REPL keeps all input in one growing string and lexes only the new
 /// part; a file is lexed with `from = 0, first_line = 1`.) Stops at the
-/// first error.
-pub fn lex(src: &str, from: usize, first_line: usize) -> Result<Vec<Token>, Diag> {
+/// first error. The tokens are in the main file; see `lex_all_in`.
+pub fn lex(src: &str, from: usize, first_line: u32) -> Result<Vec<Token>, Diag> {
     let (tokens, mut errors) = lex_all(src, from, first_line);
     if errors.is_empty() {
         Ok(tokens)
@@ -30,9 +30,15 @@ pub fn lex(src: &str, from: usize, first_line: usize) -> Result<Vec<Token>, Diag
 /// every problem. Where the text could not be read, the tokens contain a
 /// stand-in (an unclosed string still becomes a string), so the parser sees
 /// a sensible program and does not report the same mistake again.
-pub fn lex_all(src: &str, from: usize, first_line: usize) -> (Vec<Token>, Vec<Diag>) {
+pub fn lex_all(src: &str, from: usize, first_line: u32) -> (Vec<Token>, Vec<Diag>) {
+    lex_all_in(FileId::MAIN, src, from, first_line)
+}
+
+/// Like `lex_all`, for the text of file `file`: every span it makes points
+/// into that file.
+pub fn lex_all_in(file: FileId, src: &str, from: usize, first_line: u32) -> (Vec<Token>, Vec<Diag>) {
     let mut errors = Vec::new();
-    let tokens = lex_into(src, from, first_line, &mut Vec::new(), &mut errors);
+    let tokens = lex_into(file, src, from, first_line, &mut Vec::new(), &mut errors);
     (tokens, errors)
 }
 
@@ -40,7 +46,7 @@ pub fn lex_all(src: &str, from: usize, first_line: usize) -> (Vec<Token>, Vec<Di
 pub fn lex_with_comments(src: &str) -> Result<(Vec<Token>, Vec<Comment>), Diag> {
     let mut comments = Vec::new();
     let mut errors = Vec::new();
-    let tokens = lex_into(src, 0, 1, &mut comments, &mut errors);
+    let tokens = lex_into(FileId::MAIN, src, 0, 1, &mut comments, &mut errors);
     match errors.into_iter().next() {
         Some(error) => Err(error),
         None => Ok((tokens, comments)),
@@ -48,9 +54,10 @@ pub fn lex_with_comments(src: &str) -> Result<(Vec<Token>, Vec<Comment>), Diag> 
 }
 
 fn lex_into(
+    file: FileId,
     src: &str,
     from: usize,
-    first_line: usize,
+    first_line: u32,
     comments: &mut Vec<Comment>,
     errors: &mut Vec<Diag>,
 ) -> Vec<Token> {
@@ -61,7 +68,7 @@ fn lex_into(
 
     while let Some(c) = rest(i).next() {
         let start = i;
-        let span = move |end: usize| Span { start, end, line };
+        let span = move |end: usize| Span { start, end, line, file };
         let error = move |end: usize, message: String| {
             Diag::new(ErrorKind::Syntax, span(end), message).code(codes::BAD_CHARACTER)
         };
@@ -135,7 +142,7 @@ fn lex_into(
                         other => {
                             let end = i + 1 + other.map_or(0, char::len_utf8);
                             errors.push(
-                                Diag::new(ErrorKind::Syntax, Span { start: i, end, line }, "unknown escape in string")
+                                Diag::new(ErrorKind::Syntax, Span { start: i, end, line, file }, "unknown escape in string")
                                     .code(codes::BAD_CHARACTER)
                                     .hint("only `\\\"` (a quote) and `\\\\` (a backslash) are escapes"),
                             );
@@ -250,7 +257,7 @@ fn lex_into(
         tokens.push(Token { tok, span: span(i) });
     }
 
-    tokens.push(Token { tok: Tok::Eof, span: Span { start: src.len(), end: src.len(), line } });
+    tokens.push(Token { tok: Tok::Eof, span: Span { start: src.len(), end: src.len(), line, file } });
     tokens
 }
 
@@ -336,13 +343,21 @@ mod tests {
         let (tokens, comments) = lex_with_comments("let x = 1  # one   \n# two\n").unwrap();
         assert_eq!(tokens.len(), 5);
         assert_eq!(comments[0].text, "# one");
-        assert_eq!(comments[1], Comment { text: "# two".into(), span: Span { start: 20, end: 25, line: 2 } });
+        assert_eq!(comments[1], Comment { text: "# two".into(), span: Span::new(20, 25, 2) });
     }
 
     #[test]
     fn tracks_lines() {
         let tokens = lex("a\n\n  b", 0, 1).unwrap();
-        assert_eq!(tokens[1].span, Span { start: 5, end: 6, line: 3 });
+        assert_eq!(tokens[1].span, Span::new(5, 6, 3));
+    }
+
+    #[test]
+    fn spans_point_into_their_own_file() {
+        let (tokens, errors) = lex_all_in(FileId(3), "let x = @", 0, 1);
+        assert!(tokens.iter().all(|t| t.span.file == FileId(3)));
+        assert_eq!(errors[0].span.file, FileId(3));
+        assert!(lex("let x", 0, 1).unwrap().iter().all(|t| t.span.file == FileId::MAIN));
     }
 
     #[test]

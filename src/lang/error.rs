@@ -7,6 +7,7 @@
 //! warning, which does not.
 
 use super::codes;
+use super::source::SourceMap;
 use super::token::Span;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -143,21 +144,26 @@ impl Diag {
     ///                   ^^^^^^^^^^^
     /// MathError: modulo by zero
     /// ```
-    pub fn render(&self, file: &str, src: &str) -> String {
-        self.render_styled(file, src, false)
+    ///
+    /// Each line of the report names the file its span is in, so a
+    /// traceback can pass through several files; `sources` supplies their
+    /// names and text.
+    pub fn render(&self, sources: &SourceMap) -> String {
+        self.render_styled(sources, false)
     }
 
     /// Like `render`, with terminal colours when `color` is true: errors in
     /// red, warnings in yellow, hints in cyan.
-    pub fn render_styled(&self, file: &str, src: &str, color: bool) -> String {
+    pub fn render_styled(&self, sources: &SourceMap, color: bool) -> String {
         let paint = Paint(color);
         let accent = if self.is_warning() { YELLOW } else { RED };
         let mut out = String::new();
         if self.trace.is_empty() {
             let what = if self.is_warning() { "Warning" } else { "Error" };
+            let file = sources.name(self.span.file);
             out.push_str(&paint.bold(&format!("{what} in {file}, line {}:", self.span.line)));
             out.push('\n');
-            out.push_str(&excerpt(src, self.span, "    ", Some((paint, accent))));
+            out.push_str(&excerpt(sources.text(self.span.file), self.span, "    ", Some((paint, accent))));
         } else {
             out.push_str(&paint.bold("Traceback (most recent call last):"));
             out.push('\n');
@@ -172,9 +178,10 @@ impl Diag {
                     }
                     continue;
                 }
+                let file = sources.name(frame.span.file);
                 out.push_str(&format!("  {file}, line {}, in {}\n", frame.span.line, frame.func));
                 let carets = (i + 1 == total).then_some((paint, accent));
-                out.push_str(&excerpt(src, frame.span, "    ", carets));
+                out.push_str(&excerpt(sources.text(frame.span.file), frame.span, "    ", carets));
             }
         }
         out.push_str(&paint.paint(accent, &self.headline()));
@@ -291,10 +298,9 @@ mod tests {
     fn renders_carets_under_the_span() {
         let src = "let a = 1\n    let b = oops + 1\n";
         let start = src.find("oops").unwrap();
-        let d = Diag::new(ErrorKind::Name, Span { start, end: start + 4, line: 2 }, "unknown")
-            .hint("define it first");
+        let d = Diag::new(ErrorKind::Name, Span::new(start, start + 4, 2), "unknown").hint("define it first");
         assert_eq!(
-            d.render("x.kstar", src),
+            d.render(&SourceMap::new("x.kstar", src)),
             "Error in x.kstar, line 2:\n    let b = oops + 1\n            ^^^^\nNameError[E0200]: unknown\n  hint: define it first"
         );
     }
@@ -305,10 +311,11 @@ mod tests {
     fn spans_inside_characters_render() {
         let src = "let r = /a\u{feff}/\n";
         let at = src.find('\u{feff}').unwrap();
-        let d = Diag::new(ErrorKind::Syntax, Span { start: at, end: at + 1, line: 1 }, "odd");
-        assert!(d.render("x.kstar", src).contains("^"));
-        let past = Diag::new(ErrorKind::Syntax, Span { start: 999, end: 2000, line: 1 }, "past the end");
-        assert!(past.render("x.kstar", src).contains("past the end"));
+        let sources = SourceMap::new("x.kstar", src);
+        let d = Diag::new(ErrorKind::Syntax, Span::new(at, at + 1, 1), "odd");
+        assert!(d.render(&sources).contains("^"));
+        let past = Diag::new(ErrorKind::Syntax, Span::new(999, 2000, 1), "past the end");
+        assert!(past.render(&sources).contains("past the end"));
     }
 
     // Regression: carets were misplaced under a line indented with
@@ -317,7 +324,28 @@ mod tests {
     fn carets_line_up_after_a_wide_indent() {
         let src = "\u{3000}\u{3000}oops here\n";
         let start = src.find("here").unwrap();
-        let d = Diag::new(ErrorKind::Name, Span { start, end: start + 4, line: 1 }, "x");
-        assert!(d.render("x.kstar", src).contains("    oops here\n         ^^^^\n"), "{}", d.render("x.kstar", src));
+        let d = Diag::new(ErrorKind::Name, Span::new(start, start + 4, 1), "x");
+        let shown = d.render(&SourceMap::new("x.kstar", src));
+        assert!(shown.contains("    oops here\n         ^^^^\n"), "{shown}");
+    }
+
+    // A traceback can pass through several files: each frame is shown with
+    // the name and the line of the file it is in.
+    #[test]
+    fn a_traceback_names_the_file_of_each_frame() {
+        use super::super::token::FileId;
+        let mut sources = SourceMap::new("main.kstar", "let a = 1\nprint half(3)\n");
+        let lib = sources.add("lib.kstar", "fn half(n: Int) -> Int {\n    return n % 0\n}\n");
+        let call = sources.text(FileId::MAIN).find("half(3)").unwrap();
+        let at = sources.text(lib).find("n % 0").unwrap();
+        let mut d = Diag::new(ErrorKind::Math, Span { start: at, end: at + 5, line: 2, file: lib }, "modulo by zero");
+        d.trace = vec![
+            TraceFrame { func: "<main>".into(), span: Span::new(call, call + 7, 2) },
+            TraceFrame { func: "half".into(), span: d.span },
+        ];
+        assert_eq!(
+            d.render(&sources),
+            "Traceback (most recent call last):\n  main.kstar, line 2, in <main>\n    print half(3)\n  lib.kstar, line 2, in half\n    return n % 0\n           ^^^^^\nMathError[E0600]: modulo by zero"
+        );
     }
 }

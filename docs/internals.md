@@ -32,9 +32,10 @@ The lexer walks through the characters once and groups them into **tokens**:
 
 Things worth noticing:
 
-- Every token records a `Span`: where it starts and ends in the source, and on
-  which line. Spans are carried through every later stage. They are the reason
-  an error can underline the exact characters at fault.
+- Every token records a `Span`: which file it is in, where it starts and ends
+  in that file's text, and on which line. Spans are carried through every
+  later stage. They are the reason an error can underline the exact
+  characters at fault.
 - The lexer tries the longest match first, so `-->` is one token, not `--`
   followed by `>`.
 - Because the language has no division operator, a `/` can only start a regex.
@@ -108,6 +109,15 @@ themselves on the parts of the node.
 Every error is a `Diag`: a kind, a message, a span, an optional hint, and a
 trace. Rendering one means finding the source line that contains the span and
 drawing carets under it.
+
+A span does not hold a file name or any text, only a `FileId`: a small
+number. The **source map** (`src/lang/source.rs`) is the table that turns
+that number back into a name and a text, and rendering is the only place
+that needs it. So the lexer, parser, checker and interpreter just pass spans
+along, and a traceback whose frames are in different files simply looks up
+each frame's file as it is printed. The file being run is always
+`FileId::MAIN`. Keeping the id and the line number as `u32`s keeps a span at
+three machine words, which matters because every error carries several.
 
 A traceback costs almost nothing to produce, because the interpreter already
 has the list of frames. Each frame remembers the span of the call that created
@@ -360,12 +370,12 @@ formatting never changes what a program prints.
 
 `src/lib.rs`, `src/main.rs`
 
-A `Session` owns one checker and one interpreter and feeds text through the
-stages. Warnings are rendered and kept for the caller to show; errors are
-rendered, joined, and counted. A file is one piece of text. The interactive prompt feeds one entry at
-a time into the same session, which is why names defined earlier are still
-there. All the text is kept in one growing string so that an error can quote a
-line typed several entries ago.
+A `Session` owns one checker, one interpreter and the source map, and feeds
+text through the stages. Warnings are rendered and kept for the caller to
+show; errors are rendered, joined, and counted. The interactive prompt feeds
+one entry at a time into the same session, which is why names defined
+earlier are still there. Each entry is appended to the text of the main file
+in the source map, so an error can quote a line typed several entries ago.
 
 The interpreter runs on a thread with a large stack, because a tree-walking
 interpreter uses the Rust stack for every nested Kleene Star call.

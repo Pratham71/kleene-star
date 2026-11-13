@@ -11,7 +11,7 @@ use crate::lang::check::Checker;
 use crate::lang::error::Diag;
 use crate::lang::index::{DefKind, Index};
 use crate::lang::lexer::lex;
-use crate::lang::token::{Span, Tok};
+use crate::lang::token::{FileId, Span, Tok};
 
 /// An error or a warning in a program.
 #[derive(Debug, Clone, PartialEq)]
@@ -108,7 +108,7 @@ impl Analysis {
     pub fn new(src: &str) -> Analysis {
         let src = src.replace("\r\n", "\n");
         let mut checker = Checker::new(false);
-        let checked = crate::lang::check_source(&src, 0, 1, false, &mut checker);
+        let checked = crate::lang::check_source(FileId::MAIN, &src, 0, 1, false, &mut checker);
         let problems = checked.errors.into_iter().chain(checked.warnings).map(Problem::from).collect();
         let outline = outline(&checked.program, &checker.index);
         Analysis { src, problems, index: checker.index, outline, stale: false }
@@ -219,7 +219,7 @@ impl Analysis {
         // Just after the character that ends the word, however wide it is.
         let start = before.map_or(0, |(i, c)| i + c.len_utf8());
         let end = self.src[offset..].find(|c: char| !is_word(c)).map_or(self.src.len(), |i| offset + i);
-        (start < end).then(|| Span { start, end, line: self.src[..start].matches('\n').count() + 1 })
+        (start < end).then(|| Span::new(start, end, self.src[..start].matches('\n').count() as u32 + 1))
     }
 
     // ---- completion ----
