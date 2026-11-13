@@ -652,9 +652,12 @@ and, when VS Code is installed, installs the extension through VS Code's
 `installer/test-installer.ps1` on a runner with VS Code installed (install,
 check, uninstall, check again);
 `install.ps1` and `install.sh` are tested against the freshly built archives
-through `KSTAR_INSTALL_FROM`. Only a plain `vX.Y.Z` tag that matches the
-version in `Cargo.toml` publishes; any other tag is a dry run whose files stay
-as the run's artifacts. Apple Silicon is cross-compiled on the Intel macOS
+through `KSTAR_INSTALL_FROM`. A tag must match the version in `Cargo.toml`.
+A plain `vX.Y.Z` tag publishes a release; a tag with a suffix, such as
+`v0.2.4-beta`, publishes a pre-release, which GitHub does not count as the
+latest (so `kstar update` and the install scripts keep offering the last
+stable one). Running the workflow by hand is a dry run whose files stay as
+the run's artifacts. Apple Silicon is cross-compiled on the Intel macOS
 runner, so a shortage of arm64 runners cannot hold the release up; a
 separate job runs the tests on a real arm64 machine without the release
 waiting for it. Each archive and the installer carry the MIT `LICENSE`.
@@ -667,7 +670,8 @@ crates and the extension's npm packages.
 prints, and on Windows embeds the K* icon in the executables.
 
 To release: bump the version in `Cargo.toml` and
-`editors/vscode/package.json`, merge, then `git tag vX.Y.Z` and push the tag.
+`editors/vscode/package.json`, merge, then `git tag vX.Y.Z` (or
+`vX.Y.Z-beta` for a pre-release) and push the tag.
 
 New machine types belong in `src/automata/` as plain Rust first, with tests,
 and get syntax in `src/lang/` second.

@@ -62,7 +62,7 @@ installed, it installs this extension too. Otherwise:
 3. **Install it**:
 
    ```bash
-   code --install-extension kleene-star-0.2.3.vsix
+   code --install-extension kleene-star-0.2.4-beta.vsix
    ```
 
    or, in VS Code, *Extensions* → `...` → *Install from VSIX...*.

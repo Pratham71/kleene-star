@@ -7,9 +7,11 @@
 # SHA-256 checksum, the Windows installer (tested by installing and
 # uninstalling it), the VS Code extension and a SHA256SUMS file.
 #
-# Only plain version tags (v1.2.3) publish a release. A tag with a suffix,
-# such as v0.2.0-rc.1, or running the workflow by hand, does everything
-# else and leaves the files as the run's artifacts, as a dry run.
+# The tag must match the version in Cargo.toml. A plain version tag
+# (v1.2.3) publishes a release; a tag with a suffix (v0.2.4-beta) publishes a
+# pre-release, which GitHub does not count as the latest. Running the
+# workflow by hand does everything else and leaves the files as the run's
+# artifacts, as a dry run.
 name: Release
 
 on:
@@ -233,15 +235,19 @@ jobs:
         id: publish
         run: |
           tag=${GITHUB_REF#refs/tags/}
-          if [[ "$GITHUB_REF" == refs/tags/v* && "$tag" != *-* ]]; then
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
             if [ "v$version" != "$tag" ]; then
               echo "::error::the tag $tag does not match the version in Cargo.toml ($version)"
               exit 1
             fi
             echo "tag=$tag" >> "$GITHUB_OUTPUT"
+            # A suffix (v0.2.4-beta) makes it a pre-release.
+            if [[ "$tag" == *-* ]]; then
+              echo "prerelease=--prerelease --latest=false" >> "$GITHUB_OUTPUT"
+            fi
           else
-            echo "Not a plain version tag ($GITHUB_REF): a dry run, nothing is published."
+            echo "Not a version tag ($GITHUB_REF): a dry run, nothing is published."
           fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: steps.publish.outputs.tag == ''
@@ -253,6 +259,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.publish.outputs.tag }}
+          PRERELEASE: ${{ steps.publish.outputs.prerelease }}
         run: |
           cat > notes.md <<EOF
           ## Installing
@@ -263,7 +270,7 @@ jobs:
 
           Check a download with \`sha256sum -c SHA256SUMS --ignore-missing\`.
           EOF
-          gh release create "$TAG" dist/* --title "Kleene Star ${TAG#v}" --notes-file notes.md --generate-notes --verify-tag
+          gh release create "$TAG" dist/* --title "Kleene Star ${TAG#v}" --notes-file notes.md --generate-notes --verify-tag $PRERELEASE
 
   # The tests on a real Apple Silicon machine. The release does not wait for
   # this job, since arm64 runners are sometimes unavailable; if it fails,
