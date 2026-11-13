@@ -70,6 +70,9 @@ Windows installer and the VS Code extension:
 | VS Code | `kleene-star-<version>.vsix` |
 
 Every file has a `.sha256` checksum beside it, and `SHA256SUMS` lists them all.
+Nothing else is needed: the programs are self-contained (no Rust, and on
+Windows, from the release after 0.2.4-beta, no Visual C++
+Redistributable).
 
 The newest build is **0.2.4-beta**, a pre-release with imports between files,
 the `std.math` library and `kstar export`. GitHub's "latest release" (and so

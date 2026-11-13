@@ -668,6 +668,9 @@ crates and the extension's npm packages.
 
 `build.rs` records the commit, build date and target that `kstar version`
 prints, and on Windows embeds the K* icon in the executables.
+`.cargo/config.toml` links the C runtime statically into the Windows
+programs (`crt-static`), so they need no Visual C++ Redistributable; a test
+in `tests/cli.rs` fails if either program imports `VCRUNTIME140.dll`.
 
 To release: bump the version in `Cargo.toml` and
 `editors/vscode/package.json`, merge, then `git tag vX.Y.Z` (or

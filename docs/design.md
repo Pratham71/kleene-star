@@ -173,6 +173,7 @@ source-line-and-caret format without a call chain, and stop the program before i
 
 ```
 Cargo.toml  build.rs           build.rs records the commit and date, and puts the icon in kstar.exe
+.cargo/config.toml             links the C runtime into the Windows programs (no VC++ Redistributable)
 src/
   lib.rs             Session: feeds text through the stages; shared by CLI, REPL, tests and the LSP
   main.rs            CLI: run, check, fmt, trace, export, new, explain, repl, version, update
