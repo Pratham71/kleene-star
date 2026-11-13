@@ -427,7 +427,8 @@ fn watch(options: &Options) -> ExitCode {
             if last.is_some() {
                 println!("\n{}", paint.bold("=== a file changed; running again ==="));
             }
-            run_files(&files, options, false);
+            // Watching goes on whatever the result, so the exit code is unused.
+            let _ = run_files(&files, options, false);
             println!("{}", paint.bold("(watching for changes; press Ctrl-C to stop)"));
             last = Some(now);
         }
