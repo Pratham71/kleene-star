@@ -4,6 +4,8 @@
 *why*: which state the machine was in after each symbol. That is what
 `trace` shows.
 
+<p align="center"><img src="../../assets/trace.gif" width="760" alt="An animation of trace Div3 on &quot;1001&quot;: each symbol lights up in turn, a marker travels along the edge it takes, and the matching row of the trace table appears, ending with Result: ACCEPTED."></p>
+
 ## Tracing a DFA
 
 ```kstar

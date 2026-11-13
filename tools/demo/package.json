@@ -1,7 +1,7 @@
 {
   "name": "kstar-demo",
   "private": true,
-  "description": "Renders assets/demo.gif: a regex becoming an eps-NFA, a DFA and a minimal DFA, from real kstar output.",
+  "description": "Renders the animations in assets/ (demo.gif, draw.gif, trace.gif) from real kstar output.",
   "type": "module",
   "scripts": {
     "build": "node render.mjs"

@@ -1,0 +1,38 @@
+/* Shared by demo.html, draw.html and trace.html: fonts and colours. */
+@font-face {
+  font-family: "Geist";
+  src: url("node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 800;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-greek-wght-normal.woff2") format("woff2");
+  font-weight: 100 800;
+  unicode-range: U+0370-03FF;
+}
+:root {
+  /* One deep-ink ground from the logo's indigo, one accent, two greys. */
+  --bg: #16173a;
+  --panel: #1d1f4b;
+  --rule: #2e3166;
+  --node: #1f2152;
+  --ink: #ecedf8;
+  --dim: #9295c6;
+  --faint: #5d6099;
+  --line: #c9cbec;
+  --accent: #aab0ff;
+  --on-accent: #16173a;
+}
+html, body { margin: 0; background: var(--bg); }
+body { overflow: hidden; }
+svg { display: block; }
+.sans { font-family: "Geist", sans-serif; }
+.mono { font-family: "JetBrains Mono", monospace; }
+.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 6px; stroke-linejoin: round; }
+/* Source code shows exactly what is typed: no `-->` arrow ligatures. */
+.code { font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }

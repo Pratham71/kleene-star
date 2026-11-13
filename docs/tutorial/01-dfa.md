@@ -192,4 +192,9 @@ wrote Fixed.dot
 If [Graphviz](https://graphviz.org) is installed, `kstar` also writes `Fixed.svg`.
 Otherwise paste the contents of the `.dot` file into any online Graphviz viewer.
 
+Each line of a machine is one piece of its diagram, which is why machines
+are written this way:
+
+<p align="center"><img src="../../assets/draw.gif" width="760" alt="An animation of a DFA being typed a line at a time, with its state diagram growing beside it: start r0 adds the start state, accept r0 makes it a double circle, and each transition line draws its labelled edge. draw Div3 then prints wrote Div3.dot."></p>
+
 Next: [nondeterminism and eps moves](02-nfa.md).

@@ -7,63 +7,14 @@
 <head>
 <meta charset="utf-8">
 <title>Kleene Star: a regex becomes a machine</title>
-<style>
-  @font-face {
-    font-family: "Geist";
-    src: url("node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2");
-    font-weight: 100 900;
-  }
-  @font-face {
-    font-family: "JetBrains Mono";
-    src: url("node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2") format("woff2");
-    font-weight: 100 800;
-  }
-  @font-face {
-    font-family: "JetBrains Mono";
-    src: url("node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-greek-wght-normal.woff2") format("woff2");
-    font-weight: 100 800;
-    unicode-range: U+0370-03FF;
-  }
-  :root {
-    /* One deep-ink ground from the logo's indigo, one accent, two greys. */
-    --bg: #16173a;
-    --panel: #1d1f4b;
-    --rule: #2e3166;
-    --node: #1f2152;
-    --ink: #ecedf8;
-    --dim: #9295c6;
-    --faint: #5d6099;
-    --line: #c9cbec;
-    --accent: #aab0ff;
-    --on-accent: #16173a;
-  }
-  html, body { margin: 0; background: var(--bg); }
-  body { width: 960px; height: 440px; overflow: hidden; }
-  svg { display: block; }
-  .sans { font-family: "Geist", sans-serif; }
-  .mono { font-family: "JetBrains Mono", monospace; }
-  .halo { paint-order: stroke; stroke: var(--bg); stroke-width: 6px; stroke-linejoin: round; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <svg id="stage" width="960" height="440" viewBox="0 0 960 440" xmlns="http://www.w3.org/2000/svg">
   <rect width="960" height="440" fill="var(--bg)"/>
 
-  <!-- The K* mark, from assets/logo.svg, and the name. -->
-  <g transform="translate(28 30) scale(0.125)">
-    <rect width="256" height="256" rx="52" fill="#2b2d7c"/>
-    <g fill="#ffffff">
-      <rect x="42" y="96" width="44" height="124"/>
-      <polygon points="80,160 140,96 196,96 118,178 86,192"/>
-      <polygon points="106,158 144,140 204,220 148,220"/>
-    </g>
-    <g stroke="#ffffff" stroke-width="18" stroke-linecap="round" transform="translate(206 52)">
-      <line x1="0" y1="-27" x2="0" y2="27"/>
-      <line x1="-23.4" y1="-13.5" x2="23.4" y2="13.5"/>
-      <line x1="-23.4" y1="13.5" x2="23.4" y2="-13.5"/>
-    </g>
-  </g>
-  <text class="sans" x="70" y="53" fill="var(--ink)" font-size="19" font-weight="600" letter-spacing="-0.2">Kleene Star</text>
+  <!-- The K* mark and the name: Kit.brand() in kit.js. -->
+  <g id="brand"></g>
 
   <!-- Which of the four stages is on screen. -->
   <g id="stepper"></g>
@@ -78,6 +29,7 @@
   <g id="diagram"></g>
 </svg>
 <script src="machines.js"></script>
+<script src="kit.js"></script>
 <script src="demo.js"></script>
 </body>
 </html>

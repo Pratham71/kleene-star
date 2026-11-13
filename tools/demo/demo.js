@@ -12,12 +12,12 @@
 
 "use strict";
 
-const SVG = "http://www.w3.org/2000/svg";
+const { R, clamp, lerp, p, ease, pop, leave, el, set, buildMachine, drawMachine, checkLayout, brand } = window.Kit;
+
+brand(document.getElementById("brand"));
 const { nfa: NFA, dfa: DFA, min: MIN } = window.MACHINES;
 
 // ---------------------------------------------------------------- layout --
-
-const R = 23; // state radius
 
 const LAYOUT = {
   nfa: { q0: [453, 248], q1: [556, 248], q3: [659, 248], q4: [762, 248], q5: [865, 248], q2: [659, 368] },
@@ -39,11 +39,7 @@ const BEND = {
 };
 
 // Check the hand-placed layout against the real machines, both ways.
-for (const [key, machine] of [["nfa", NFA], ["dfa", DFA], ["min", MIN]]) {
-  const placed = Object.keys(LAYOUT[key]).sort().join(" ");
-  const real = [...machine.states].sort().join(" ");
-  if (placed !== real) throw new Error(`LAYOUT.${key} places [${placed}] but kstar printed [${real}]`);
-}
+for (const [key, machine] of [["nfa", NFA], ["dfa", DFA], ["min", MIN]]) checkLayout(`LAYOUT.${key}`, LAYOUT[key], machine);
 
 // Minimization merges DFA states; kstar names the result "X+Y".
 const MERGED_INTO = {};
@@ -69,30 +65,6 @@ const T = {
 };
 window.DEMO_TOTAL = T.total;
 window.DEMO_STILL = T.fadeOut - 50;
-
-const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-const lerp = (a, b, u) => a + (b - a) * u;
-const p = (t, start, dur) => clamp((t - start) / dur);
-const ease = {
-  out: (u) => 1 - Math.pow(1 - u, 3),
-  in: (u) => u * u * u,
-  inOut: (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2),
-  back: (u, s = 1.9) => (u <= 0 ? 0 : 1 + (s + 1) * Math.pow(u - 1, 3) + s * Math.pow(u - 1, 2)),
-};
-// A pop-in: 0 before start, overshoots, settles at 1.
-const pop = (t, start, dur = 320) => ease.back(p(t, start, dur));
-// A quick exit: 1 before start, 0 after.
-const leave = (t, start, dur = 180) => 1 - ease.in(p(t, start, dur));
-
-// ------------------------------------------------------------------ dom --
-
-function el(name, attrs = {}, parent) {
-  const node = document.createElementNS(SVG, name);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
-  if (parent) parent.appendChild(node);
-  return node;
-}
-const set = (node, attrs) => { for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v); };
 
 // ---------------------------------------------------------------- stepper --
 
@@ -231,84 +203,10 @@ function drawCaption(t) {
 
 const diagram = document.getElementById("diagram");
 
-// A quadratic edge from a to b, trimmed to the two circles.
-function edgeGeometry(a, b, bend) {
-  const dx = b[0] - a[0], dy = b[1] - a[1];
-  const len = Math.hypot(dx, dy);
-  const nx = -dy / len, ny = dx / len;
-  const c = [(a[0] + b[0]) / 2 + nx * bend * len, (a[1] + b[1]) / 2 + ny * bend * len];
-  const at = (u) => [
-    (1 - u) * (1 - u) * a[0] + 2 * (1 - u) * u * c[0] + u * u * b[0],
-    (1 - u) * (1 - u) * a[1] + 2 * (1 - u) * u * c[1] + u * u * b[1],
-  ];
-  const solve = (from, inward) => {
-    // The parameter where the curve crosses the circle around `from`.
-    let lo = inward ? 0 : 0.5, hi = inward ? 0.5 : 1;
-    for (let k = 0; k < 30; k++) {
-      const mid = (lo + hi) / 2;
-      const q = at(mid), d = Math.hypot(q[0] - from[0], q[1] - from[1]);
-      if ((d < R) === inward) lo = mid; else hi = mid;
-    }
-    return (lo + hi) / 2;
-  };
-  const t0 = solve(a, true), t1 = solve(b, false);
-  // The control point of the piece between t0 and t1 (blossoming).
-  const ctl = [0, 1].map((k) => (1 - t0) * (1 - t1) * a[k] + ((1 - t0) * t1 + t0 * (1 - t1)) * c[k] + t0 * t1 * b[k]);
-  const s = at(t0), e = at(t1);
-  const tan = [2 * (1 - t1) * (c[0] - a[0]) + 2 * t1 * (b[0] - c[0]), 2 * (1 - t1) * (c[1] - a[1]) + 2 * t1 * (b[1] - c[1])];
-  const mid = at(0.5);
-  // Labels go on the outside of the bow; straight edges get theirs above.
-  let side = Math.sign(bend) || (ny < 0 || (ny === 0 && nx < 0) ? 1 : -1);
-  if (!bend && Math.abs(ny) < 1e-9) side = nx > 0 ? -1 : 1;
-  const label = [mid[0] + nx * side * 14, mid[1] + ny * side * 14 + 5];
-  return { d: `M${s[0]},${s[1]} Q${ctl[0]},${ctl[1]} ${e[0]},${e[1]}`, tip: e, tan, label };
-}
-
-function arrowPoints(tip, tan) {
-  const len = Math.hypot(tan[0], tan[1]);
-  const ux = tan[0] / len, uy = tan[1] / len;
-  const bx = tip[0] - ux * 10, by = tip[1] - uy * 10;
-  return `${tip[0]},${tip[1]} ${bx - uy * 5},${by + ux * 5} ${bx + uy * 5},${by - ux * 5}`;
-}
-
-// One drawn machine: state groups and edges, all positioned by draw().
-function buildMachine(machine, key) {
-  const g = el("g", {}, diagram);
-  const edges = el("g", {}, g);
-  const nodes = el("g", {}, g);
-  const start = {
-    line: el("line", { stroke: "var(--line)", "stroke-width": 2 }, edges),
-    head: el("polygon", { fill: "var(--line)" }, edges),
-  };
-  const edgeViews = machine.edges.map((e) => {
-    const eg = el("g", {}, edges);
-    const path = el("path", { fill: "none", stroke: "var(--line)", "stroke-width": 2, pathLength: 1, "stroke-dasharray": "1 1" }, eg);
-    const head = el("polygon", { fill: "var(--line)" }, eg);
-    const label = el("text", { class: "mono halo", "font-size": 15, "text-anchor": "middle", fill: "var(--ink)" }, eg);
-    label.textContent = e.label;
-    return { e, g: eg, path, head, label };
-  });
-  const nodeViews = {};
-  for (const s of machine.states) {
-    const ng = el("g", {}, nodes);
-    const halo = el("circle", { r: R + 9, fill: "var(--accent)", opacity: 0 }, ng);
-    const ring = el("circle", { r: R, fill: "var(--node)", stroke: "var(--line)", "stroke-width": 2 }, ng);
-    const inner = machine.accept.includes(s) ? el("circle", { r: R - 5, fill: "none", stroke: "var(--line)", "stroke-width": 2 }, ng) : null;
-    const inside = key === "nfa";
-    const name = el("text", { class: "mono", "text-anchor": "middle", "font-size": inside ? 15 : 14, fill: inside ? "var(--ink)" : "var(--dim)" }, ng);
-    // Long set names go above or below the circle, a part per line.
-    const parts = inside ? [s] : s.split("+").map((x, i, all) => (i < all.length - 1 ? x + "+" : x));
-    parts.forEach((part, i) => {
-      const above = LABEL_SIDE[s] === "above";
-      const y = inside ? 5 : above ? -R - 12 - (parts.length - 1 - i) * 18 : R + 22 + i * 18;
-      el("tspan", { x: 0, y }, name).textContent = part;
-    });
-    nodeViews[s] = { g: ng, halo, ring, inner, name };
-  }
-  return { g, start, edges: edgeViews, nodes: nodeViews, machine };
-}
-
-const views = { nfa: buildMachine(NFA, "nfa"), dfa: buildMachine(DFA, "dfa"), min: null };
+const views = {
+  nfa: buildMachine(NFA, diagram, { namesInside: true }),
+  dfa: buildMachine(DFA, diagram, { namesInside: false, labelSide: LABEL_SIDE }),
+};
 
 // The regex of stage 1, a character at a time.
 const REGEX = "/(ab)*/";
@@ -334,49 +232,6 @@ function drawRegex(t) {
     const dy = (1 - Math.min(shown, 1)) * 14 - exit * 10;
     set(c.g, { transform: `translate(${c.x} ${c.y + dy}) scale(${s})`, opacity: clamp(shown) });
   });
-}
-
-// Positions and per-state animation values for one machine at time t.
-function drawMachine(view, pos, look, edgeLook, bendOf) {
-  const { machine } = view;
-  for (const s of machine.states) {
-    const n = view.nodes[s];
-    const [x, y] = pos(s);
-    const l = look(s);
-    set(n.g, { transform: `translate(${x} ${y}) scale(${l.scale})`, opacity: clamp(l.opacity) });
-    set(n.halo, { opacity: l.halo || 0 });
-    const stroke = l.accent ? "var(--accent)" : "var(--line)";
-    set(n.ring, { stroke });
-    if (n.inner) set(n.inner, { stroke, transform: `scale(${l.inner ?? 1})` });
-    set(n.name, { opacity: l.name ?? 1 });
-  }
-  // The start arrow follows the start state.
-  const [sx, sy] = pos(machine.start);
-  const sl = look(machine.start);
-  const reach = clamp(sl.arrow ?? 1);
-  set(view.start.line, { x1: sx - R - 42, y1: sy, x2: sx - R - 42 + 40 * reach, y2: sy, opacity: clamp(sl.opacity) });
-  set(view.start.head, { points: arrowPoints([sx - R - 1, sy], [1, 0]), opacity: reach > 0.9 ? clamp(sl.opacity) : 0 });
-  for (const v of view.edges) {
-    const { e } = v;
-    const l = edgeLook(e);
-    if (e.from === e.to) {
-      // A loop above the state.
-      const [x, y] = pos(e.from);
-      const a = [x - 10, y - R + 2], b = [x + 10, y - R + 2];
-      set(v.path, { d: `M${a[0]},${a[1]} C${x - 34},${y - 78} ${x + 34},${y - 78} ${b[0]},${b[1]}` });
-      set(v.head, { points: arrowPoints([b[0], b[1]], [-4, 12]) });
-      set(v.label, { x, y: y - 72 });
-    } else {
-      const geo = edgeGeometry(pos(e.from), pos(e.to), bendOf(e));
-      set(v.path, { d: geo.d });
-      set(v.head, { points: arrowPoints(geo.tip, geo.tan) });
-      set(v.label, { x: geo.label[0], y: geo.label[1] });
-    }
-    set(v.path, { "stroke-dashoffset": 1 - clamp(l.draw) });
-    set(v.g, { opacity: clamp(l.opacity ?? 1) });
-    set(v.head, { opacity: l.draw > 0.92 ? 1 : 0 });
-    set(v.label, { opacity: clamp((l.draw - 0.4) / 0.6) * (l.label ?? 1) });
-  }
 }
 
 const bendKey = (e) => `${e.from}>${e.to}`;
@@ -502,11 +357,4 @@ window.READY = document.fonts.ready.then(() => {
   return true;
 });
 
-// Play in a browser tab; render.mjs drives the clock itself instead.
-if (!navigator.webdriver) {
-  window.READY.then(() => {
-    const t0 = performance.now();
-    const tick = () => { window.render(performance.now() - t0); requestAnimationFrame(tick); };
-    requestAnimationFrame(tick);
-  });
-}
+window.READY.then(() => Kit.play(window.render));

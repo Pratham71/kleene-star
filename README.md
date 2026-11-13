@@ -54,6 +54,18 @@ DFA with 3 states over {0, 1}
 tests: 2 passed, 0 failed
 ```
 
+## Watch it work
+
+You write a machine the way you would draw it, one transition per line, and
+`draw` turns it into a state diagram (a Graphviz `.dot` file):
+
+<p align="center"><img src="assets/draw.gif" width="960" alt="An animation of a program being typed. As each line of a DFA called Div3 appears, its piece of the diagram appears beside it: start r0 brings in state r0 with its start arrow, accept r0 makes it a double circle, and each line such as r0 --1--> r1 draws that labelled edge, adding states r1 and r2 as they are first named. The last line, draw Div3, prints wrote Div3.dot."></p>
+
+`trace` runs a machine on a word and shows every step, so you can see why
+it accepts or rejects:
+
+<p align="center"><img src="assets/trace.gif" width="960" alt="An animation of trace Div3 on &quot;1001&quot;. Each symbol of 1001 lights up in turn, a marker travels along the edge it takes, from r0 to r1, r1 to r2, r2 to r1 and r1 back to r0, and the matching row of the trace table appears. It ends with Result: ACCEPTED, Reason: Ended in accepting state r0, since 1001 is 9 in binary and Div3 accepts the binary numbers divisible by 3."></p>
+
 ## Install
 
 | On | Run |
