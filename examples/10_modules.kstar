@@ -22,4 +22,8 @@ for w in {"0", "11", "110", "1001"} {
 }
 
 test equivalent(intersect(Ones, binary.EvenZeros), Ones)
+
+# Multiples of both 4 and 6 are the multiples of lcm(4, 6) = 12, and their
+# smallest DFA has only 5 states. The standard library needs no import.
+print states(minimize(intersect(divisible_by(4), divisible_by(6)))), std.math.lcm(4, 6)
 trace binary.EvenZeros on "010"

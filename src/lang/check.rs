@@ -228,6 +228,7 @@ impl Checker {
                     visible: (0, usize::MAX),
                     detail: format!("fn {}({}) -> {}", f.name.text, params.join(", "), f.ret),
                     origin: None,
+                    doc: None,
                 });
                 let signature = Signature {
                     params: f.params.iter().map(|(_, ty)| ty.clone()).collect(),
@@ -287,6 +288,7 @@ impl Checker {
             visible: (name.span.end, self.block_end),
             detail,
             origin: None,
+                    doc: None,
         });
         self.scopes.last_mut().unwrap().insert(name.text.clone(), Var { ty, alphabet, def });
         Ok(())
@@ -363,6 +365,7 @@ impl Checker {
             visible,
             detail: format!("import {}", lib.shown()),
             origin: None,
+                    doc: None,
         });
         let mut members: Vec<Def> = exports.values.values().map(|v| v.def.clone()).collect();
         members.extend(exports.functions.values().map(|f| f.def.clone()));
@@ -383,7 +386,11 @@ impl Checker {
                 continue;
             };
             let exports = self.modules.get(target).cloned().unwrap_or_default();
-            let result = self.member(&exports, &lib.shown(), name).and_then(|member| {
+            let module = match &lib.kind {
+                LibKind::Std(_) => format!("`{}`", lib.shown()),
+                LibKind::File(_) => lib.shown(),
+            };
+            let result = self.member(&exports, &module, name).and_then(|member| {
                 self.check_binding(local)?;
                 let def = self.index.add_def(Def {
                     name: local.text.clone(),
@@ -396,6 +403,7 @@ impl Checker {
                     visible: (end, self.block_end),
                     detail: member.def().detail.clone(),
                     origin: Some(member.def().span).filter(|s| s.file != FileId::STD),
+                    doc: member.def().doc.clone(),
                 });
                 match member {
                     Member::Value(v) => {
@@ -851,6 +859,7 @@ impl Checker {
                         visible: (m.body.start, m.body.end),
                         detail: String::new(),
                         origin: None,
+                    doc: None,
                     });
                     defs.push((state.name.clone(), def, if role.is_empty() { vec![] } else { vec![role] }));
                 }
@@ -879,6 +888,7 @@ impl Checker {
                         visible: (g.body.start, g.body.end),
                         detail: format!("variable {} of {owner}{start}", rule.head.text),
                         origin: None,
+                    doc: None,
                     });
                     defs.push((rule.head.text.clone(), def));
                 }

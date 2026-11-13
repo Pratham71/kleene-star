@@ -264,11 +264,14 @@ impl Analysis {
         if let Some(def) = self.symbol_at(offset) {
             let def = &self.index.defs[def];
             let span = self.word_at(offset).unwrap_or(def.span);
-            let text = match def.kind {
+            let mut text = match def.kind {
                 // These details are sentences, not code.
                 DefKind::State | DefKind::GrammarVariable => def.detail.clone(),
                 _ => code(&def.detail),
             };
+            if let Some(doc) = &def.doc {
+                text.push_str(&format!("\n\n{doc}"));
+            }
             return Some((span, text));
         }
         let touches = |span: &Span| span.start <= offset && offset <= span.end;
@@ -410,7 +413,7 @@ impl Analysis {
                     label: f.def.name.clone(),
                     kind: CompletionKind::Function,
                     detail: f.def.detail.clone(),
-                    doc: None,
+                    doc: f.def.doc.clone(),
                 })
                 .collect();
             found.sort_by(|a, b| a.label.cmp(&b.label));
@@ -430,7 +433,7 @@ impl Analysis {
                 label: def.name.clone(),
                 kind: completion_kind(def.kind, &def.detail),
                 detail: def.detail.clone(),
-                doc: None,
+                doc: def.doc.clone(),
             })
             .collect()
     }
@@ -496,11 +499,11 @@ impl Analysis {
     fn function_detail(&self, name: &str) -> Option<(String, Option<String>)> {
         if let Some((path, member)) = name.rsplit_once('.') {
             if let Some(exports) = path.strip_prefix("std.").and_then(stdlib::exports) {
-                return exports.functions.get(member).map(|f| (f.def.detail.clone(), None));
+                return exports.functions.get(member).map(|f| (f.def.detail.clone(), f.def.doc.clone()));
             }
             let namespace = self.index.namespaces.iter().rev().find(|n| n.name == path)?;
             let def = namespace.members.iter().find(|d| d.name == member && d.detail.starts_with("fn "))?;
-            return Some((def.detail.clone(), None));
+            return Some((def.detail.clone(), def.doc.clone()));
         }
         let is_function = |kind: DefKind, detail: &str| {
             kind == DefKind::Function || (kind == DefKind::Imported && detail.starts_with("fn "))
@@ -520,7 +523,7 @@ impl Analysis {
             }
             _ => def.detail.clone(),
         };
-        Some((detail, None))
+        Some((detail, def.doc.clone()))
     }
 }
 
@@ -909,6 +912,28 @@ print Even accepts \"00\", count
         assert_eq!(help.label, "double(n: Int) -> Int");
         let help = a.signature_help(at(main, "(2", 0, 1)).unwrap();
         assert_eq!(help.label, "twice(n: Int) -> Int");
+    }
+
+    #[test]
+    fn the_standard_library_in_the_editor() {
+        let main = "import std.math as m\nfrom std.math import gcd\nprint std.math.lcm(4, 6), m.pow(2, 3), gcd(4, 6)\nprint std.\nprint std.math.\n";
+        let a = Analysis::new(main);
+        assert_eq!(a.errors().count(), 2, "{:?}", a.problems); // the two unfinished lines
+        let hover = a.hover(at(main, "lcm", 0, 1)).unwrap().1;
+        assert!(hover.starts_with("```kstar\nfn lcm(a: Int, b: Int) -> Int\n```\n\nThe least common multiple"), "{hover}");
+        assert!(a.hover(at(main, "gcd(4", 0, 1)).unwrap().1.contains("greatest common divisor"));
+        assert_eq!(a.definition(at(main, "lcm", 0, 1)), None, "the library has no source to go to");
+        let help = a.signature_help(at(main, "(2, 3", 0, 1)).unwrap();
+        assert_eq!((help.label.as_str(), help.active), ("pow(base: Int, exp: Int) -> Int", 0));
+        assert!(help.doc.unwrap().contains("power"));
+        let help = a.signature_help(at(main, "(4, 6), m", 0, 1)).unwrap();
+        assert_eq!(help.label, "lcm(a: Int, b: Int) -> Int");
+        let modules: Vec<String> = a.completions(at(main, "std.\n", 0, 4)).into_iter().map(|c| c.label).collect();
+        assert_eq!(modules, ["math"]);
+        let functions = a.completions(at(main, "std.math.\n", 0, 9));
+        assert!(functions.iter().any(|c| c.label == "is_prime" && c.doc.as_deref().is_some_and(|d| d.contains("prime"))));
+        let aliased: Vec<String> = a.completions(at(main, "m.pow", 0, 2)).into_iter().map(|c| c.label).collect();
+        assert!(aliased.contains(&"factorial".to_string()), "{aliased:?}");
     }
 
     #[test]

@@ -1290,6 +1290,26 @@ LimitError[E0608]: the regex for this language would be too large (over 100000 p
   hint: some languages only have very long regexes; keep working with the machine instead
 ```
 
+## E0609: A number a math function does not accept
+
+A function of `std.math` was given an argument it has no answer for: a
+square root or factorial of a negative number, the logarithm of a number
+below 1, a negative power, or division by zero in `div`. The hint says
+which numbers the function accepts.
+
+```kstar-error
+print std.math.sqrt(0 - 9)
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 1, in <main>
+    print std.math.sqrt(0 - 9)
+                        ^^^^^
+MathError[E0609]: the square root of -9 is not a whole number
+  hint: `sqrt` needs a number from 0 up
+```
+
 ## W0100: A state that can never be reached
 
 No sequence of moves from the start state leads to this state, so it does

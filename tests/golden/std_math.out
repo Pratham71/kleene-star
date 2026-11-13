@@ -1,0 +1,9 @@
+5 2 3 81
+6 12 -4 1
+4 4 120 false true
+Traceback (most recent call last):
+  std_math.kstar, line 8, in <main>
+    print m.pow(10, 19)
+          ^^^^^^^^^^^^^
+MathError[E0600]: pow(10, 19) is too large for an Int
+  hint: Ints are 64-bit: about plus or minus 9 * 10^18
