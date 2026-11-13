@@ -4,7 +4,9 @@
 //!
 //! * random sequences of tokens;
 //! * every example and test program, truncated and mutated at random;
-//! * unbalanced brackets, very deep nesting, huge literals and odd Unicode.
+//! * unbalanced brackets, very deep nesting, huge literals and odd Unicode;
+//! * imports: random import statements and qualified names, circles, and
+//!   long chains of modules.
 //!
 //! Each program goes through everything that happens before running: the
 //! lexer, parser and checker (as `kstar check` and the language server use
@@ -14,16 +16,23 @@
 //! run, see `fuzz_for_longer` below.
 
 mod common;
-use common::{files_in, project_dir, seed, Rng};
+use common::{files_in, project_dir, run_with_files, seed, Rng};
 use kstar::ide::Analysis;
 use kstar::Session;
 use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::path::PathBuf;
+
+/// Where fuzzed programs pretend to be, so that the imports of mutated
+/// golden programs (`"modules/lib.kstar"`) find real files.
+fn fuzz_path() -> PathBuf {
+    project_dir().join("tests/golden/fuzz.kstar")
+}
 
 /// Puts `src` through every stage short of running it. Returns a
 /// description of the failure, if there was one.
 fn try_survive(src: &str) -> Result<(), String> {
     let outcome = catch_unwind(AssertUnwindSafe(|| {
-        let analysis = Analysis::new(src);
+        let analysis = Analysis::open(src, Some(&fuzz_path()), None);
         // Editor queries at a spread of positions, including ones inside a
         // character, which must not panic either.
         let step = (src.len() / 40).max(1);
@@ -36,6 +45,7 @@ fn try_survive(src: &str) -> Result<(), String> {
         }
         // What `kstar check` prints, which renders every error.
         let mut session = Session::new("fuzz.kstar", Box::new(std::io::sink()), std::env::temp_dir(), false);
+        session.set_path(&fuzz_path());
         let checked = session.check(src);
         let _ = session.take_warnings();
         // The formatter: the same parse, and it must be idempotent.
@@ -88,7 +98,9 @@ const VOCABULARY: &[&str] = &[
     "*", "%", "..", "--", "-->", "->", "|", "/", "B", "M", "S", "q0", "q1", "x", "n", "0", "1", "a", "b",
     "Z", "AZ", "_", "L", "R", "\"01\"", "\"\"", "/(0|1)*/", "/a*b/", "Int", "Str", "Set", "Dfa", "minimize",
     "union", "to_dfa", "len", "run", "derive", "#c", ";", "@", "'", "\\", "\"open", "/open", "9999999999999999999999",
-    "é", "😀", "\u{200b}", "\u{0}", "\u{feff}", "\t", "\r",
+    "é", "😀", "\u{200b}", "\u{0}", "\u{feff}", "\t", "\r", "import", "from", "as", ".", "std", "std.math",
+    "\"modules/lib.kstar\"", "\"modules/cycle_a.kstar\"", "\"x.kstar\"", "lib", "lib.B", "lib.EvenZeros",
+    "lib.double", "a.b.c",
 ];
 
 /// A random sequence of tokens, with random spacing and line breaks.
@@ -143,6 +155,7 @@ fn all_programs() -> Vec<(String, String)> {
     let root = project_dir();
     let mut files = files_in(&root.join("examples"), "kstar");
     files.extend(files_in(&root.join("tests/golden"), "kstar"));
+    files.extend(files_in(&root.join("tests/golden/modules"), "kstar"));
     files.extend(files_in(&root.join("tests/format"), "kstar"));
     files
         .into_iter()
@@ -247,6 +260,75 @@ fn deep_nesting_is_an_error_not_a_crash() {
         assert_eq!(errors, 0, "ok case {i} was refused");
         let outcome = common::run_program("deep.kstar", src);
         assert!(outcome.ok, "ok case {i} failed:\n{}", outcome.output);
+    }
+}
+
+/// Programs made of random imports and qualified names, over a few small
+/// files that import each other (sometimes in a circle), are checked and
+/// run without crashing.
+#[test]
+fn random_imports_never_crash() {
+    let mut rng = Rng::new(seed());
+    let names = ["a", "b", "c", "lib/d", "../e", "a.b", "std.math", "std.x"];
+    let members = ["X", "f", "B", "M", "g", "nope", "a", "b"];
+    for case in 0..200 {
+        let mut files: Vec<(String, String)> = Vec::new();
+        for file in ["a", "b", "c", "lib/d"] {
+            let mut text = String::from("alphabet B = {0, 1}\nlet X = 1\nfn f(n: Int) -> Int {\n    return n + X\n}\n");
+            for _ in 0..rng.below(3) {
+                text.insert_str(0, &format!("import \"{}.kstar\"\n", rng.pick(&names)));
+            }
+            if rng.chance(30) {
+                text.push_str("let Y = 1 % 0\n");
+            }
+            files.push((format!("{file}.kstar"), text));
+        }
+        let mut main = String::new();
+        for _ in 0..1 + rng.below(4) {
+            let lib = rng.pick(&names);
+            let lib = if lib.starts_with("std") { lib.to_string() } else { format!("\"{lib}.kstar\"") };
+            main.push_str(&match rng.below(3) {
+                0 => format!("import {lib}\n"),
+                1 => format!("import {lib} as {}\n", rng.pick(&members)),
+                _ => format!("from {lib} import {}, {} as z\n", rng.pick(&members), rng.pick(&members)),
+            });
+        }
+        for _ in 0..rng.below(5) {
+            let first = rng.pick(&["a", "b", "c", "d", "std", "z", "X", "std.math"]);
+            main.push_str(&format!("print {first}.{}\n", rng.pick(&members)));
+            if rng.chance(30) {
+                main.push_str(&format!("print {first}.{}(1)\n", rng.pick(&members)));
+            }
+        }
+        let files: Vec<(&str, &str)> = files.iter().map(|(n, t)| (n.as_str(), t.as_str())).collect();
+        let outcome = catch_unwind(AssertUnwindSafe(|| run_with_files("main.kstar", &main, &files)));
+        assert!(outcome.is_ok(), "case {case} (KSTAR_SEED={}) crashed:\n{main}", seed());
+    }
+}
+
+/// A chain of modules, each importing the next, as long as a program could
+/// sensibly have and much longer: loading must not overflow the stack, and
+/// running a chain longer than the call limit is an error, not a crash.
+#[test]
+fn long_chains_of_modules() {
+    for (length, should_run) in [(50, true), (2000, false)] {
+        let files: Vec<(String, String)> = (0..length)
+            .map(|i| {
+                let text = if i + 1 < length {
+                    format!("import \"m{}.kstar\"\nlet X = m{}.X + 1\n", i + 1, i + 1)
+                } else {
+                    "let X = 0\n".to_string()
+                };
+                (format!("m{i}.kstar"), text)
+            })
+            .collect();
+        let files: Vec<(&str, &str)> = files.iter().map(|(n, t)| (n.as_str(), t.as_str())).collect();
+        let outcome = run_with_files("main.kstar", "import \"m0.kstar\"\nprint m0.X\n", &files);
+        if should_run {
+            assert_eq!(outcome.output, format!("{}\n", length - 1));
+        } else {
+            assert!(outcome.output.contains("RecursionError"), "{}", &outcome.output[..outcome.output.len().min(500)]);
+        }
     }
 }
 

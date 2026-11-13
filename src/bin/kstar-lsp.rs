@@ -4,11 +4,16 @@
 //! the Language Server Protocol. All the language knowledge lives in
 //! `kstar::ide`; this file only keeps the open documents and converts between
 //! the protocol's line/character positions and byte offsets.
+//!
+//! A document's imports are read from the other open documents when they
+//! are open (so unsaved changes count), and from the disk otherwise. When a
+//! document changes, every open document that imports it is checked again.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use kstar::ide::{self, Analysis, CompletionKind as Kind};
-use kstar::lang::token::Span;
+use kstar::lang::token::{FileId, Span};
 use tower_lsp_server::jsonrpc::Result;
 use tower_lsp_server::ls_types::*;
 use tower_lsp_server::{Client, LanguageServer, LspService, Server};
@@ -25,12 +30,53 @@ fn range(src: &str, span: Span) -> Range {
     Range::new(Position::new(start_line, start_char), Position::new(end_line, end_char))
 }
 
+/// Where a document is on disk, if it is a file.
+fn path_of(uri: &Uri) -> Option<PathBuf> {
+    uri.to_file_path().map(|p| p.into_owned())
+}
+
+/// Reads an imported file: the open document's text if it is open,
+/// otherwise the file on disk.
+fn reader(open: HashMap<PathBuf, String>) -> kstar::lang::module::Reader {
+    Box::new(move |path| match open.get(path) {
+        Some(text) => Ok(text.clone()),
+        None => std::fs::read_to_string(path).map(|t| t.replace("\r\n", "\n")),
+    })
+}
+
 impl Backend {
-    /// Analyses new text for `uri` and publishes its diagnostics.
+    /// Analyses new text for `uri` and publishes its diagnostics; then does
+    /// the same for every open document that imports it.
     async fn update(&self, uri: Uri, text: String, version: Option<i32>) {
-        let diagnostics = {
+        let changed = path_of(&uri);
+        let mut published = vec![(uri.clone(), self.analyse(&uri, &text), version)];
+        if let Some(changed) = changed {
+            let dependents: Vec<(Uri, String)> = {
+                let documents = self.documents.lock().expect("no thread panicked holding the lock");
+                documents
+                    .iter()
+                    .filter(|(other, a)| **other != uri && a.paths.values().any(|p| same_file(p, &changed)))
+                    .map(|(other, a)| (other.clone(), a.src.clone()))
+                    .collect()
+            };
+            for (other, text) in dependents {
+                published.push((other.clone(), self.analyse(&other, &text), None));
+            }
+        }
+        for (uri, diagnostics, version) in published {
+            self.client.publish_diagnostics(uri, diagnostics, version).await;
+        }
+    }
+
+    /// Analyses `text` as the document `uri`, keeps the analysis, and
+    /// returns its diagnostics.
+    fn analyse(&self, uri: &Uri, text: &str) -> Vec<Diagnostic> {
+        {
             let mut documents = self.documents.lock().expect("no thread panicked holding the lock");
-            let analysis = Analysis::with_fallback(&text, documents.get(&uri));
+            let open: HashMap<PathBuf, String> =
+                documents.iter().filter_map(|(u, a)| Some((path_of(u)?, a.src.clone()))).collect();
+            let path = path_of(uri);
+            let analysis = Analysis::open_with_fallback(text, documents.get(uri), path.as_deref(), Some(reader(open)));
             let diagnostics = analysis
                 .problems
                 .iter()
@@ -52,8 +98,7 @@ impl Backend {
                 .collect();
             documents.insert(uri.clone(), analysis);
             diagnostics
-        };
-        self.client.publish_diagnostics(uri, diagnostics, version).await;
+        }
     }
 
     /// Runs `f` on the analysis of the document at `position`, with the
@@ -127,7 +172,12 @@ impl LanguageServer for Backend {
         let uri = position.text_document.uri.clone();
         Ok(self.with_document(&position, |a, offset| {
             let span = a.definition(offset)?;
-            Some(GotoDefinitionResponse::Scalar(Location::new(uri, range(&a.src, span))))
+            // A definition in an imported file is opened in that file.
+            let target = match span.file {
+                FileId::MAIN => uri,
+                file => Uri::from_file_path(a.file_path(file)?)?,
+            };
+            Some(GotoDefinitionResponse::Scalar(Location::new(target, range(a.file_text(span.file), span))))
         }))
     }
 
@@ -154,6 +204,7 @@ impl LanguageServer for Backend {
                         Kind::Variable => CompletionItemKind::VARIABLE,
                         Kind::State => CompletionItemKind::ENUM_MEMBER,
                         Kind::Symbol => CompletionItemKind::CONSTANT,
+                        Kind::Module => CompletionItemKind::MODULE,
                     }),
                     detail: Some(c.detail),
                     documentation: c.doc.map(Documentation::String),
@@ -225,6 +276,15 @@ fn document_symbol(src: &str, symbol: &ide::Symbol) -> DocumentSymbol {
         range: range(src, symbol.span),
         selection_range: range(src, symbol.name_span),
         children: Some(symbol.children.iter().map(|c| document_symbol(src, c)).collect()),
+    }
+}
+
+/// True if two paths name the same file, comparing them as the system
+/// would after resolving `.`, `..` and links where possible.
+fn same_file(a: &std::path::Path, b: &std::path::Path) -> bool {
+    match (std::fs::canonicalize(a), std::fs::canonicalize(b)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => a == b,
     }
 }
 

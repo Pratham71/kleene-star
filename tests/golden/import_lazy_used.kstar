@@ -1,0 +1,4 @@
+# The module runs at its first use, so the traceback starts there.
+import "modules/fails_at_top.kstar" as top
+print "before"
+print top.Fine

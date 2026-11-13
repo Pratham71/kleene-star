@@ -23,7 +23,7 @@
 
     "machine": {
       "comment": "`dfa Name over B { ... }`, also `nfa`, `pda` and `tm`, with or without a name.",
-      "begin": "\\b(dfa|nfa|pda|tm)\\b(?:\\s+([A-Za-z_]\\w*))?\\s+(over)\\s+([A-Za-z_]\\w*)\\s*(\\{)",
+      "begin": "\\b(dfa|nfa|pda|tm)\\b(?:\\s+([A-Za-z_]\\w*))?\\s+(over)\\s+([A-Za-z_][\\w.]*)\\s*(\\{)",
       "beginCaptures": {
         "1": { "name": "storage.type.machine.kstar" },
         "2": { "name": "entity.name.type.machine.kstar" },
@@ -99,7 +99,7 @@
 
     "grammar": {
       "comment": "`grammar G over B { S -> a S b | eps }`",
-      "begin": "\\b(grammar)\\b(?:\\s+([A-Za-z_]\\w*))?\\s+(over)\\s+([A-Za-z_]\\w*)\\s*(\\{)",
+      "begin": "\\b(grammar)\\b(?:\\s+([A-Za-z_]\\w*))?\\s+(over)\\s+([A-Za-z_][\\w.]*)\\s*(\\{)",
       "beginCaptures": {
         "1": { "name": "storage.type.grammar.kstar" },
         "2": { "name": "entity.name.type.grammar.kstar" },
@@ -172,6 +172,7 @@
         { "include": "#keyword" },
         { "include": "#return-type" },
         { "include": "#type" },
+        { "include": "#namespace" },
         { "include": "#call" },
         { "include": "#number" },
         { "include": "#operator" }
@@ -196,8 +197,17 @@
         { "match": "[()\\[\\]]", "name": "punctuation.definition.group.regexp.kstar" }
       ]
     },
+    "namespace": {
+      "comment": "The module part of a qualified name: `utils` in `utils.EvenZeros`, `std` and `math` in `std.math.gcd`.",
+      "match": "\\b([A-Za-z_]\\w*)(\\.)(?=[A-Za-z_])",
+      "captures": {
+        "1": { "name": "entity.name.namespace.kstar" },
+        "2": { "name": "punctuation.accessor.kstar" }
+      }
+    },
     "keyword": {
       "patterns": [
+        { "match": "\\b(import|from|as)\\b", "name": "keyword.control.import.kstar" },
         { "match": "\\b(alphabet|dfa|nfa|pda|tm|grammar|fn)\\b", "name": "storage.type.kstar" },
         {
           "match": "\\b(over|start|accept|reject|let|return|if|else|for|in|print|test|draw|trace|on)\\b",

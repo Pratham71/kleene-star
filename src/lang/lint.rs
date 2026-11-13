@@ -14,6 +14,7 @@
 //!   forever.
 //! * A `let` or a function that is never used. Names starting with `_` are
 //!   exempt, as is everything typed into the REPL.
+//! * An import, or a name taken with `from ... import`, that is never used.
 //! * A `test` whose condition uses no names, calls or regexes, so it always
 //!   gives the same answer.
 
@@ -22,6 +23,7 @@ use super::codes;
 use super::error::Diag;
 use super::index::{DefKind, Index};
 use super::machine::MachineSpec;
+use super::token::FileId;
 use std::collections::{HashMap, HashSet};
 
 /// Warnings about one machine written out in full (no loops), which has
@@ -111,8 +113,9 @@ fn closure<'a>(from: impl IntoIterator<Item = &'a str>, edges: &HashMap<&'a str,
     seen
 }
 
-/// Warnings about the program as a whole: unused names and constant tests.
-pub fn program(stmts: &[Stmt], index: &Index, repl: bool) -> Vec<Diag> {
+/// Warnings about the program as a whole, the text of file `file`: unused
+/// names and imports, and constant tests.
+pub fn program(stmts: &[Stmt], index: &Index, repl: bool, file: FileId) -> Vec<Diag> {
     let mut warnings = Vec::new();
     if !repl {
         let mut used = vec![false; index.defs.len()];
@@ -123,7 +126,17 @@ pub fn program(stmts: &[Stmt], index: &Index, repl: bool) -> Vec<Diag> {
             }
         }
         for (def, used) in index.defs.iter().zip(used) {
-            if used || def.name.starts_with('_') {
+            // Definitions in other files are in the index only so that
+            // editors can show them.
+            if used || def.name.starts_with('_') || def.span.file != file {
+                continue;
+            }
+            if matches!(def.kind, DefKind::Module | DefKind::Imported) {
+                let what = if def.kind == DefKind::Module { "module" } else { "imported name" };
+                warnings.push(
+                    Diag::warning(codes::UNUSED_IMPORT, def.span, format!("{what} `{}` is never used", def.name))
+                        .hint("remove the import; an import that is never used costs a file read and a check"),
+                );
                 continue;
             }
             let (code, what) = match def.kind {

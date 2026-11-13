@@ -1,0 +1,3 @@
+# The module's top level would fail, but nothing uses it, so it never runs.
+import "modules/fails_at_top.kstar"
+print "fine"

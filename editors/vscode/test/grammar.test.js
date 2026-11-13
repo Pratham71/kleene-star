@@ -137,6 +137,23 @@ print len("a\\"b") + 1`);
   assert.strictEqual(ones[ones.length - 1][1], "constant.numeric.integer.kstar");
 });
 
+test("imports and qualified names", async () => {
+  const all = await tokens(`import "lib/parity.kstar" as p
+from std.math import gcd
+dfa D over p.B {
+    start q
+}
+print p.EvenZeros accepts "0", gcd(4, 6)`);
+  assert.strictEqual(scopeOf(all, "import"), "keyword.control.import.kstar");
+  assert.strictEqual(scopeOf(all, "as"), "keyword.control.import.kstar");
+  assert.strictEqual(scopeOf(all, "from"), "keyword.control.import.kstar");
+  assert.strictEqual(scopeOf(all, "std"), "entity.name.namespace.kstar");
+  assert.strictEqual(scopeOf(all, "p.B"), "entity.name.type.alphabet.kstar");
+  assert.strictEqual(scopeOf(all, "p", 1), "entity.name.namespace.kstar");
+  assert.strictEqual(scopeOf(all, "start"), "keyword.control.state-role.kstar");
+  assert.strictEqual(scopeOf(all, "gcd"), "entity.name.function.call.kstar");
+});
+
 test("every example tokenizes, and no machine or grammar is left open", async () => {
   const grammar = await loadGrammar();
   const examples = path.join(root, "..", "..", "examples");

@@ -18,8 +18,10 @@ pub mod interp;
 pub mod lexer;
 pub mod lint;
 pub mod machine;
+pub mod module;
 pub mod parser;
 pub mod source;
+pub mod stdlib;
 pub mod token;
 pub mod trace;
 pub mod value;
@@ -38,33 +40,51 @@ pub struct Checked {
     pub warnings: Vec<Diag>,
 }
 
-/// Lexes, parses and checks the text of `src` (the text of file `file`)
-/// from byte `from` (on line `first_line`) onwards, reporting every error
-/// rather than only the first.
+/// Lexes and parses the text of file `file` from byte `from` (on line
+/// `first_line`) onwards, carrying on after errors: the lexer skips what it
+/// cannot read and the parser skips to the next statement. Returns the
+/// statements that parsed and every error.
+pub fn parse_source(file: token::FileId, src: &str, from: usize, first_line: u32, repl: bool) -> (Vec<Stmt>, Vec<Diag>) {
+    let (tokens, mut errors) = lexer::lex_all_in(file, src, from, first_line);
+    let (program, parse_errors) = parser::Parser::new(tokens, src, repl).program_recovering();
+    errors.extend(parse_errors);
+    (program, errors)
+}
+
+/// Checks a parsed program and returns its errors in source order.
 ///
-/// Each stage carries on past its errors: the lexer skips what it cannot
-/// read, the parser skips to the next statement, and the checker checks the
-/// statements that did parse. A name defined by a statement that did not
-/// parse would then look undefined, so after a syntax error, "not defined"
-/// errors are left out: they are most likely consequences of it.
+/// A name defined by a statement that did not parse would look undefined,
+/// so when there were syntax errors (`syntax_ok` is false), "not defined"
+/// errors are left out: they are most likely consequences of them.
+pub fn check_parsed(program: &[Stmt], syntax_ok: bool, checker: &mut Checker) -> Vec<Diag> {
+    let mut errors = checker.check_all(program);
+    if !syntax_ok {
+        errors.retain(|e| e.code != codes::UNDEFINED && e.code != codes::UNKNOWN_FUNCTION);
+    }
+    errors
+}
+
+/// Lexes, parses and checks the text of file `file` from byte `from` (on
+/// line `first_line`) onwards, reporting every error rather than only the
+/// first. The files it imports are loaded and checked by `loader` first;
+/// their errors come before the file's own, each shown in its own file.
 pub fn check_source(
     file: token::FileId,
-    src: &str,
+    sources: &mut source::SourceMap,
     from: usize,
     first_line: u32,
     repl: bool,
     checker: &mut Checker,
+    loader: &mut module::Loader,
 ) -> Checked {
-    let (tokens, mut errors) = lexer::lex_all_in(file, src, from, first_line);
-    let (program, parse_errors) = parser::Parser::new(tokens, src, repl).program_recovering();
-    errors.extend(parse_errors);
+    let (mut program, mut errors) = parse_source(file, sources.text(file), from, first_line, repl);
     let syntax_ok = errors.is_empty();
-    let mut check_errors = checker.check_all(&program);
-    if !syntax_ok {
-        check_errors.retain(|e| e.code != codes::UNDEFINED && e.code != codes::UNKNOWN_FUNCTION);
-    }
-    errors.extend(check_errors);
+    errors.extend(loader.resolve(&mut program, file, sources));
+    checker.set_modules(loader.exports.clone());
+    errors.extend(check_parsed(&program, syntax_ok, checker));
     errors.sort_by_key(|e| e.span.start);
-    let warnings = if errors.is_empty() { checker.warnings(&program) } else { Vec::new() };
-    Checked { program, errors, warnings }
+    let mut all = loader.errors_below(&program);
+    all.extend(errors);
+    let warnings = if all.is_empty() { checker.warnings(&program) } else { Vec::new() };
+    Checked { program, errors: all, warnings }
 }

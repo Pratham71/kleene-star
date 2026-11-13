@@ -1,0 +1,5 @@
+from "modules/lib.kstar" import double, doubel, Greeting as hello
+from "modules/reexporter.kstar" import lib, Mine
+import "modules/reexporter.kstar"
+print reexporter.lib.B
+print hello, Mine, double(1)

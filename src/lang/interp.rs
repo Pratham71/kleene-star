@@ -2,13 +2,22 @@
 //!
 //! `exec` runs a statement, `eval` computes an expression. The call stack is
 //! an explicit list of frames, which is also what a traceback is printed from.
+//!
+//! Every file has its own globals and functions (`ModuleState`), and every
+//! frame remembers which file's code it is running, so a function always
+//! sees the globals of the file it was written in. An imported module runs
+//! *lazily*: its top level is run the first time one of its names is used,
+//! in a frame of its own called `<module>`, so an error there shows the line
+//! that first used it. Running a module is *quiet*: its top-level `print`,
+//! `test`, `draw` and `trace` are skipped, since they are there for when the
+//! file is run by itself.
 
 use super::ast::*;
 use super::codes;
 use super::error::{Diag, ErrorKind, TraceFrame};
 use super::machine::{self, Built, MachineSpec, Transition};
 use super::source::SourceMap;
-use super::token::Span;
+use super::token::{FileId, Span};
 use super::value::Value;
 use super::trace as show_trace;
 use super::machine::GrammarSpec;
@@ -30,13 +39,62 @@ const MAX_RANGE: i64 = 1_000_000;
 /// The largest regex `to_regex` builds, in nodes of its syntax tree.
 const MAX_REGEX_SIZE: usize = 100_000;
 
-/// One function call in progress.
+/// One function call in progress, or the top level of a file.
 struct Frame {
     func: String,
     /// Where, in the caller, this call was made.
     call_site: Span,
-    /// Innermost scope last.
+    /// The file whose code this is, which decides the globals it sees.
+    module: FileId,
+    /// Innermost scope last. Empty at the top level of a file, whose
+    /// definitions go into the file's globals.
     scopes: Vec<HashMap<String, Value>>,
+    /// The top level of an imported module: `print`, `test`, `draw` and
+    /// `trace` are skipped.
+    quiet: bool,
+}
+
+/// How far an imported module has run.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Progress {
+    /// Not yet: none of its names has been used.
+    NotRun,
+    Running,
+    Done,
+}
+
+/// What one file has defined while running.
+struct ModuleState {
+    globals: HashMap<String, Value>,
+    funcs: HashMap<String, Rc<FnDef>>,
+    /// The modules its `import` statements bound, by name.
+    aliases: HashMap<String, ModuleRef>,
+    /// The names its `from ... import` statements took: the module and the
+    /// name there.
+    taken: HashMap<String, (ModuleRef, String)>,
+    /// Its statements; the main file's arrive through `run` instead.
+    program: Option<Rc<Vec<Stmt>>>,
+    progress: Progress,
+}
+
+impl ModuleState {
+    fn new(program: Option<Rc<Vec<Stmt>>>) -> ModuleState {
+        let progress = if program.is_some() { Progress::NotRun } else { Progress::Done };
+        ModuleState {
+            globals: HashMap::new(),
+            funcs: HashMap::new(),
+            aliases: HashMap::new(),
+            taken: HashMap::new(),
+            program,
+            progress,
+        }
+    }
+}
+
+/// A function about to be called, and the file it was written in.
+struct Callee {
+    module: FileId,
+    def: Rc<FnDef>,
 }
 
 /// What happened when a statement ran.
@@ -46,9 +104,13 @@ enum Flow {
 }
 
 pub struct Interp {
-    funcs: HashMap<String, Rc<FnDef>>,
-    /// `frames[0]` is the top level of the program; its first scope holds the globals.
+    /// What each file has defined; the main file is `FileId::MAIN`.
+    modules: HashMap<FileId, ModuleState>,
+    /// `frames[0]` is the top level of the main file.
     frames: Vec<Frame>,
+    /// Run each imported module at its `import` statement, instead of when
+    /// one of its names is first used.
+    pub eager_imports: bool,
     out: Box<dyn Write>,
     /// Where `draw` writes its files.
     out_dir: PathBuf,
@@ -71,12 +133,15 @@ type Run<T> = Result<T, Diag>;
 impl Interp {
     pub fn new(out: Box<dyn Write>, out_dir: PathBuf) -> Interp {
         Interp {
-            funcs: HashMap::new(),
+            modules: HashMap::from([(FileId::MAIN, ModuleState::new(None))]),
             frames: vec![Frame {
                 func: "<main>".into(),
                 call_site: Span::new(0, 0, 1),
-                scopes: vec![HashMap::new()],
+                module: FileId::MAIN,
+                scopes: Vec::new(),
+                quiet: false,
             }],
+            eager_imports: false,
             out,
             out_dir,
             render_svg: false,
@@ -94,6 +159,12 @@ impl Interp {
         self.out = out;
     }
 
+    /// Makes a module that the loader has checked ready to run, the first
+    /// time it is seen. It runs when one of its names is first used.
+    pub fn add_module(&mut self, file: FileId, program: Rc<Vec<Stmt>>) {
+        self.modules.entry(file).or_insert_with(|| ModuleState::new(Some(program)));
+    }
+
     /// Runs a program (or, in the REPL, one more piece of it). `sources`
     /// holds the text of its files.
     pub fn run(&mut self, program: &[Stmt], sources: &SourceMap) -> Run<()> {
@@ -101,7 +172,7 @@ impl Interp {
         let result = self.block(program);
         // After an error, forget any calls and blocks that were in progress.
         self.frames.truncate(1);
-        self.frames[0].scopes.truncate(1);
+        self.frames[0].scopes.clear();
         result.map(drop)
     }
 
@@ -131,22 +202,115 @@ impl Interp {
         &mut self.frames.last_mut().unwrap().scopes
     }
 
-    fn define(&mut self, name: &str, value: Value) {
-        self.scopes().last_mut().unwrap().insert(name.to_string(), value);
+    /// The file whose code is running.
+    fn current(&self) -> FileId {
+        self.frames.last().unwrap().module
     }
 
-    /// Looks in the current function's scopes, then in the globals.
-    fn lookup(&self, name: &str, span: Span) -> Run<Value> {
-        let local = self.frames.last().unwrap().scopes.iter().rev().find_map(|s| s.get(name));
-        match local.or_else(|| self.frames[0].scopes[0].get(name)) {
-            Some(value) => Ok(value.clone()),
-            // The checker allows a function to use a global defined above it,
-            // but the function may have been *called* before that line ran.
-            None => Err(self
-                .error(ErrorKind::Name, span, format!("`{name}` is used before it is defined"))
-                .code(codes::USED_TOO_EARLY)
-                .hint(format!("move the definition of `{name}` above the call that needs it"))),
+    fn module(&mut self, file: FileId) -> &mut ModuleState {
+        self.modules.get_mut(&file).expect("the loader registered every module")
+    }
+
+    /// Defines a name in the innermost scope, or, at the top level of a
+    /// file, in that file's globals.
+    fn define(&mut self, name: &str, value: Value) {
+        let file = self.current();
+        match self.scopes().last_mut() {
+            Some(scope) => scope.insert(name.to_string(), value),
+            None => self.module(file).globals.insert(name.to_string(), value),
+        };
+    }
+
+    /// Looks in the current function's scopes, then in its file's globals,
+    /// then among the names its file imported with `from`.
+    fn lookup(&mut self, name: &str, span: Span) -> Run<Value> {
+        if name.contains('.') {
+            let (target, member) = self.qualified(name);
+            return self.member(&target, &member, span);
         }
+        let frame = self.frames.last().unwrap();
+        let module = &self.modules[&frame.module];
+        if let Some(value) = frame.scopes.iter().rev().find_map(|s| s.get(name)).or_else(|| module.globals.get(name)) {
+            return Ok(value.clone());
+        }
+        if let Some((target, member)) = module.taken.get(name).cloned() {
+            return self.member(&target, &member, span);
+        }
+        // The checker allows a function to use a global defined above it,
+        // but the function may have been *called* before that line ran.
+        Err(self
+            .error(ErrorKind::Name, span, format!("`{name}` is used before it is defined"))
+            .code(codes::USED_TOO_EARLY)
+            .hint(format!("move the definition of `{name}` above the call that needs it")))
+    }
+
+    // ---- modules ----
+
+    /// The module and the name inside it that a qualified name such as
+    /// `utils.B` or `std.math.gcd` refers to. The checker has made sure
+    /// that it exists.
+    fn qualified(&self, name: &str) -> (ModuleRef, String) {
+        let parts: Vec<&str> = name.split('.').collect();
+        match self.modules[&self.current()].aliases.get(parts[0]) {
+            Some(target) => (target.clone(), parts[1].to_string()),
+            None => (ModuleRef::Std(parts[1].to_string()), parts[2].to_string()),
+        }
+    }
+
+    /// The value called `member` in module `target`, running the module
+    /// first if this is the first use of any of its names.
+    fn member(&mut self, target: &ModuleRef, member: &str, span: Span) -> Run<Value> {
+        let ModuleRef::File(file) = target else {
+            unreachable!("the checker allows only functions from the standard library")
+        };
+        self.run_module(*file, span)?;
+        match self.modules[file].globals.get(member) {
+            Some(value) => Ok(value.clone()),
+            None => Err(self
+                .error(ErrorKind::Name, span, format!("`{member}` is used before it is defined"))
+                .code(codes::USED_TOO_EARLY)
+                .hint(format!("in its module, move the definition of `{member}` above the line that needs it"))),
+        }
+    }
+
+    /// Runs the top level of a module, if it has not run yet. `use_site` is
+    /// where it is needed: the line of first use, or with `--eager-imports`
+    /// the import itself. A module runs at most once; if it fails, it is
+    /// left as if it had never run (so the REPL can try again).
+    fn run_module(&mut self, file: FileId, use_site: Span) -> Run<()> {
+        let module = self.module(file);
+        if module.progress != Progress::NotRun {
+            return Ok(());
+        }
+        let program = module.program.clone().expect("a module has its statements");
+        let depth = self.frames.len();
+        // Modules whose top levels use each other in a long chain nest like
+        // calls do, so they share the limit.
+        if depth >= MAX_DEPTH {
+            return Err(self
+                .error(ErrorKind::Recursion, use_site, format!("more than {MAX_DEPTH} calls and modules are running at once"))
+                .hint("a long chain of modules, each needing the next to run first; shorten the chain"));
+        }
+        self.module(file).progress = Progress::Running;
+        self.frames.push(Frame { func: "<module>".into(), call_site: use_site, module: file, scopes: Vec::new(), quiet: true });
+        let result = self.block(&program);
+        self.frames.truncate(depth);
+        let module = self.module(file);
+        match result {
+            Ok(_) => {
+                module.progress = Progress::Done;
+                Ok(())
+            }
+            Err(error) => {
+                *module = ModuleState::new(module.program.clone());
+                Err(error)
+            }
+        }
+    }
+
+    /// True at the top level of an imported module, where output is skipped.
+    fn quiet(&self) -> bool {
+        self.frames.last().unwrap().quiet
     }
 
     // ---- statements ----
@@ -189,8 +353,30 @@ impl Interp {
                 self.define(&name.text, value);
             }
             StmtKind::Fn(f) => {
-                self.funcs.insert(f.name.text.clone(), f.clone());
+                let file = self.current();
+                self.module(file).funcs.insert(f.name.text.clone(), f.clone());
             }
+            StmtKind::Import { lib, alias, target } => {
+                let target = target.clone().expect("the loader found every module before running");
+                let name = alias.as_ref().map_or_else(|| lib.default_name(), |a| a.text.clone());
+                if let (ModuleRef::File(module), true) = (&target, self.eager_imports) {
+                    self.run_module(*module, lib.span)?;
+                }
+                let file = self.current();
+                self.module(file).aliases.insert(name, target);
+            }
+            StmtKind::FromImport { lib, names, target } => {
+                let target = target.clone().expect("the loader found every module before running");
+                if let (ModuleRef::File(module), true) = (&target, self.eager_imports) {
+                    self.run_module(*module, lib.span)?;
+                }
+                let file = self.current();
+                for (name, alias) in names {
+                    let local = alias.as_ref().unwrap_or(name);
+                    self.module(file).taken.insert(local.text.clone(), (target.clone(), name.text.clone()));
+                }
+            }
+            StmtKind::Print(_) | StmtKind::Test(_) | StmtKind::Draw(_) | StmtKind::Trace { .. } if self.quiet() => {}
             StmtKind::Return(value) => return Ok(Flow::Return(self.eval(value)?)),
             StmtKind::If { cond, then, otherwise } => {
                 if self.eval_bool(cond)? {
@@ -257,9 +443,10 @@ impl Interp {
             Value::Tm(m) => dot::tm_to_dot(&m),
             other => dot::nfa_to_dot(&to_nfa(&other, &symbols_of(&other))),
         };
-        // `draw d` writes d.dot; anything more complex gets a numbered name.
+        // `draw d` writes d.dot (and `draw utils.d` too); anything more
+        // complex gets a numbered name.
         let base = match &expr.kind {
-            ExprKind::Name(name) => name.clone(),
+            ExprKind::Name(name) => name.rsplit('.').next().unwrap_or(name).to_string(),
             _ => {
                 self.drawings += 1;
                 format!("machine{}", self.drawings)
@@ -580,18 +767,43 @@ impl Interp {
         .hint("eps moves that push without reading can let a PDA run forever; the answer is unknown, not \"no\"")
     }
 
-    /// Calls a user-defined function.
-    fn call(&mut self, name: &Name, args: Vec<Value>, call_site: Span) -> Run<Value> {
-        let Some(f) = self.funcs.get(&name.text).cloned() else {
-            return Err(self
+    /// The function that `name` calls: one of the current file's, one taken
+    /// from a module with `from`, or `module.name`. A module's functions are
+    /// only there once the module has run, so this may run it.
+    fn callee(&mut self, name: &Name) -> Run<Callee> {
+        let current = self.current();
+        let (target, member) = if name.is_qualified() {
+            self.qualified(&name.text)
+        } else {
+            let module = &self.modules[&current];
+            if let Some(def) = module.funcs.get(&name.text) {
+                return Ok(Callee { module: current, def: def.clone() });
+            }
+            match module.taken.get(&name.text) {
+                Some(taken) => taken.clone(),
+                None => (ModuleRef::File(current), name.text.clone()),
+            }
+        };
+        let ModuleRef::File(file) = target else {
+            unreachable!("the standard library has no functions yet")
+        };
+        self.run_module(file, name.span)?;
+        match self.modules[&file].funcs.get(&member) {
+            Some(def) => Ok(Callee { module: file, def: def.clone() }),
+            None => Err(self
                 .error(
                     ErrorKind::Name,
                     name.span,
                     format!("function `{}` is called before it is defined", name.text),
                 )
                 .code(codes::USED_TOO_EARLY)
-                .hint(format!("move `fn {}` above this line", name.text)));
-        };
+                .hint(format!("move `fn {member}` above this line"))),
+        }
+    }
+
+    /// Calls a user-defined function.
+    fn call(&mut self, name: &Name, args: Vec<Value>, call_site: Span) -> Run<Value> {
+        let Callee { module, def: f } = self.callee(name)?;
         if self.frames.len() >= MAX_DEPTH {
             return Err(self
                 .error(
@@ -607,7 +819,7 @@ impl Interp {
             let _ = writeln!(self.out, "{indent}-> {}({})   line {}", name.text, shown.join(", "), call_site.line);
         }
         let params = f.params.iter().map(|(param, _)| param.text.clone()).zip(args).collect();
-        self.frames.push(Frame { func: name.text.clone(), call_site, scopes: vec![params] });
+        self.frames.push(Frame { func: f.name.text.clone(), call_site, module, scopes: vec![params], quiet: false });
         let flow = self.block(&f.body)?;
         self.frames.pop();
         match flow {

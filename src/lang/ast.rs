@@ -3,7 +3,7 @@
 //! A program is a list of statements. Statements contain expressions.
 //! Every node remembers its `Span` so later stages can point at it.
 
-use super::token::Span;
+use super::token::{FileId, Span};
 use crate::automata::Regex;
 
 #[derive(Debug, Clone)]
@@ -38,13 +38,97 @@ pub enum StmtKind {
     Draw(Expr),
     /// `trace machine on word`: run the machine step by step, printing each step.
     Trace { machine: Expr, word: Expr },
+    /// `import "utils.kstar" as u`, or `import std.math`: binds a module
+    /// as a namespace, so its names are written `u.Name`.
+    Import { lib: Lib, alias: Option<Name>, target: Option<ModuleRef> },
+    /// `from "utils.kstar" import a, b as c`: puts names of a module into
+    /// this file's scope. Each pair is a name and its optional new name.
+    FromImport { lib: Lib, names: Vec<(Name, Option<Name>)>, target: Option<ModuleRef> },
+}
+
+/// What an import statement names: a file, or a standard-library module.
+#[derive(Debug, Clone)]
+pub struct Lib {
+    pub kind: LibKind,
+    /// The quoted path, or `std.math`.
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LibKind {
+    /// `"machines/parity.kstar"`: a path relative to the importing file.
+    File(String),
+    /// `std.math`: the module's name, `math`.
+    Std(String),
+}
+
+impl Lib {
+    /// The name the module is bound to when `import` has no `as`: the file
+    /// name without `.kstar` (`parity` for `"machines/parity.kstar"`), or the
+    /// standard-library module's own name. It may not be a valid name, which
+    /// the checker reports.
+    pub fn default_name(&self) -> String {
+        match &self.kind {
+            LibKind::File(path) => {
+                let file = path.rsplit(['/', '\\']).next().unwrap_or(path);
+                file.strip_suffix(".kstar").unwrap_or(file).to_string()
+            }
+            LibKind::Std(module) => module.clone(),
+        }
+    }
+
+    /// How the module is written in messages: `"utils.kstar"` or `std.math`.
+    pub fn shown(&self) -> String {
+        match &self.kind {
+            LibKind::File(path) => format!("\"{path}\""),
+            LibKind::Std(module) => format!("std.{module}"),
+        }
+    }
+}
+
+/// Which module an import refers to, once the loader has found it: a file
+/// (by its id in the source map) or a standard-library module (by name).
+/// The parser leaves `target` empty; `module::Loader` fills it in.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ModuleRef {
+    File(FileId),
+    Std(String),
 }
 
 /// A name together with where it was written.
+///
+/// A name that refers to something in a module is *qualified*: its text
+/// holds the parts joined by dots, as written, like `utils.EvenZeros` or
+/// `std.math.gcd`. The parser only accepts dots with no spaces around them,
+/// so each part's place in the source follows from the text.
 #[derive(Debug, Clone)]
 pub struct Name {
     pub text: String,
     pub span: Span,
+}
+
+impl Name {
+    /// True for `utils.B`, false for `B`.
+    pub fn is_qualified(&self) -> bool {
+        self.text.contains('.')
+    }
+
+    /// The parts of a qualified name, each with its own span.
+    pub fn parts(&self) -> Vec<Name> {
+        parts_of(&self.text, self.span)
+    }
+}
+
+/// The dot-separated parts of `text`, which was written at `span`.
+pub fn parts_of(text: &str, span: Span) -> Vec<Name> {
+    let mut start = span.start;
+    text.split('.')
+        .map(|part| {
+            let name = Name { text: part.to_string(), span: Span { start, end: start + part.len(), ..span } };
+            start += part.len() + 1;
+            name
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone)]

@@ -228,6 +228,7 @@ fn lex_into(
                     '*' => (Tok::Star, 1),
                     '%' => (Tok::Percent, 1),
                     '|' => (Tok::Bar, 1),
+                    '.' => (Tok::Dot, 1),
                     ';' => {
                         errors.push(
                             error(i + 1, "unexpected `;`".into())
@@ -243,7 +244,6 @@ fn lex_into(
                             '!' => err.hint("for \"not\" write `not`; for \"not equal\" write `!=`"),
                             '&' => err.hint("for \"and\" write `and`"),
                             '\'' => err.hint("strings use double quotes: \"abc\""),
-                            '.' => err.hint("a range is written `0..n`"),
                             _ => err,
                         };
                         errors.push(err);

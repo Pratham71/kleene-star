@@ -47,6 +47,29 @@ is run by `tests/programs.rs`, so the documentation cannot drift from the
 language. `UPDATE_DOCS=1 cargo test --test programs` rewrites the expected
 outputs shown in the docs.
 
+The fences say what to do with a block:
+
+- ```` ```kstar ```` must run cleanly, and ```` ```kstar-error ```` must fail.
+  A ```` ```text ```` block straight after either is its exact output.
+- ```` ```kstar file=utils.kstar ```` is not run. It is a file that every
+  later block on the same page can import, as if it sat next to it on disk
+  (in `docs/errors.md`, every later block in the same section). A later
+  block with the same file name replaces it. Use it to show imports:
+
+  ````markdown
+  ```kstar file=utils.kstar
+  let Size = 2
+  ```
+
+  ```kstar
+  import "utils.kstar"
+  print utils.Size
+  ```
+  ````
+
+Golden programs can import too: put the imported files in
+`tests/golden/modules/`, which the golden test does not run by themselves.
+
 The stress tests are too slow for every run and are marked `#[ignore]`; run
 them in a release build, optionally with a fixed seed:
 

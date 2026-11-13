@@ -1,0 +1,6 @@
+import "modules/lib.kstar"
+fn go(n: Int) -> Int {
+    return lib.wrap(n - 1)
+}
+print go(2)
+print go(1)

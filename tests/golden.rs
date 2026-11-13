@@ -2,11 +2,14 @@
 //! (everything printed, then the error if there was one) must equal
 //! `tests/golden/NAME.out`.
 //!
+//! A golden program may import files; those live in `tests/golden/modules/`
+//! and are not golden tests themselves.
+//!
 //! After an intended change in behaviour, regenerate the `.out` files with
 //! `UPDATE_GOLDEN=1 cargo test --test golden` and review the diff.
 
 mod common;
-use common::{files_in, project_dir, run_program};
+use common::{files_in, project_dir, run_at};
 
 #[test]
 fn golden_files() {
@@ -18,7 +21,7 @@ fn golden_files() {
     for program in programs {
         let name = program.file_stem().unwrap().to_string_lossy().to_string();
         let text = std::fs::read_to_string(&program).unwrap();
-        let actual = run_program(&format!("{name}.kstar"), &text).output;
+        let actual = run_at(&program, &format!("{name}.kstar"), &text).output;
         let expected_path = program.with_extension("out");
         if update {
             std::fs::write(&expected_path, &actual).unwrap();

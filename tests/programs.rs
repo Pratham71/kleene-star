@@ -6,9 +6,12 @@
 //!   must be what the program really prints. So if the language changes,
 //!   out-of-date documentation fails the build. After a deliberate change,
 //!   `UPDATE_DOCS=1 cargo test --test programs` rewrites those output blocks.
+//! * A block marked ```kstar file=utils.kstar is not run. It is a file that
+//!   the later blocks on the same page (or, in docs/errors.md, the same
+//!   section) can import, as if it were next to them on disk.
 
 mod common;
-use common::{files_in, project_dir, run_program};
+use common::{files_in, project_dir, run_at, run_program, run_with_files};
 
 #[test]
 fn examples_run_cleanly() {
@@ -16,7 +19,7 @@ fn examples_run_cleanly() {
     assert!(!examples.is_empty(), "no examples found");
     for example in examples {
         let name = example.file_name().unwrap().to_string_lossy().to_string();
-        let outcome = run_program(&name, &std::fs::read_to_string(&example).unwrap());
+        let outcome = run_at(&example, &name, &std::fs::read_to_string(&example).unwrap());
         assert!(outcome.ok, "examples/{name} failed:\n{}", outcome.output);
     }
 }
@@ -81,14 +84,21 @@ fn documentation_code_runs() {
         let blocks = code_blocks(&markdown);
         // With UPDATE_DOCS, (line range, new text) for each stale output block.
         let mut updates = Vec::new();
+        // The files defined so far on this page, for the blocks to import.
+        let mut files: Vec<(String, String)> = Vec::new();
         for (i, block) in blocks.iter().enumerate() {
+            if let Some(file) = file_name(block) {
+                files.retain(|(name, _)| name != file);
+                files.push((file.to_string(), block.text.clone()));
+                continue;
+            }
             let should_pass = match block.tag.as_str() {
                 "kstar" => true,
                 "kstar-error" => false,
                 _ => continue,
             };
             checked += 1;
-            let outcome = run_program("demo.kstar", &block.text);
+            let outcome = run_block(&block.text, &files);
             if outcome.ok != should_pass {
                 problems.push(format!(
                     "{name}: this block should {}:\n{}\nit printed:\n{}",
@@ -123,6 +133,20 @@ fn documentation_code_runs() {
     assert!(checked > 20, "only {checked} documentation blocks were found");
 }
 
+/// The file a ```kstar file=NAME block defines, if it is one.
+fn file_name(block: &Block) -> Option<&str> {
+    block.tag.strip_prefix("kstar file=").map(str::trim)
+}
+
+/// Runs a documentation block as `demo.kstar`, next to `files`.
+fn run_block(text: &str, files: &[(String, String)]) -> common::Outcome {
+    if files.is_empty() {
+        return run_program("demo.kstar", text);
+    }
+    let files: Vec<(&str, &str)> = files.iter().map(|(name, text)| (name.as_str(), text.as_str())).collect();
+    run_with_files("demo.kstar", text, &files)
+}
+
 /// Each section of docs/errors.md explains one code, and its example must
 /// really produce that code. A few codes have no example: the formatter's
 /// safety net, the nesting limit (an example would be hundreds of brackets),
@@ -134,12 +158,17 @@ fn every_error_example_shows_its_code() {
     let mut checked = 0;
     for section in page.split("\n## ").skip(1) {
         let code = &section[..5];
-        let example = code_blocks(section).into_iter().find(|b| b.tag == "kstar" || b.tag == "kstar-error");
+        let blocks = code_blocks(section);
+        let files: Vec<(String, String)> = blocks
+            .iter()
+            .filter_map(|b| file_name(b).map(|name| (name.to_string(), b.text.clone())))
+            .collect();
+        let example = blocks.into_iter().find(|b| b.tag == "kstar" || b.tag == "kstar-error");
         let Some(example) = example else {
             assert!(without_example.contains(&code), "{code} has no example in docs/errors.md");
             continue;
         };
-        let output = run_program("demo.kstar", &example.text).output;
+        let output = run_block(&example.text, &files).output;
         assert!(output.contains(&format!("[{code}]")), "the example for {code} does not show it:\n{output}");
         checked += 1;
     }

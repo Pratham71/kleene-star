@@ -1,0 +1,3 @@
+import "lib.kstar"
+from "lib.kstar" import double
+let Mine = 1

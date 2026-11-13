@@ -1,0 +1,4 @@
+# Its top level fails when it runs.
+let Zero = 0
+let Broken = 1 % Zero
+let Fine = 1

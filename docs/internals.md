@@ -380,6 +380,69 @@ in the source map, so an error can quote a line typed several entries ago.
 The interpreter runs on a thread with a large stack, because a tree-walking
 interpreter uses the Rust stack for every nested Kleene Star call.
 
+## 13. Modules
+
+`src/lang/module.rs`, `src/lang/check.rs`, `src/lang/interp.rs`
+
+An `import` statement goes through the same stages as everything else, with
+one stage added between parsing and checking: the **loader**.
+
+**Parsing.** `import` and `from` are statements; the parser checks that
+they are at the top level and that a path ends in `.kstar`, and leaves the
+statement's `target` empty. A qualified name such as `utils.EvenZeros` is
+read as one `Name` whose text keeps the dot. The dots must touch the names
+on both sides, so the position of each part can be worked out from the
+text, which is how an error can point at just `EvenZeros`.
+
+**Loading.** Before a file is checked, `Loader::resolve` goes through its
+import statements. For each one it joins the path to the importing file's
+folder, tidies it (`a/../b` becomes `b`, without asking the disk), and:
+
+- if the file is already loaded, uses it again: every file is loaded once;
+- if the file is in the middle of being loaded, the imports go round in a
+  circle, and the chain of files being loaded is the error message;
+- otherwise reads it, gives it the next `FileId` in the source map, parses
+  it, resolves *its* imports (recursion), and checks it with a checker of
+  its own.
+
+Either way the statement's `target` is filled in with a `ModuleRef`: a file
+id, or the name of a standard-library module. From then on nobody deals
+with paths. Reading goes through a function the loader is given, so tests
+and the language server can supply files that are not on disk.
+
+**Interfaces.** What a checked module offers is its `Exports`: the type of
+each top-level value, the parameter and result types of each function, and
+each one's definition for the editor. The checker that checked the module
+produces it, leaving out names the module imported itself (so there is no
+re-exporting). The importing file's checker gets the table of every
+module's exports and needs nothing else, which is why a module's mistakes
+cannot leak into the importing file's checking: either a name is in the
+table with a type, or it is not there. The standard library (`stdlib/`)
+produces the same kind of table.
+
+**Checking.** The checker keeps the modules bound by `import` apart from
+ordinary names (`aliases`). `resolve_path` reads a qualified name part by
+part: the first part (or two, for `std.math`) names a module, the next
+must be one of its exports, and anything after that is an error, with a
+special message when it is a module that module imported. A name taken
+with `from` becomes an ordinary name of the file. For the editor, each
+definition from another file is copied into the index once (`mirror`), so
+hovering, completing and "go to definition" work across files.
+
+**Running.** The interpreter keeps a `ModuleState` per file: its globals,
+its functions, and the modules and names it imported. Every frame records
+which file's code it runs, so a function finds the globals of the file it
+was written in. A module's top level runs the first time one of its names
+is needed (`run_module`), in a frame called `<module>` whose call site is
+that first use. That frame is *quiet*: `print`, `test`, `draw` and `trace`
+are skipped in it. If the module fails, it is reset to "not run", so the
+REPL can try again after a fix. `--eager-imports` simply runs the module
+when its `import` statement executes.
+
+**Errors across files.** Every span carries its file id (section 5), so an
+error in a module is shown with the module's name and line, and a
+traceback whose frames are in different files shows each frame's file.
+
 ## Testing
 
 ```bash
@@ -397,6 +460,9 @@ cargo test
   run cleanly, and every code sample in the documentation is run and compared
   with the output shown beneath it. `UPDATE_DOCS=1 cargo test --test programs`
   rewrites those outputs after a deliberate change.
+- **Modules** (`tests/modules.rs`, and the golden tests named `import_*`)
+  import files that exist only in the test, or in `tests/golden/modules/`:
+  quiet and lazy loading, eager loading, per-file globals, the REPL.
 - **The command line** (`tests/cli.rs`) runs the real `kstar` binary in a
   scratch folder: several files, folders, `fmt -`, `new`, `explain`, colour,
   `--trace-calls`, and exit codes.

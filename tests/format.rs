@@ -8,7 +8,7 @@
 //! * Formatting is idempotent: formatting formatted text changes nothing.
 
 mod common;
-use common::{files_in, project_dir, run_program};
+use common::{files_in, project_dir, run_at};
 
 fn format(name: &str, text: &str) -> Result<String, String> {
     kstar::format_program(name, &text.replace("\r\n", "\n"))
@@ -49,8 +49,8 @@ fn examples_are_formatted_and_keep_their_meaning() {
         let formatted = format(&name, &text).unwrap_or_else(|e| panic!("{e}"));
         assert_eq!(formatted, text, "examples/{name} is not formatted; run `kstar fmt examples/{name}`");
         assert_eq!(format(&name, &formatted).unwrap(), formatted, "{name}: not idempotent");
-        let before = run_program(&name, &text);
-        let after = run_program(&name, &formatted);
+        let before = run_at(&example, &name, &text);
+        let after = run_at(&example, &name, &formatted);
         assert_eq!(before.output, after.output, "{name}: formatting changed the output");
     }
 }
@@ -68,9 +68,9 @@ fn formatting_is_idempotent_and_keeps_output() {
         assert_eq!(format(&name, &once).unwrap(), once, "{name}: not idempotent");
         // Line numbers may move, so only compare programs that run cleanly,
         // and only count their warnings, which quote line numbers.
-        let before = run_program(&name, &text);
+        let before = run_at(&program, &name, &text);
         if before.ok {
-            let after = run_program(&name, &once);
+            let after = run_at(&program, &name, &once);
             let (warnings, output) = split_warnings(&before.output);
             assert_eq!((warnings, output), split_warnings(&after.output), "{name}: output changed");
         }

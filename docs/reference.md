@@ -28,6 +28,8 @@ comment that runs to the end of the line.
 | `test cond` | Checks a condition. Failures are reported and counted. |
 | `draw machine` | Writes a Graphviz `.dot` file (and `.svg` if Graphviz is installed). |
 | `trace machine on word` | Runs a `Dfa`, `Nfa`, `Pda` or `Tm` on a `Str` and prints every step. See [tracing](#tracing). |
+| `import "file.kstar" as m` | Binds another file as a module; its names are written `m.Name`. See [modules](#modules). |
+| `from "file.kstar" import a, b as c` | Puts names of another file into this one. |
 
 ### Names and scope
 
@@ -199,6 +201,56 @@ Reason: Ended in non-accepting state even
 - For a `Tm` the columns are `Step  Move  State  Tape`, with the head's cell
   in brackets (`10[1]1`), and a last line `Tape:` with the final contents.
 - A blank line follows each trace.
+
+## Modules
+
+A program can be split over several files. Any `.kstar` file can be
+imported by another; it is then called a **module**.
+
+| Form | Binds |
+|---|---|
+| `import "lib/parity.kstar"` | the module as `parity` (the file name without `.kstar`) |
+| `import "lib/parity.kstar" as p` | the module as `p` |
+| `import std.math`, `import std.math as m` | a standard-library module as `math`, or `m` |
+| `from "parity.kstar" import EvenZeros, ends_in as ending` | `EvenZeros` and `ending` |
+| `from std.math import gcd` | `gcd` |
+
+- `import` and `from` are written at the top level of a file. The path is
+  in quotes, relative to the folder of the importing file, and ends in
+  `.kstar`. Without `as`, the file name must be a valid name.
+- A module's names are its top-level alphabets, machines, grammars, `let`
+  values and functions. All of them are public. Names it imported itself
+  are not passed on: `a.b.X`, where `b` is a module `a` imports, is an
+  error (E0210). Import `b` directly.
+- A **qualified name** `m.Name` works wherever a name does: in expressions
+  and calls, after `over`, and in `trace` and `draw`. It is written without
+  spaces around the dot.
+- An imported module, a name from `from`, and every other top-level name of
+  the file must all be different. `std` always means the standard library,
+  so nothing can be called `std`.
+- Every imported file is read, parsed and checked before the program runs,
+  so its errors are reported first, each in its own file, even if none of
+  its names is used.
+- **Quiet:** when a file is loaded as a module, its top-level `print`,
+  `test`, `draw` and `trace` are checked but not run, and its tests are not
+  counted. Its functions behave normally when called.
+- **Lazy:** a module's top level runs the first time one of its names is
+  used, and a run-time error there shows that line in the traceback, then
+  the module's line `in <module>`. `kstar run --eager-imports` runs each
+  module at its `import` instead.
+- A module runs at most once per program, however many files import it, and
+  keeps its own globals: a function sees the names of the file it is written
+  in.
+- Files that import each other in a circle are an error showing the chain:
+  `a.kstar -> b.kstar -> a.kstar`.
+- An import that is never used is a warning (W0202).
+
+## The standard library
+
+The standard library comes with Kleene Star. A module of it is reached by
+its full name with no import (`std.math.gcd(12, 18)`), or imported like a
+file: `import std.math`, `import std.math as m`, `from std.math import gcd`.
+There are no modules in it yet; they are listed here as they are added.
 
 ## Types
 
@@ -488,13 +540,19 @@ statement   := 'alphabet' NAME '=' '{' (symbol (',' symbol)*)? '}'
              | 'test' expr
              | 'draw' expr
              | 'trace' range 'on' expr
+             | 'import' lib ('as' NAME)?                     (top level only)
+             | 'from' lib 'import' NAME ('as' NAME)? (',' NAME ('as' NAME)?)*
+
+lib         := STRING                       a path ending in `.kstar`
+             | 'std' '.' NAME
+qualified   := NAME ('.' NAME)*             no spaces around the dots
 
 block       := '{' statement* '}'
 param       := NAME ':' type
 type        := 'Int' | 'Bool' | 'Str' | 'Alphabet' | 'Dfa' | 'Nfa' | 'Pda' | 'Tm'
              | 'Regex' | 'Grammar' | 'Set' '[' type ']'
 
-machine     := 'over' NAME '{' item* '}'
+machine     := 'over' qualified '{' item* '}'
 item        := 'start' state
              | 'accept' state (',' state)*
              | 'reject' state (',' state)*                  (tm)
@@ -509,7 +567,7 @@ push        := 'eps' | letters and digits written together, top first
 label       := symbol | 'eps'
 symbol      := one letter or digit
 
-grammar     := 'over' NAME '{' rule* '}'
+grammar     := 'over' qualified '{' rule* '}'
 rule        := VARIABLE '->' alternative ('|' alternative)*
 alternative := 'eps' | (VARIABLE | symbol)+
 VARIABLE    := a NAME starting with a capital letter
@@ -524,8 +582,8 @@ sum         := product (('+' | '-') product)*
 product     := unary (('*' | '%') unary)*
 unary       := '-' unary | primary
 primary     := INT | STRING | REGEX | 'true' | 'false'
-             | NAME
-             | NAME '(' (expr (',' expr)*)? ')'
+             | qualified
+             | qualified '(' (expr (',' expr)*)? ')'
              | '(' expr ')'
              | '{' (expr (',' expr)*)? '}'
              | ('dfa' | 'nfa' | 'pda' | 'tm') machine
@@ -561,6 +619,7 @@ Keywords, which cannot be used as names: `accept` `accepts` `alphabet` `and`
 | `kstar run --out dir ...` | Writes drawings into `dir`. |
 | `kstar run --watch ...` | Runs again whenever a file changes; Ctrl-C stops. |
 | `kstar run --trace-calls ...` | Prints a line for every function call (with its arguments) and return (with its result). |
+| `kstar run --eager-imports ...` | Runs each imported module at its `import` line, instead of when one of its names is first used. |
 | `kstar check <files>...` | Reports every error and warning without running. |
 | `kstar fmt <files>...` | Rewrites files (or every file in a folder) in the standard style. See [formatting](#formatting). |
 | `kstar fmt --check <files>...` | Lists the files that are not formatted, changing nothing. |

@@ -1,0 +1,9 @@
+before
+Traceback (most recent call last):
+  import_lazy_used.kstar, line 4, in <main>
+    print top.Fine
+  modules/fails_at_top.kstar, line 3, in <module>
+    let Broken = 1 % Zero
+                 ^^^^^^^^
+MathError[E0601]: modulo by zero
+  hint: the right-hand side of `%` is 0 here

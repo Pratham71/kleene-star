@@ -1,0 +1,12 @@
+if true {
+    import "modules/lib.kstar"
+}
+import "modules/lib"
+import "modules/my-lib.kstar"
+from std.nothing import x
+import "modules/lib.kstar" as m
+print m
+print std.math2.gcd(1, 2)
+print m.double.x
+let x = 1
+print x.y

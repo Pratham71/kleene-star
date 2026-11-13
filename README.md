@@ -154,6 +154,7 @@ kstar run examples/tour.kstar
 6. [Watching a machine run](docs/tutorial/06-trace.md)
 7. [Grammars and pushdown automata](docs/tutorial/07-context-free.md)
 8. [Turing machines](docs/tutorial/08-turing.md)
+9. [Programs in several files](docs/tutorial/09-modules.md)
 
 Appendix: [tools](docs/tutorial/tools.md), including `kstar fmt` and the `kstar-lsp`
 language server ([VS Code extension](editors/vscode/README.md)).

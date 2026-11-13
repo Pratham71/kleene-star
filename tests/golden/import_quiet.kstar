@@ -1,0 +1,5 @@
+# The module's print, test, trace and draw do not run, and its failing test
+# is not counted.
+import "modules/noisy.kstar"
+print noisy.Count, noisy.Ones accepts "111"
+test noisy.Count == 3

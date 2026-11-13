@@ -1,0 +1,5 @@
+Error in import_missing.kstar, line 1:
+    import "modules/nowhere.kstar"
+           ^^^^^^^^^^^^^^^^^^^^^^^
+NameError[E0206]: cannot find the file `modules/nowhere.kstar`
+  hint: a path in an import is relative to the folder of the file that contains the import

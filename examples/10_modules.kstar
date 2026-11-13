@@ -1,0 +1,25 @@
+# Chapter 9: a program in two files. The machines live in lib/binary.kstar.
+
+import "lib/binary.kstar"
+from "lib/binary.kstar" import div_by as divisible_by
+
+# A qualified name works wherever a name does, even after `over`.
+dfa Ones over binary.B {
+    start  s
+    accept s
+    s    --1  --> s
+    s    --0  --> dead
+    dead --0,1--> dead
+}
+
+print binary.EvenZeros accepts "0110"
+print divisible_by(5) accepts "1010"  # 10 is divisible by 5
+
+# Words with an even number of 0s that are also multiples of 3.
+let both = intersect(binary.EvenZeros, divisible_by(3))
+for w in {"0", "11", "110", "1001"} {
+    print w, both accepts w
+}
+
+test equivalent(intersect(Ones, binary.EvenZeros), Ones)
+trace binary.EvenZeros on "010"

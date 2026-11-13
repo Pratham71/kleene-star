@@ -1,0 +1,23 @@
+# A small library for the import tests.
+alphabet B = {0, 1}
+
+# Words with an even number of 0s.
+dfa EvenZeros over B {
+    start q0
+    accept q0
+    q0 --0--> q1
+    q0 --1--> q0
+    q1 --0--> q0
+    q1 --1--> q1
+}
+
+let Greeting = "hello from lib"
+
+fn double(n: Int) -> Int {
+    return n * 2
+}
+
+# Fails when n is 0.
+fn wrap(n: Int) -> Int {
+    return 10 % n
+}

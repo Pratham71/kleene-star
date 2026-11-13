@@ -1,0 +1,12 @@
+Error in import_unknown_member.kstar, line 2:
+    print lib.EvnZeros accepts "0"
+              ^^^^^^^^
+NameError[E0208]: module `lib` has no `EvnZeros`
+  hint: did you mean `EvenZeros`?
+
+Error in import_unknown_member.kstar, line 3:
+    print lib.nothing_like_this
+              ^^^^^^^^^^^^^^^^^
+NameError[E0208]: module `lib` has no `nothing_like_this`
+
+2 errors found

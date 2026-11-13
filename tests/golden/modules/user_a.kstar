@@ -1,0 +1,4 @@
+import "shared.kstar"
+fn from_a() -> Int {
+    return shared.Seven + 1
+}
