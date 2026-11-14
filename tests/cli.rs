@@ -38,7 +38,7 @@ const BROKEN: &str = "let x = 1;\nprint y\nlet z = 1 + true\n";
 fn help_for_every_command() {
     let dir = scratch("help");
     let general = stdout(&kstar(&dir, &["help"]));
-    for command in ["run", "check", "fmt", "new", "trace", "export", "explain", "repl"] {
+    for command in ["run", "check", "fmt", "new", "trace", "export", "explain", "repl", "update", "version"] {
         assert!(general.contains(command), "help does not mention {command}");
         let specific = kstar(&dir, &[command, "--help"]);
         assert!(specific.status.success());

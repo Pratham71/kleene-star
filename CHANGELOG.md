@@ -33,6 +33,12 @@ its GitHub release, so write it for people who use Kleene Star.
 - The reference's list of keywords now includes `import`, `from` and `as`.
 - The README showed `from utils import f`, which is not valid; a `from`
   import names a file in quotes: `from "utils.kstar" import f`.
+- `kstar help update`, `kstar update --help`, `kstar help version` and
+  `kstar version --help` show help for that command, not the general help.
+- `kstar update` suggests the same install command as the README, which
+  needs only PowerShell or curl, instead of one that needed the GitHub CLI.
+- The VS Code extension uses minimatch 11.0.8, fixing a denial-of-service
+  advisory in the version it bundled before.
 
 ## [0.2.5-beta] - 2026-11-13
 

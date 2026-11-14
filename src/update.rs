@@ -82,15 +82,14 @@ fn latest_tag() -> Result<String, String> {
     Ok(tag.to_string())
 }
 
-/// The command that installs the latest release on this system.
+/// The command that installs the latest release on this system: the same
+/// one-liner as in the README, which needs only PowerShell or curl.
 fn install_command() -> String {
     let repo = repository();
     if cfg!(windows) {
-        format!(
-            "powershell -c \"gh api repos/{repo}/contents/install.ps1 -H 'Accept: application/vnd.github.raw' | Out-String | iex\""
-        )
+        format!("powershell -c \"irm https://raw.githubusercontent.com/{repo}/main/install.ps1 | iex\"")
     } else {
-        format!("gh api repos/{repo}/contents/install.sh -H \"Accept: application/vnd.github.raw\" | sh")
+        format!("curl -fsSL https://raw.githubusercontent.com/{repo}/main/install.sh | sh")
     }
 }
 

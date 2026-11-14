@@ -101,6 +101,23 @@ Options:
   --minimize         minimize the DFA first, for the smallest table
   --color <when>     auto (default), always or never";
 
+const UPDATE_HELP: &str = "\
+Usage: kstar update [--check]
+
+Asks GitHub for the latest stable release and says whether it is newer than
+this kstar. Without --check it also prints the command that installs it; kstar
+does not replace itself while it is running. Pre-releases (such as 0.2.5-beta)
+are not offered: install one by name with KSTAR_VERSION (see docs/install.md).
+
+Options:
+  --check   only say whether a newer release exists";
+
+const VERSION_HELP: &str = "\
+Usage: kstar version
+
+Shows this kstar's version, the commit it was built from, the build date and
+the platform it was built for. `kstar --version` and `kstar -V` do the same.";
+
 const EXPLAIN_HELP: &str = "\
 Usage: kstar explain <code>
 
@@ -186,6 +203,8 @@ fn help(command: Option<&str>) -> ExitCode {
         Some("repl") => REPL_HELP,
         Some("trace") => TRACE_HELP,
         Some("export") => EXPORT_HELP,
+        Some("update") => UPDATE_HELP,
+        Some("version") => VERSION_HELP,
         Some(_) => USAGE,
     };
     println!("{text}");
