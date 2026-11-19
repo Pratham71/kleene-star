@@ -12,6 +12,22 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-19
+
+Four new standard-library modules for the subject itself, and a way to move
+machines to and from other tools as JSON. `std.automata` builds the machines
+that come up again and again and answers questions the built-ins only answer
+with yes or no; `std.regex` keeps regexes as regexes; `std.binary` does binary
+numbers; `std.testing` makes a failing `test` say why.
+
+### Upgrading from 0.3.0
+
+Programs that ran under 0.3.0 run the same, with one exception: `to_json` and
+`from_json` are now built-in functions, so a program that defines a function
+with either name is an error (E0203). Rename the function. Nothing else needs
+changing; the new modules are reached by their full names (`std.automata...`)
+or imported, like the 0.3 ones.
+
 ### Added
 
 - **`std.automata`**: ready-made minimal DFAs for common patterns
@@ -51,6 +67,13 @@ its GitHub release, so write it for people who use Kleene Star.
 - Three new error codes: E0614 (a string that should be one symbol), E0615
   (no word with the asked-for property) and E0616 (text that is not a
   machine in the JSON format).
+
+### Changed
+
+- A library argument whose element type is not decided yet now says it
+  must be "an Int, a Str or a Bool" instead of "a T".
+- An error from a standard-library function about a symbol or an alphabet
+  is an `AlphabetError`, like the same error from a built-in.
 
 ## [0.3.0] - 2026-11-19
 
@@ -322,7 +345,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Pratham71/kleene-star/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pratham71/kleene-star/compare/v0.2.5-beta...v0.3.0
 [0.2.5-beta]: https://github.com/Pratham71/kleene-star/compare/v0.2.4-beta...v0.2.5-beta
 [0.2.4-beta]: https://github.com/Pratham71/kleene-star/compare/v0.2.3...v0.2.4-beta

@@ -192,12 +192,11 @@ which is installed next to `kstar`; see
 
 | | Version | What it has |
 |---|---|---|
-| Stable | **0.3.0** | Everything above: imports between files, `kstar export`, and the standard library (`std.math`, `std.string`, `std.collections`). The install scripts and `kstar update` use it. |
+| Stable | **0.4.0** | Everything above: imports between files, `kstar export` to Rust and JSON, and the standard library (`std.math`, `std.string`, `std.collections`, `std.automata`, `std.regex`, `std.binary`, `std.testing`). The install scripts and `kstar update` use it. |
 
 What changed in each version, and how to upgrade, is in the
-[changelog](CHANGELOG.md). Next are JSON import and export, then version 0.4 with more
-libraries (`std.automata`, `std.regex`, `std.binary`, `std.testing`) and a
-list type, and later packages; see [the design](docs/design.md).
+[changelog](CHANGELOG.md). Next are a list type and more libraries for grammars,
+PDAs and Turing machines, and later packages; see [the design](docs/design.md).
 
 Until version 0.2 the project was called TOC-Lang, with `.toc` files and a
 `toc` command.
