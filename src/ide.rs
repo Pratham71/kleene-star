@@ -929,7 +929,8 @@ print Even accepts \"00\", count
         let help = a.signature_help(at(main, "(4, 6), m", 0, 1)).unwrap();
         assert_eq!(help.label, "lcm(a: Int, b: Int) -> Int");
         let modules: Vec<String> = a.completions(at(main, "std.\n", 0, 4)).into_iter().map(|c| c.label).collect();
-        assert_eq!(modules, ["automata", "collections", "math", "string"]);
+        let expected: Vec<&str> = crate::lang::stdlib::MODULES.iter().map(|m| m.name).collect();
+        assert_eq!(modules, expected);
         let functions = a.completions(at(main, "std.math.\n", 0, 9));
         assert!(functions.iter().any(|c| c.label == "is_prime" && c.doc.as_deref().is_some_and(|d| d.contains("prime"))));
         let aliased: Vec<String> = a.completions(at(main, "m.pow", 0, 2)).into_iter().map(|c| c.label).collect();

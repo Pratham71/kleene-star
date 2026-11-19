@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_regex_min_above_max.kstar, line 1, in <main>
+    print std.regex.repeat_between(/a/, 4, 2)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MathError[E0609]: there is no number of copies from 4 to 2
+  hint: `min` must not be larger than `max`

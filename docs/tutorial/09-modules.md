@@ -304,6 +304,22 @@ print std.automata.is_finite(EvenOnes), std.automata.count_words(EvenOnes, 3)
 false 4
 ```
 
+`std.regex` keeps regexes as regexes. The built-in `concat(/a/, /b/)` is
+an `Nfa`; `std.regex.seq(/a/, /b/)` is the regex `/ab/`. It can also read a
+regex from a string made at run time:
+
+```kstar
+alphabet B = {0, 1}
+let three = std.regex.power(std.regex.any_of(B), 3)
+print three, std.regex.parse("(" + std.regex.text(three) + ")*")
+print std.regex.seq(/a|b/, /c/), std.regex.repeat_between(/a/, 2, 3)
+```
+
+```text
+/(0|1)(0|1)(0|1)/ /((0|1)(0|1)(0|1))*/
+/(a|b)c/ /aaa?/
+```
+
 ## Summary
 
 | You write | You get |

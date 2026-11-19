@@ -1,0 +1,8 @@
+# Mistakes the checker finds before anything runs.
+alphabet B = {0, 1}
+print std.regex.parse(/ab/)
+print std.regex.seq(/a/, "b")
+print std.regex.power(/a/, "2")
+print std.regex.any_of("01")
+print std.regex.size(/a/) + "x"
+print std.regex.star(/a/)

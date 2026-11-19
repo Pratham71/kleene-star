@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_regex_foreign_word.kstar, line 2, in <main>
+    print std.regex.ends_with(B, "012")
+                                 ^^^^^
+AlphabetError[E0501]: the word contains `2`, which is not in the alphabet
+  hint: the alphabet is {0, 1}

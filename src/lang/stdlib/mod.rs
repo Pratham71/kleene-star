@@ -20,6 +20,7 @@
 pub mod automata;
 pub mod collections;
 pub mod math;
+pub mod regex;
 pub mod string;
 
 use super::ast::Type;
@@ -84,6 +85,20 @@ pub struct Failure {
     pub hint: String,
 }
 
+/// Checks that every symbol of `word`, argument `arg` of a call, is in
+/// `alphabet`. `what` names the word in the message ("the pattern").
+pub fn word_over(word: &str, alphabet: &[char], arg: usize, what: &str) -> Result<(), Failure> {
+    match word.chars().find(|c| !alphabet.contains(c)) {
+        Some(c) => Err(Failure {
+            code: super::codes::FOREIGN_WORD,
+            arg: Some(arg),
+            message: format!("{what} contains `{c}`, which is not in the alphabet"),
+            hint: format!("the alphabet is {}", crate::automata::fmt_alphabet(alphabet)),
+        }),
+        None => Ok(()),
+    }
+}
+
 /// One library function.
 pub struct Function {
     pub name: &'static str,
@@ -114,7 +129,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[automata::MODULE, collections::MODULE, math::MODULE, string::MODULE];
+pub const MODULES: &[Module] = &[automata::MODULE, collections::MODULE, math::MODULE, regex::MODULE, string::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

@@ -1,0 +1,28 @@
+# Chapter 9: the standard library's std.regex. Regexes can be built from
+# pieces and from text while the program runs, and stay regexes, so they
+# print the way a person would write them.
+
+alphabet B = {0, 1}
+
+# Binary numbers without leading zeros: "0", or a 1 followed by anything.
+let bit = std.regex.any_of(B)
+let number = std.regex.alt(std.regex.literal("0"), std.regex.seq(/1/, std.regex.zero_or_more(bit)))
+print number
+for w in {"0", "101", "011", ""} {
+    print w, number accepts w
+}
+
+# Fixed-width fields: a 4-bit nibble, and one to three of them.
+let nibble = std.regex.power(bit, 4)
+let fields = std.regex.repeat_between(nibble, 1, 3)
+print std.regex.size(nibble), std.regex.size(fields)
+test fields accepts "10100001" and not (fields accepts "101")
+
+# A regex read from text, as an exercise sheet might give it, checked
+# against the library's own version of "ends in 01".
+let answer = std.regex.parse("(0|1)*01")
+test equivalent(answer, std.regex.ends_with(B, "01"))
+print "the answer, written back out:", std.regex.text(answer)
+
+# The library keeps regexes as regexes; the built-ins make machines.
+print std.regex.seq(/ab/, /c*/), concat(/ab/, /c*/)

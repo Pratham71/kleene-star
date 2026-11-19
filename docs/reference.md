@@ -453,6 +453,73 @@ print std.math.abs(-3), std.math.min(3, -2), std.math.max(3, -2)
 3 -2 3
 ```
 
+### `std.regex`
+
+Regular expressions built at run time and put together from pieces: from text, from a word or an alphabet, by choice, sequence and repetition, and the common prefix, suffix and substring forms.
+
+| Function | What it does |
+|---|---|
+| `parse(text: Str) -> Regex` | The regex written in `text`, in the same syntax as between slashes; text that is not a regex is an error. |
+| `literal(word: Str) -> Regex` | The regex that matches exactly `word` and nothing else. |
+| `any_of(alphabet: Alphabet) -> Regex` | The regex for any one symbol of `alphabet`, written out as a choice between them. |
+| `alt(a: Regex, b: Regex) -> Regex` | The choice of `a` or `b`: the words of either one. |
+| `seq(a: Regex, b: Regex) -> Regex` | `ab`: a word of `a` followed by a word of `b`. |
+| `zero_or_more(r: Regex) -> Regex` | `r*`: any number of words of `r` one after another, including none. |
+| `one_or_more(r: Regex) -> Regex` | `r+`: one or more words of `r` one after another. |
+| `optional(r: Regex) -> Regex` | `r?`: a word of `r`, or the empty string. |
+| `power(r: Regex, n: Int) -> Regex` | Exactly `n` words of `r` one after another; `power(r, 0)` matches only the empty string. |
+| `repeat_between(r: Regex, min: Int, max: Int) -> Regex` | From `min` to `max` words of `r` one after another, both included. |
+| `at_least(r: Regex, n: Int) -> Regex` | `n` or more words of `r` one after another. |
+| `starts_with(alphabet: Alphabet, prefix: Str) -> Regex` | The regex for the strings over `alphabet` that begin with `prefix`. |
+| `ends_with(alphabet: Alphabet, suffix: Str) -> Regex` | The regex for the strings over `alphabet` that end with `suffix`. |
+| `contains(alphabet: Alphabet, part: Str) -> Regex` | The regex for the strings over `alphabet` that contain `part` somewhere. |
+| `size(r: Regex) -> Int` | The number of parts of the regex: its symbols, operators and joins. |
+| `text(r: Regex) -> Str` | The regex written out as a string, without the slashes. |
+
+**Why a library for regexes.** The built-ins already combine languages,
+but they hand back machines: `concat(/a/, /b/)` and `star(/a/)` are `Nfa`s.
+These functions keep a `Regex` a `Regex`, so it still prints as a regex and
+can be compared with what a student wrote. `parse` reads a regex from a
+string made while the program runs, which a `/.../` literal cannot do. To go
+the other way, from a machine to a regex, use the built-in `to_regex`.
+
+The results are simplified as they are built, with the identities a
+textbook uses: `[]` disappears from a choice and swallows a sequence, `()`
+disappears from a sequence, and `(r*)*` is `r*`. So `power(r, 0)` is `()`,
+and `repeat_between(/a/, 1, 3)` prints as `a(aa?)?`: the optional copies
+are nested so that each word splits into copies in only one way.
+
+`starts_with(B, "01")` is `01(0|1)*`, with the alphabet written out; it is
+the regex counterpart of `std.automata.starts_with`, which builds the
+smallest DFA instead.
+
+`parse` reports a bad regex as a `ValueError` (E0105) with the parser's
+message. A negative number of copies is E0610, `min` larger than `max` is
+E0609, a word with a symbol outside the alphabet is E0501, and a result of
+more than 20000 parts (the same limit as for a regex the parser reads) is a
+`LimitError` (E0612), checked before anything is built.
+
+```kstar
+alphabet B = {0, 1}
+let digit = std.regex.any_of(B)
+let byte = std.regex.power(digit, 8)
+print std.regex.text(std.regex.power(digit, 3)), std.regex.size(byte)
+print byte accepts "01100001", byte accepts "0110"
+let typed = std.regex.parse("1(0|1)*")
+let no_leading_zero = std.regex.alt(std.regex.literal("0"), typed)
+print no_leading_zero
+print std.regex.repeat_between(std.regex.literal("ab"), 1, 3), std.regex.at_least(/a/, 2)
+print std.regex.contains(B, "11"), equivalent(std.regex.ends_with(B, "01"), std.automata.ends_with(B, "01"))
+```
+
+```text
+(0|1)(0|1)(0|1) 31
+true false
+/0|1(0|1)*/
+/ab(ab(ab)?)?/ /aaa*/
+/(0|1)*11(0|1)*/ true
+```
+
 ### `std.string`
 
 Words as data: searching, slicing, repeating, and the prefixes, suffixes and substrings of a word.

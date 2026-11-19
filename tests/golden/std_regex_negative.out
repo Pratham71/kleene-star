@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_regex_negative.kstar, line 1, in <main>
+    print std.regex.power(/ab/, 0 - 1)
+                                ^^^^^
+ValueError[E0610]: a number of copies cannot be negative, but this is -1
+  hint: use 0 or more

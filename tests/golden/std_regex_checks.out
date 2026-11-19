@@ -1,0 +1,33 @@
+Error in std_regex_checks.kstar, line 3:
+    print std.regex.parse(/ab/)
+                          ^^^^
+TypeError[E0300]: argument 1 of `std.regex.parse` must be a Str, but this is a Regex
+
+Error in std_regex_checks.kstar, line 4:
+    print std.regex.seq(/a/, "b")
+                             ^^^
+TypeError[E0300]: argument 2 of `std.regex.seq` must be a Regex, but this is a Str
+
+Error in std_regex_checks.kstar, line 5:
+    print std.regex.power(/a/, "2")
+                               ^^^
+TypeError[E0300]: argument 2 of `std.regex.power` must be an Int, but this is a Str
+
+Error in std_regex_checks.kstar, line 6:
+    print std.regex.any_of("01")
+                           ^^^^
+TypeError[E0300]: argument 1 of `std.regex.any_of` must be an Alphabet, but this is a Str
+
+Error in std_regex_checks.kstar, line 7:
+    print std.regex.size(/a/) + "x"
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is an Int and the right side is a Str
+  hint: an Int is not turned into a Str by itself; `print` can show both: `print "n =", n`
+
+Error in std_regex_checks.kstar, line 8:
+    print std.regex.star(/a/)
+                    ^^^^
+NameError[E0208]: `std.regex` has no `star`
+  hint: it defines `alt`, `any_of`, `at_least`, `contains`, `ends_with`, `literal` and 10 more
+
+6 errors found
