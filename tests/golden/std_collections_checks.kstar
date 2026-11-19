@@ -1,0 +1,12 @@
+# Mistakes the checker finds before anything runs.
+from std.collections import union
+from std.collections import intersect as intersect2, difference
+from std.collections import contains as has, size as len
+print std.collections.contains({1, 2}, "a")
+print std.collections.union({1}, {"a"})
+print std.collections.union({1}, 2)
+print std.collections.min({"a"})
+print std.collections.sum(5)
+print std.collections.words(3, 3)
+print std.collections.powerset({1, 2})
+print std.collections.min({}) + "a"

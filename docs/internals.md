@@ -515,7 +515,11 @@ Say the new module is `std.string`.
    `pub const MODULE: Module = Module { name: "string", doc: "...", functions: &[...] };`,
    one `Function` per function. Copy the shape of `math.rs`: a one-line
    `doc` that reads as a sentence, parameter names that say what they are
-   for, and `Ty`s for the types (`Ty::Set(&Ty::Str)` for a `Set[Str]`).
+   for, and `Ty`s for the types (`Ty::Set(&Ty::Str)` for a `Set[Str]`). A function
+   that works for any kind of set uses `Ty::Elem`, the type variable `T`:
+   `Ty::Set(&Ty::Elem)` is a `Set[T]`. `check_arguments` decides `T` from
+   the first argument that shows it and requires the rest to agree
+   (`std.collections` is the example).
 2. **Implement each function** as `fn name(args: &[Value]) -> Result<Value, Failure>`.
    The checker has already made sure each argument has its declared type,
    so take them apart with `match` and `unreachable!` for the impossible

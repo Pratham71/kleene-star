@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_collections_max_empty.kstar, line 3, in <main>
+    print std.collections.max(std.collections.difference({1}, {1}))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0613]: the largest member of an empty set is not defined
+  hint: check `size(s) > 0` before asking for the largest member

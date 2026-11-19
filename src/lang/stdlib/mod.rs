@@ -17,6 +17,7 @@
 //! To add a module, see "Adding a standard-library module" in
 //! `docs/internals.md`.
 
+pub mod collections;
 pub mod math;
 pub mod string;
 
@@ -41,6 +42,9 @@ pub enum Ty {
     Pda,
     Tm,
     Set(&'static Ty),
+    /// The element type `T` of a generic function: `Set(&Ty::Elem)` is a
+    /// `Set[T]`. The checker fills it in from the arguments of each call.
+    Elem,
 }
 
 impl Ty {
@@ -58,6 +62,7 @@ impl Ty {
             Ty::Pda => Type::Pda,
             Ty::Tm => Type::Tm,
             Ty::Set(inner) => Type::Set(Box::new(inner.to_type())),
+            Ty::Elem => Type::Var,
         }
     }
 }
@@ -103,7 +108,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[math::MODULE, string::MODULE];
+pub const MODULES: &[Module] = &[collections::MODULE, math::MODULE, string::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

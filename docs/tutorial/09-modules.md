@@ -259,6 +259,31 @@ error: write `std.string.reverse`, or take it under another name with
 so is a result that would be too big to build, such as
 `std.string.repeat("ab", 1000000000000)`.
 
+`std.collections` works on sets, the only collection the language has. A
+set holds Ints, Strs or Bools, and the functions agree on which: you can ask
+whether a Str is in a set of Strs, but not an Int. `words(alphabet, n)` lists
+every string of length `n` over an alphabet, which makes it easy to test a
+machine on all short words:
+
+```kstar
+alphabet B = {0, 1}
+let a = {1, 2, 3, 4}
+print std.collections.union(a, {9}), std.collections.is_subset({1, 2}, a)
+print std.collections.size(std.collections.words(B, 3)), std.collections.max(a)
+```
+
+```text
+{1, 2, 3, 4, 9} true
+8 4
+```
+
+The library's `union`, `intersect` and `difference` are *not* the built-ins
+of the same names. The built-ins take two languages and make a machine
+(`union({"a"}, {"b"})` is a Dfa); these take two sets and give a set. So
+`from std.collections import union` is an error that suggests `as` or the
+full name. There is no power set and no set of pairs, because a set cannot
+hold other sets.
+
 ## Summary
 
 | You write | You get |

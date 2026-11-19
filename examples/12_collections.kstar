@@ -1,0 +1,31 @@
+# Chapter 9: the standard library's std.collections. A language over a small
+# alphabet can be explored by listing every word of a length, and sets can be
+# compared with set operations.
+
+alphabet B = {0, 1}
+
+dfa EvenOnes over B {
+    start  e
+    accept e
+    e --0--> e
+    e --1--> o
+    o --0--> o
+    o --1--> e
+}
+
+# All 8 words of length 3, and which of them the machine accepts.
+let all = std.collections.words(B, 3)
+print std.collections.size(all), all
+for w in all {
+    print w, EvenOnes accepts w
+}
+
+# Sets of words can be compared: the words with exactly two 1s are a subset.
+let two_ones = {"011", "101", "110"}
+print std.collections.is_subset(two_ones, all), std.collections.contains(all, "111")
+print std.collections.difference(all, two_ones)
+
+# `std.collections.union` joins the members of two sets and gives a set; the
+# built-in `union` makes a machine from two languages.
+print std.collections.union({1, 2}, {2, 3}), std.collections.sum(1..5)
+print std.collections.min({4, 2, 9}), std.collections.max({4, 2, 9})

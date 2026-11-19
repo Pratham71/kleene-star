@@ -369,6 +369,10 @@ pub enum Type {
     Set(Box<Type>),
     /// The type of `{}`, which fits any `Set[T]`.
     EmptySet,
+    /// The element type in a library function's signature, as in
+    /// `contains(s: Set[T], x: T)`: it stands for whatever the arguments
+    /// show it to be. Only library tables write it; a program never has it.
+    Var,
 }
 
 impl std::fmt::Display for Type {
@@ -386,6 +390,7 @@ impl std::fmt::Display for Type {
             Type::Tm => write!(f, "Tm"),
             Type::Set(inner) => write!(f, "Set[{inner}]"),
             Type::EmptySet => write!(f, "Set[?]"),
+            Type::Var => write!(f, "T"),
         }
     }
 }

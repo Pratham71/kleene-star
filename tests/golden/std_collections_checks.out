@@ -1,0 +1,61 @@
+Error in std_collections_checks.kstar, line 2:
+    from std.collections import union
+                                ^^^^^
+NameError[E0203]: `union` is a built-in function and cannot be redefined
+  hint: import it under another name with `as`, such as `... as my_union`, or call it by its full name
+
+Error in std_collections_checks.kstar, line 3:
+    from std.collections import intersect as intersect2, difference
+                                                         ^^^^^^^^^^
+NameError[E0203]: `difference` is a built-in function and cannot be redefined
+  hint: import it under another name with `as`, such as `... as my_difference`, or call it by its full name
+
+Error in std_collections_checks.kstar, line 4:
+    from std.collections import contains as has, size as len
+                                                         ^^^
+NameError[E0203]: `len` is a built-in function and cannot be redefined
+  hint: import it under another name with `as`, such as `... as my_len`, or call it by its full name
+
+Error in std_collections_checks.kstar, line 5:
+    print std.collections.contains({1, 2}, "a")
+                                           ^^^
+TypeError[E0300]: argument 2 of `std.collections.contains` must be an Int, but this is a Str
+
+Error in std_collections_checks.kstar, line 6:
+    print std.collections.union({1}, {"a"})
+                                     ^^^^^
+TypeError[E0300]: argument 2 of `std.collections.union` must be a Set[Int], but this is a Set[Str]
+
+Error in std_collections_checks.kstar, line 7:
+    print std.collections.union({1}, 2)
+                                     ^
+TypeError[E0300]: argument 2 of `std.collections.union` must be a Set[Int], but this is an Int
+
+Error in std_collections_checks.kstar, line 8:
+    print std.collections.min({"a"})
+                              ^^^^^
+TypeError[E0300]: argument 1 of `std.collections.min` must be a Set[Int], but this is a Set[Str]
+
+Error in std_collections_checks.kstar, line 9:
+    print std.collections.sum(5)
+                              ^
+TypeError[E0300]: argument 1 of `std.collections.sum` must be a Set[Int], but this is an Int
+
+Error in std_collections_checks.kstar, line 10:
+    print std.collections.words(3, 3)
+                                ^
+TypeError[E0300]: argument 1 of `std.collections.words` must be an Alphabet, but this is an Int
+
+Error in std_collections_checks.kstar, line 11:
+    print std.collections.powerset({1, 2})
+                          ^^^^^^^^
+NameError[E0208]: `std.collections` has no `powerset`
+  hint: it defines `contains`, `difference`, `intersect`, `is_subset`, `max`, `min` and 4 more
+
+Error in std_collections_checks.kstar, line 12:
+    print std.collections.min({}) + "a"
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is an Int and the right side is a Str
+  hint: an Int is not turned into a Str by itself; `print` can show both: `print "n =", n`
+
+11 errors found
