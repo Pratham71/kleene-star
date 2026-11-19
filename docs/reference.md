@@ -347,6 +347,81 @@ true false
 8 {"0101", "1001", "101"}
 ```
 
+### `std.binary`
+
+Binary numbers and bit strings over {0, 1}: divisibility and remainders, numerals without leading zeros, fixed widths, parity, runs of equal bits, and converting between Ints and bit strings.
+
+| Function | What it does |
+|---|---|
+| `divisible_by(n: Int) -> Dfa` | The bit strings whose value is a multiple of `n`, as the machine with one state per remainder. |
+| `remainder(n: Int, r: Int) -> Dfa` | The bit strings whose value leaves remainder `r` when divided by `n`. |
+| `no_leading_zeros() -> Dfa` | Numerals written without leading zeros: `0`, or a `1` followed by any bits. |
+| `fixed_width(n: Int) -> Dfa` | The bit strings of exactly `n` bits. |
+| `even_parity() -> Dfa` | The bit strings with an even number of 1s. |
+| `odd_parity() -> Dfa` | The bit strings with an odd number of 1s. |
+| `run_at_most(bit: Str, k: Int) -> Dfa` | The bit strings in which `bit` never appears more than `k` times in a row. |
+| `to_binary(n: Int) -> Str` | `n` written in binary without leading zeros; `n` must not be negative, and 0 is `"0"`. |
+| `from_binary(bits: Str) -> Int` | The value of a bit string, most significant bit first; leading zeros do not count and `""` is 0. |
+
+Every machine here is over the alphabet `{0, 1}`, so none of the functions
+takes an alphabet; combine them with machines `over` an alphabet `{0, 1}`.
+
+**How a bit string is a number.** It is read most significant bit first,
+the way numbers are written: `110` is 6. Leading zeros do not change the
+value, so `0110` is 6 too, and the empty string counts as 0. That is the
+reading under which the machines are correct, and it means
+`divisible_by(3)` accepts `""`, `"0"` and `"0011"`. To accept only
+numerals written the usual way, intersect with `no_leading_zeros()`:
+`intersect(std.binary.divisible_by(3), std.binary.no_leading_zeros())`.
+
+**The remainder machine.** `divisible_by(n)` and `remainder(n, r)` have
+one state per remainder, `r0` to `r{n-1}`. Reading a bit `b` after a
+number `x` makes the number `2x + b`, so the remainder `i` becomes
+`(2i + b) mod n`: the machine only ever needs to remember the remainder.
+This is the machine a textbook proof builds, and it is minimal when `n` is
+odd; for an even `n`, `minimize` makes it smaller. `run_at_most` names its
+states `run0`, `run1`, ... for the length of the current run, and `dead`.
+
+**Relation to other modules.** `fixed_width(n)` is
+`std.automata.length_between(B, n, n)`, and the parity machines are
+`std.automata.count_mod(B, "1", 2, 0)` and `(..., 1)`, over `{0, 1}`.
+
+`to_binary` and `from_binary` connect machines to arithmetic, which makes
+proof-style checks short: `for n in 0..64 { test (D accepts to_binary(n)) == (n % 3 == 0) }`.
+A divisor below 1 or a remainder outside 0 to `n - 1` is a `MathError`
+(E0609), as is a negative number for `to_binary`; a negative width or run
+length is E0610; `bit` must be `"0"` or `"1"` (E0614, E0500); a machine of
+more than 10000 states is E0612. `from_binary` refuses anything but 0s and
+1s (E0611) and values past the largest Int (E0600).
+
+```kstar
+alphabet B = {0, 1}
+let Div3 = std.binary.divisible_by(3)
+print Div3
+for n in 0..64 {
+    test (Div3 accepts std.binary.to_binary(n)) == (n % 3 == 0)
+}
+print Div3 accepts "", Div3 accepts "0110", std.binary.from_binary("0110")
+let Numerals = intersect(Div3, std.binary.no_leading_zeros())
+print Numerals accepts "0110", Numerals accepts "110"
+print states(std.binary.divisible_by(4)), states(minimize(std.binary.divisible_by(4)))
+test equivalent(std.binary.divisible_by(6), intersect(std.binary.divisible_by(2), std.binary.divisible_by(3)))
+print std.automata.count_words(std.binary.run_at_most("1", 1), 10)
+```
+
+```text
+DFA with 3 states over {0, 1}
+       | 0  | 1
+-> *r0 | r0 | r1
+    r1 | r2 | r0
+    r2 | r1 | r2
+true true 6
+false true
+4 3
+144
+tests: 65 passed, 0 failed
+```
+
 ### `std.collections`
 
 Sets: membership, subsets, union, intersection, difference, size, smallest, largest and sum, and every word of a given length over an alphabet.

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_overflow.kstar, line 1, in <main>
+    print std.binary.from_binary("1000000000000000000000000000000000000000000000000000000000000000")
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MathError[E0600]: the value of these 64 bits is too large for an Int
+  hint: Ints are 64-bit: the largest is 63 ones in a row

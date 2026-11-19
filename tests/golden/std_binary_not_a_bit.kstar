@@ -1,0 +1,1 @@
+print std.binary.run_at_most("2", 1)

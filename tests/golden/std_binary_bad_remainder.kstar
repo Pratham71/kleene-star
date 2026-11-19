@@ -1,0 +1,1 @@
+print std.binary.remainder(3, 5)

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_too_large.kstar, line 1, in <main>
+    print std.binary.divisible_by(1000000)
+                                  ^^^^^^^
+LimitError[E0612]: a divisor of 1000000 would need more than 10000 states
+  hint: the machines of the standard library are limited to 10000 states

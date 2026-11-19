@@ -28,6 +28,11 @@ its GitHub release, so write it for people who use Kleene Star.
   `seq`, `zero_or_more`, `one_or_more`, `optional`, `power`,
   `repeat_between`, `at_least`, the prefix, suffix and substring forms
   `starts_with`, `ends_with`, `contains`, and `size` and `text`.
+- **`std.binary`**: machines over `{0, 1}` for binary numbers and bit
+  strings (`divisible_by`, `remainder`, `no_leading_zeros`, `fixed_width`,
+  `even_parity`, `odd_parity`, `run_at_most`) and the conversions
+  `to_binary` and `from_binary`. A bit string is read most significant bit
+  first; leading zeros do not count, and the empty string is 0.
 - Two new error codes: E0614 (a string that should be one symbol) and E0615
   (no word with the asked-for property).
 

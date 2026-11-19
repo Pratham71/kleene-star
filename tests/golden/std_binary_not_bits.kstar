@@ -1,0 +1,1 @@
+print std.binary.from_binary("10a1")

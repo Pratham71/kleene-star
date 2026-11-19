@@ -1,0 +1,37 @@
+# Chapter 9: the standard library's std.binary. Machines for binary numbers,
+# checked against arithmetic on every number up to a bound, and two facts
+# from number theory checked once and for all with `equivalent`.
+
+alphabet B = {0, 1}
+
+# The machine for multiples of 3 has one state per remainder.
+let Div3 = std.binary.divisible_by(3)
+print Div3
+trace Div3 on "1001"
+
+# Checked against arithmetic on the numbers 0 to 255.
+for n in 0..256 {
+    test (Div3 accepts std.binary.to_binary(n)) == (n % 3 == 0)
+}
+
+# Divisible by 6 means divisible by 2 and by 3, since 2 and 3 have no common
+# factor. `equivalent` checks it for every bit string at once, not only for
+# the ones tried above.
+let Div6 = std.binary.divisible_by(6)
+test equivalent(Div6, intersect(std.binary.divisible_by(2), Div3))
+
+# Divisible by 4 means ending in 00 (or being 0, "0" or ""), so the four
+# remainder states shrink to three once minimized.
+print states(std.binary.divisible_by(4)), states(minimize(std.binary.divisible_by(4)))
+
+# Leading zeros: the machines read "0110" as 6. Numerals written the usual
+# way have no leading zeros.
+let Numerals = intersect(Div3, std.binary.no_leading_zeros())
+print Div3 accepts "0110", Numerals accepts "0110", Numerals accepts "110"
+
+# Strings with no two 1s together: their number grows like the Fibonacci
+# numbers (2, 3, 5, 8, 13, ...).
+let Sparse = std.binary.run_at_most("1", 1)
+for n in 1..8 {
+    print n, std.automata.count_words(Sparse, n)
+}

@@ -1,0 +1,1 @@
+print std.binary.divisible_by(0)

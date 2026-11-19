@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_negative_width.kstar, line 1, in <main>
+    print std.binary.fixed_width(0 - 2)
+                                 ^^^^^
+ValueError[E0610]: a length cannot be negative, but this is -2
+  hint: use 0 or more

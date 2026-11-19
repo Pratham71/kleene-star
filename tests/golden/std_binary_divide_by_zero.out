@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_divide_by_zero.kstar, line 1, in <main>
+    print std.binary.divisible_by(0)
+                                  ^
+MathError[E0609]: cannot divide by 0
+  hint: the divisor must be 1 or more

@@ -1412,7 +1412,8 @@ ValueError[E0613]: the largest member of an empty set is not defined
 ## E0614: A string that should be one symbol
 
 A function of `std.automata` that counts a symbol (`exactly`, `at_least`,
-`at_most`, `count_mod`) takes the symbol as a string, and that string must be
+`at_most`, `count_mod`), and `std.binary.run_at_most`, takes the symbol as
+a string, and that string must be
 exactly one symbol long. Empty strings and longer words are refused.
 
 ```kstar-error

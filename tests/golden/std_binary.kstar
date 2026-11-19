@@ -1,0 +1,23 @@
+# Every function of std.binary, through each way of reaching it.
+import std.binary
+import std.binary as bin
+from std.binary import to_binary, from_binary as value
+alphabet B = {0, 1}
+
+print std.binary.divisible_by(3)
+print binary.remainder(4, 1)
+print bin.no_leading_zeros()
+print bin.fixed_width(2)
+print bin.even_parity()
+print bin.odd_parity()
+print bin.run_at_most("1", 1)
+print to_binary(0), to_binary(5), to_binary(9223372036854775807)
+print value(""), value("0"), value("000101"), value("111111111111111111111111111111111111111111111111111111111111111")
+for n in 0..200 {
+    test (bin.divisible_by(7) accepts to_binary(n)) == (n % 7 == 0)
+    test bin.remainder(5, n % 5) accepts to_binary(n)
+    test value(to_binary(n)) == n
+}
+test bin.divisible_by(1) accepts ""
+test equivalent(bin.fixed_width(3), std.automata.length_between(B, 3, 3))
+test equivalent(bin.even_parity(), std.automata.count_mod(B, "1", 2, 0))

@@ -1,0 +1,1 @@
+print std.binary.to_binary(0 - 6)

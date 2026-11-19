@@ -20,7 +20,7 @@
 //! where they test one string. Here they build a machine for every string
 //! with that start or end.
 
-use super::{Failure, Function, Module, Ty};
+use super::{alphabet_arg, int_arg as int, str_arg as text, Failure, Function, Module, Ty};
 use crate::automata::{fmt_alphabet, ops, patterns, questions, Dfa};
 use crate::lang::codes;
 use crate::lang::langs;
@@ -55,31 +55,10 @@ pub const MODULE: Module = Module {
 
 // ---- reading the arguments ----
 
-fn alphabet(args: &[Value]) -> &[char] {
-    match &args[0] {
-        Value::Alphabet(symbols) => symbols,
-        other => unreachable!("the checker allowed {other:?} as an Alphabet"),
-    }
-}
-
-fn text(args: &[Value], i: usize) -> &str {
-    match &args[i] {
-        Value::Str(s) => s,
-        other => unreachable!("the checker allowed {other:?} as a Str"),
-    }
-}
-
-fn int(args: &[Value], i: usize) -> i64 {
-    match &args[i] {
-        Value::Int(n) => *n,
-        other => unreachable!("the checker allowed {other:?} as an Int"),
-    }
-}
-
 /// Argument `i`: a word whose every symbol is in the alphabet, and short
 /// enough to become one state per symbol.
 fn pattern(args: &[Value], i: usize) -> Result<Vec<char>, Failure> {
-    super::word_over(text(args, i), alphabet(args), i, "the pattern")?;
+    super::word_over(text(args, i), alphabet_arg(args, 0), i, "the pattern")?;
     let word: Vec<char> = text(args, i).chars().collect();
     if word.len() as i64 > MAX_STATES {
         return Err(too_many_states(i, "a pattern", word.len() as i64));
@@ -89,7 +68,7 @@ fn pattern(args: &[Value], i: usize) -> Result<Vec<char>, Failure> {
 
 /// Argument `i`: one symbol of the alphabet, written as a string.
 fn symbol(args: &[Value], i: usize) -> Result<char, Failure> {
-    let symbols = alphabet(args);
+    let symbols = alphabet_arg(args, 0);
     let given = text(args, i);
     let mut chars = given.chars();
     let (Some(c), None) = (chars.next(), chars.next()) else {
@@ -128,12 +107,12 @@ fn count(args: &[Value], i: usize, what: &str) -> Result<usize, Failure> {
     Ok(n as usize)
 }
 
-fn too_many_states(arg: usize, what: &str, n: i64) -> Failure {
+pub(super) fn too_many_states(arg: usize, what: &str, n: i64) -> Failure {
     Failure {
         code: codes::RESULT_TOO_LARGE,
         arg: Some(arg),
         message: format!("{what} of {n} would need more than {MAX_STATES} states"),
-        hint: format!("pattern machines are limited to {MAX_STATES} states"),
+        hint: format!("the machines of the standard library are limited to {MAX_STATES} states"),
     }
 }
 
@@ -180,38 +159,38 @@ fn dfa(args: &[Value]) -> Dfa {
 // ---- pattern machines ----
 
 fn starts_with(args: &[Value]) -> Result<Value, Failure> {
-    Ok(Value::dfa(patterns::starts_with(alphabet(args), &pattern(args, 1)?)))
+    Ok(Value::dfa(patterns::starts_with(alphabet_arg(args, 0), &pattern(args, 1)?)))
 }
 
 fn ends_with(args: &[Value]) -> Result<Value, Failure> {
-    Ok(Value::dfa(patterns::ends_with(alphabet(args), &pattern(args, 1)?)))
+    Ok(Value::dfa(patterns::ends_with(alphabet_arg(args, 0), &pattern(args, 1)?)))
 }
 
 fn contains_substring(args: &[Value]) -> Result<Value, Failure> {
-    Ok(Value::dfa(patterns::contains(alphabet(args), &pattern(args, 1)?)))
+    Ok(Value::dfa(patterns::contains(alphabet_arg(args, 0), &pattern(args, 1)?)))
 }
 
 fn exactly(args: &[Value]) -> Result<Value, Failure> {
-    Ok(Value::dfa(patterns::count_exactly(alphabet(args), symbol(args, 1)?, count(args, 2, "a count")?)))
+    Ok(Value::dfa(patterns::count_exactly(alphabet_arg(args, 0), symbol(args, 1)?, count(args, 2, "a count")?)))
 }
 
 fn at_least(args: &[Value]) -> Result<Value, Failure> {
-    Ok(Value::dfa(patterns::count_at_least(alphabet(args), symbol(args, 1)?, count(args, 2, "a count")?)))
+    Ok(Value::dfa(patterns::count_at_least(alphabet_arg(args, 0), symbol(args, 1)?, count(args, 2, "a count")?)))
 }
 
 fn at_most(args: &[Value]) -> Result<Value, Failure> {
-    Ok(Value::dfa(patterns::count_at_most(alphabet(args), symbol(args, 1)?, count(args, 2, "a count")?)))
+    Ok(Value::dfa(patterns::count_at_most(alphabet_arg(args, 0), symbol(args, 1)?, count(args, 2, "a count")?)))
 }
 
 fn count_mod(args: &[Value]) -> Result<Value, Failure> {
     let c = symbol(args, 1)?;
     let (m, r) = modulus(args, 2)?;
-    Ok(Value::dfa(patterns::count_mod(alphabet(args), c, m, r)))
+    Ok(Value::dfa(patterns::count_mod(alphabet_arg(args, 0), c, m, r)))
 }
 
 fn length_mod(args: &[Value]) -> Result<Value, Failure> {
     let (m, r) = modulus(args, 1)?;
-    Ok(Value::dfa(patterns::length_mod(alphabet(args), m, r)))
+    Ok(Value::dfa(patterns::length_mod(alphabet_arg(args, 0), m, r)))
 }
 
 fn length_between(args: &[Value]) -> Result<Value, Failure> {
@@ -225,7 +204,7 @@ fn length_between(args: &[Value]) -> Result<Value, Failure> {
             hint: "`min` must not be larger than `max`".into(),
         });
     }
-    Ok(Value::dfa(patterns::length_between(alphabet(args), min, max)))
+    Ok(Value::dfa(patterns::length_between(alphabet_arg(args, 0), min, max)))
 }
 
 // ---- questions ----

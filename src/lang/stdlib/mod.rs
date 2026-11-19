@@ -18,6 +18,7 @@
 //! `docs/internals.md`.
 
 pub mod automata;
+pub mod binary;
 pub mod collections;
 pub mod math;
 pub mod regex;
@@ -85,6 +86,36 @@ pub struct Failure {
     pub hint: String,
 }
 
+// ---- reading arguments ----
+//
+// A library function gets values the checker has already given the right
+// types, so these only take them apart; any other value is a bug in the
+// checker, not a mistake in the program.
+
+/// Argument `i`, an `Int`.
+pub fn int_arg(args: &[Value], i: usize) -> i64 {
+    match &args[i] {
+        Value::Int(n) => *n,
+        other => unreachable!("the checker allowed {other:?} as an Int"),
+    }
+}
+
+/// Argument `i`, a `Str`.
+pub fn str_arg(args: &[Value], i: usize) -> &str {
+    match &args[i] {
+        Value::Str(s) => s,
+        other => unreachable!("the checker allowed {other:?} as a Str"),
+    }
+}
+
+/// Argument `i`, an `Alphabet`.
+pub fn alphabet_arg(args: &[Value], i: usize) -> &[char] {
+    match &args[i] {
+        Value::Alphabet(symbols) => symbols,
+        other => unreachable!("the checker allowed {other:?} as an Alphabet"),
+    }
+}
+
 /// Checks that every symbol of `word`, argument `arg` of a call, is in
 /// `alphabet`. `what` names the word in the message ("the pattern").
 pub fn word_over(word: &str, alphabet: &[char], arg: usize, what: &str) -> Result<(), Failure> {
@@ -129,7 +160,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[automata::MODULE, collections::MODULE, math::MODULE, regex::MODULE, string::MODULE];
+pub const MODULES: &[Module] = &[automata::MODULE, binary::MODULE, collections::MODULE, math::MODULE, regex::MODULE, string::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

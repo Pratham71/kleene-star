@@ -304,6 +304,23 @@ print std.automata.is_finite(EvenOnes), std.automata.count_words(EvenOnes, 3)
 false 4
 ```
 
+`std.binary` has the machines for binary numbers, and `to_binary` to test
+them on many numbers at once. A bit string is read most significant bit
+first; leading zeros do not count, and `""` is 0:
+
+```kstar
+let Div5 = std.binary.divisible_by(5)
+for n in 0..100 {
+    test (Div5 accepts std.binary.to_binary(n)) == (n % 5 == 0)
+}
+print states(Div5), std.binary.to_binary(10), std.binary.from_binary("1010")
+```
+
+```text
+5 1010 10
+tests: 100 passed, 0 failed
+```
+
 `std.regex` keeps regexes as regexes. The built-in `concat(/a/, /b/)` is
 an `Nfa`; `std.regex.seq(/a/, /b/)` is the regex `/ab/`. It can also read a
 regex from a string made at run time:
