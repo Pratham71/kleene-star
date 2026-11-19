@@ -429,6 +429,15 @@ impl Checker {
         if name.text == "std" {
             return Err(std_reserved(name.span));
         }
+        // A built-in keeps its name: `reverse` always means the built-in on
+        // languages, so `from std.string import reverse` would make two
+        // different functions share one name. Import it under another name,
+        // or call it by its full name, `std.string.reverse`.
+        if builtins::NAMES.contains(&name.text.as_str()) {
+            return Err(Diag::new(ErrorKind::Name, name.span, format!("`{}` is a built-in function and cannot be redefined", name.text))
+                .code(codes::BUILTIN_REDEFINED)
+                .hint(format!("import it under another name with `as`, such as `... as my_{}`, or call it by its full name", name.text)));
+        }
         let taken = self.scopes[0].contains_key(&name.text)
             || self.funcs.contains_key(&name.text)
             || self.aliases.contains_key(&name.text);

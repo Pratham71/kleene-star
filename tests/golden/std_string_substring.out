@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_string_substring.kstar, line 3, in <main>
+    print std.string.substring("hello", 4, 2)
+                                           ^
+ValueError[E0610]: end 2 is not between start (4) and the length (5)
+  hint: `end` runs from `start` to 5, and the character at `end` is not included

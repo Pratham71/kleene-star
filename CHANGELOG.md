@@ -14,6 +14,15 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Added
 
+- `std.string`, the second standard-library module: `length`, `reverse`,
+  `repeat`, `contains`, `starts_with`, `ends_with`, `index_of` (-1 when
+  absent), `count` (non-overlapping), `substring`, `char_at`, `to_int`,
+  `from_int`, `is_palindrome`, and the set-valued `symbols`, `prefixes`,
+  `suffixes` and `substrings` (each but `symbols` includes the empty
+  string). Indices count characters, not bytes. Bad indices, a negative
+  repeat count and text that is not a number are errors with hints (new
+  codes E0610 and E0611); a result over 1000000 characters is an error
+  (E0612), not a hang. `std.string.length` is the same as `len` on a Str.
 - An animation at the top of the README shows a regular expression becoming
   an eps-NFA, a DFA and a minimal DFA, drawn from real `kstar` output.
 - Two more animations, in the README and the tutorial: a DFA written a line
@@ -26,6 +35,10 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Changed
 
+- Taking a built-in's name with `import ... as` or `from ... import`, as in
+  `from std.string import reverse`, is now an error (E0203) with a hint to
+  use `as` or the full name. Library errors that are not arithmetic are now
+  `ValueError` or `LimitError` instead of `MathError`.
 - The notes of each GitHub release now come from this file.
 
 ### Fixed

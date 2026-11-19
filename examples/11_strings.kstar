@@ -1,0 +1,26 @@
+# Chapter 9: the standard library's std.string. Words are data, so we can
+# take them apart and test a machine on every piece of a word.
+
+alphabet B = {0, 1}
+
+dfa EvenOnes over B {
+    start  e
+    accept e
+    e --0--> e
+    e --1--> o
+    o --0--> o
+    o --1--> e
+}
+
+# The set of all substrings of a word includes "" (the empty string).
+let w = "0110"
+print std.string.substrings(w)
+
+# Which pieces does the machine accept, and which read the same backwards?
+for part in std.string.substrings(w) {
+    print part, EvenOnes accepts part, std.string.is_palindrome(part)
+}
+
+# Prefixes and suffixes, and a number hidden in text.
+print std.string.prefixes("01"), std.string.suffixes("01")
+print std.string.to_int("42") + 1, std.string.from_int(7) + std.string.repeat("0", 3)

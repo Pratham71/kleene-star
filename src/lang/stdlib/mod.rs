@@ -18,6 +18,7 @@
 //! `docs/internals.md`.
 
 pub mod math;
+pub mod string;
 
 use super::ast::Type;
 use super::index::{Def, DefKind};
@@ -102,7 +103,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[math::MODULE];
+pub const MODULES: &[Module] = &[math::MODULE, string::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

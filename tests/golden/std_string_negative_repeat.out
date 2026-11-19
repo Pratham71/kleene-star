@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_string_negative_repeat.kstar, line 3, in <main>
+    print std.string.repeat("ab", 0 - 1)
+                                  ^^^^^
+ValueError[E0610]: cannot repeat a string -1 times
+  hint: the count must be 0 or more; `repeat(s, 0)` is the empty string

@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_string_substrings_too_large.kstar, line 3, in <main>
+    print std.string.substrings(std.string.repeat("a", 200))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0612]: the substrings would be too large to build (over 1000000 characters)
+  hint: use a shorter string, or reason about the language instead of building every word

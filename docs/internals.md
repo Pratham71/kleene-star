@@ -499,7 +499,9 @@ loader, the checker (`resolve_path`, `check_arguments`) and the editor
 (hover, completion after `std.` and `std.math.`, signature help) treat a
 library function exactly like a function imported from a file. The
 interpreter's `callee` finds the entry with `stdlib::function` and calls its
-`run`; a `Failure` becomes a `MathError` pointing at the argument it names.
+`run`; a `Failure` becomes an error pointing at the argument it names: a
+`MathError` for `OVERFLOW` and `MATH_DOMAIN`, a `LimitError` for
+`RESULT_TOO_LARGE`, and a `ValueError` for every other code.
 
 A test (`the_reference_matches_the_table`) checks that `docs/reference.md`
 has a section for each module with one row per function, giving its exact

@@ -297,6 +297,66 @@ print std.math.abs(-3), std.math.min(3, -2), std.math.max(3, -2)
 3 -2 3
 ```
 
+### `std.string`
+
+Words as data: searching, slicing, repeating, and the prefixes, suffixes and substrings of a word.
+
+| Function | What it does |
+|---|---|
+| `char_at(s: Str, i: Int) -> Str` | The character of `s` at index `i`, counting from 0, as a string of length 1. |
+| `contains(s: Str, part: Str) -> Bool` | Whether `part` occurs anywhere inside `s`; the empty string occurs in every string. |
+| `count(s: Str, part: Str) -> Int` | How many times `part` occurs in `s`, not overlapping: `count("aaaa", "aa")` is 2; `part` must not be empty. |
+| `ends_with(s: Str, suffix: Str) -> Bool` | Whether `s` ends with `suffix`. |
+| `from_int(n: Int) -> Str` | The digits of `n` as a string, with a leading `-` if it is negative. |
+| `index_of(s: Str, part: Str) -> Int` | The index of the first occurrence of `part` in `s`, or -1 if there is none. |
+| `is_palindrome(s: Str) -> Bool` | Whether `s` reads the same backwards; the empty string does. |
+| `length(s: Str) -> Int` | The number of characters in `s`; the same as `len(s)`. |
+| `prefixes(s: Str) -> Set[Str]` | Every prefix of `s`, including the empty string and `s` itself. |
+| `repeat(s: Str, n: Int) -> Str` | `s` written `n` times in a row; `n` must not be negative, and the result at most 1000000 characters. |
+| `reverse(s: Str) -> Str` | The characters of `s` in the opposite order. |
+| `starts_with(s: Str, prefix: Str) -> Bool` | Whether `s` starts with `prefix`. |
+| `substring(s: Str, start: Int, end: Int) -> Str` | The characters of `s` from index `start` up to, but not including, index `end`; needs `0 <= start <= end <= length(s)`. |
+| `substrings(s: Str) -> Set[Str]` | Every substring of `s` (a run of neighbouring characters), including the empty string and `s` itself. |
+| `suffixes(s: Str) -> Set[Str]` | Every suffix of `s`, including the empty string and `s` itself. |
+| `symbols(s: Str) -> Set[Str]` | The distinct characters of `s`, each as a string of length 1; the empty string is not one of them. |
+| `to_int(s: Str) -> Int` | The number written in `s`: digits with an optional leading `-` or `+`, and nothing else. |
+
+Indices count characters, not bytes, from 0, and `substring(s, start, end)`
+leaves out the character at `end`. `length(s)` is the same as the built-in
+`len(s)`, which also measures sets and alphabets. The built-in `reverse`
+reverses a *language*; `std.string.reverse` reverses one *word*, so it has to
+be written in full or imported under another name
+(`from std.string import reverse as reverse_word`): importing it as plain
+`reverse` is an error, because that name belongs to the built-in.
+
+`prefixes`, `suffixes` and `substrings` return sets that always include the
+empty string (and the word itself). `symbols` does not include the empty
+string: it is the word's distinct characters, each as a one-character
+string. `index_of` gives -1 when there is no match, and `count` does not
+count overlapping matches (`count("aaaa", "aa")` is 2).
+
+A mistake in an argument is a `ValueError`: an index or count out of range
+is E0610, text `to_int` cannot read is E0611, and a number too large for an
+Int is E0600. A result of more than 1000000 characters (for a set, all its
+members added up) is a `LimitError`, E0612, instead of a hang.
+
+```kstar
+let w = "abracadabra"
+print std.string.length(w), std.string.count(w, "abra"), std.string.index_of(w, "cad")
+print std.string.substring(w, 4, 7), std.string.char_at(w, 0), std.string.reverse(w)
+print std.string.is_palindrome("level"), std.string.repeat("01", 3)
+print std.string.to_int("-42") + 1, std.string.from_int(7) + "!"
+print std.string.prefixes("ab"), std.string.symbols("abba")
+```
+
+```text
+11 2 4
+cad a arbadacarba
+true 010101
+-41 7!
+{"", "a", "ab"} {"a", "b"}
+```
+
 ## Types
 
 | Type | Values | Written as |

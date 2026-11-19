@@ -1,0 +1,25 @@
+# std.string: ordinary use, and the edge cases.
+import std.string as s
+from std.string import is_palindrome, substring as slice
+
+let w = "abracadabra"
+print s.length(w), len(w), s.reverse(w), s.repeat("ab", 3)
+print s.contains(w, "cad"), s.starts_with(w, "abra"), s.ends_with(w, "bra")
+print s.index_of(w, "cad"), s.index_of(w, "xyz"), s.count(w, "abra"), s.count("aaaa", "aa")
+print slice(w, 4, 7), s.char_at(w, 10), slice(w, 3, 3) == ""
+print is_palindrome("level"), is_palindrome(""), is_palindrome(w)
+print s.to_int("-42") + 1, s.to_int("007"), s.from_int(-5) + "!"
+
+# Indices count characters, not bytes.
+print s.length("é😀"), s.char_at("aéb", 1), s.index_of("éé0", "0"), s.reverse("é😀")
+
+# Sets of words always include the empty string, except `symbols`.
+print s.symbols("abba")
+print s.prefixes("ab")
+print s.suffixes("ab")
+print s.substrings("aba")
+print s.prefixes(""), s.symbols("")
+print len(s.substrings("abcd")), len(s.prefixes("abcd"))
+
+# The empty string is in every string; `repeat` by 0 gives it.
+print s.contains("", ""), s.index_of("abc", ""), s.repeat("abc", 0) == ""
