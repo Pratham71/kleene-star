@@ -101,7 +101,7 @@ as a standalone Rust function.
 
 **Programs that grow.** Functions, loops and `test` statements; `import` to
 split a program over several files; a standard library (`std.math`,
-`std.string`, `std.collections`, `std.automata`); a formatter (`kstar fmt`) and a REPL (`kstar repl`).
+`std.string`, `std.collections`, `std.automata`, `std.regex`); a formatter (`kstar fmt`) and a REPL (`kstar repl`).
 
 **Mistakes caught early.** A DFA with a missing transition, a symbol outside
 the alphabet or a type mix-up is reported before anything runs, every error

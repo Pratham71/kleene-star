@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_regex_too_large.kstar, line 1, in <main>
+    print std.regex.power(/ab/, 1000000000)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0612]: the regex would have more than 20000 parts
+  hint: build a smaller regex, or work with a machine (`to_dfa`) instead

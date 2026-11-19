@@ -159,6 +159,40 @@ pub const MAX_DEPTH: usize = 500;
 /// without a limit a short regex could become enormous.
 pub const MAX_SIZE: usize = 20_000;
 
+// ---- building regexes ----
+//
+// These put larger regexes together from smaller ones, always through the
+// simplifying constructors above, so `power(r, 0)` is `()` rather than an
+// empty concatenation.
+
+/// The regex for exactly the word `word`: its symbols one after another.
+pub fn literal(word: &str) -> Regex {
+    word.chars().fold(Eps, |acc, c| Regex::concat(acc, Sym(c)))
+}
+
+/// One symbol of `alphabet`, written out: `0|1`. With no symbols, `[]`.
+pub fn any_of(alphabet: &[char]) -> Regex {
+    alphabet.iter().fold(Empty, |acc, &c| Regex::alt(acc, Sym(c)))
+}
+
+/// Exactly `n` copies of `r` one after another, `r^n`. `r^0` is `()`.
+pub fn power(r: &Regex, n: usize) -> Regex {
+    (0..n).fold(Eps, |acc, _| Regex::concat(acc, r.clone()))
+}
+
+/// From `min` to `max` copies of `r` (`min <= max`): `r^min` followed by up
+/// to `max - min` more. The optional copies are nested, `(r(r)?)?`, rather
+/// than written side by side, `r?r?`, so that a word has one way to split.
+pub fn repeat_between(r: &Regex, min: usize, max: usize) -> Regex {
+    let extra = (min..max).fold(Eps, |tail, _| Regex::optional(Regex::concat(r.clone(), tail)));
+    Regex::concat(power(r, min), extra)
+}
+
+/// At least `n` copies of `r`: `r^n r*`.
+pub fn at_least(r: &Regex, n: usize) -> Regex {
+    Regex::concat(power(r, n), Regex::star(r.clone()))
+}
+
 /// Parses regex source text (without the surrounding slashes).
 pub fn parse(src: &str) -> Result<Regex, ParseError> {
     let mut p = Parser { chars: src.char_indices().collect(), pos: 0, end: src.len(), depth: 0 };

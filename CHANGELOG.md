@@ -22,6 +22,12 @@ its GitHub release, so write it for people who use Kleene Star.
   `distinguishing_word` (the shortest word that shows two languages are not
   `equivalent`), `is_finite`, `count_words` and `words_up_to`. The questions
   take any regular language, like the built-ins do.
+- **`std.regex`**: regexes built at run time and put together from pieces,
+  staying regexes (the built-ins `concat` and `star` turn them into
+  machines): `parse` (a regex from a string), `literal`, `any_of`, `alt`,
+  `seq`, `zero_or_more`, `one_or_more`, `optional`, `power`,
+  `repeat_between`, `at_least`, the prefix, suffix and substring forms
+  `starts_with`, `ends_with`, `contains`, and `size` and `text`.
 - Two new error codes: E0614 (a string that should be one symbol) and E0615
   (no word with the asked-for property).
 

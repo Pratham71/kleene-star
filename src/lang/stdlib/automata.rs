@@ -79,16 +79,8 @@ fn int(args: &[Value], i: usize) -> i64 {
 /// Argument `i`: a word whose every symbol is in the alphabet, and short
 /// enough to become one state per symbol.
 fn pattern(args: &[Value], i: usize) -> Result<Vec<char>, Failure> {
-    let symbols = alphabet(args);
+    super::word_over(text(args, i), alphabet(args), i, "the pattern")?;
     let word: Vec<char> = text(args, i).chars().collect();
-    if let Some(c) = word.iter().find(|c| !symbols.contains(c)) {
-        return Err(Failure {
-            code: codes::FOREIGN_WORD,
-            arg: Some(i),
-            message: format!("the pattern contains `{c}`, which is not in the alphabet"),
-            hint: format!("the alphabet is {}", fmt_alphabet(symbols)),
-        });
-    }
     if word.len() as i64 > MAX_STATES {
         return Err(too_many_states(i, "a pattern", word.len() as i64));
     }

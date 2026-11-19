@@ -402,3 +402,54 @@ fn listing_words_stops_at_its_budget() {
     assert_eq!(questions::count_words(&everything, 70), None, "2^70 does not fit in an Int");
     assert_eq!(questions::count_words(&everything, 62), Some(1 << 62));
 }
+
+/// The regex builders of `std.regex` describe exactly the words their
+/// definitions say, checked on every word up to length 7.
+#[test]
+fn regex_builders_match_their_definitions() {
+    let mut rng = Rng::new(seed());
+    let accepts = |r: &Regex, w: &str| dfa(r).accepts(w).unwrap();
+    for case in 0..CASES {
+        let word: String = random_word(&mut rng, 3).into_iter().collect();
+        let lit = regex::literal(&word);
+        same_language(&format!("case {case}: literal {word:?}"), |w| accepts(&lit, w), |w| w == word);
+
+        let r = random_regex(&mut rng, 2);
+        let rd = dfa(&r);
+        let n = rng.below(4);
+        let (lo, hi) = (rng.below(3), rng.below(3));
+        let (lo, hi) = (lo.min(hi), lo.max(hi));
+        // `w` is in r^k when it splits into k pieces that are each in r.
+        let in_power = |w: &str, k: usize| -> bool {
+            let chars: Vec<char> = w.chars().collect();
+            // reach[i]: the first i symbols split into the pieces so far.
+            let mut reach = vec![false; chars.len() + 1];
+            reach[0] = true;
+            for _ in 0..k {
+                let mut next = vec![false; chars.len() + 1];
+                for i in (0..=chars.len()).filter(|&i| reach[i]) {
+                    for j in i..=chars.len() {
+                        let piece: String = chars[i..j].iter().collect();
+                        if rd.accepts(&piece).unwrap() {
+                            next[j] = true;
+                        }
+                    }
+                }
+                reach = next;
+            }
+            reach[chars.len()]
+        };
+        let what = format!("case {case}: /{r}/, n = {n}, {lo} to {hi}");
+        let p = regex::power(&r, n);
+        same_language(&what, |w| accepts(&p, w), |w| in_power(w, n));
+        let between = regex::repeat_between(&r, lo, hi);
+        same_language(&what, |w| accepts(&between, w), |w| (lo..=hi).any(|k| in_power(w, k)));
+        // At least n: n copies, then any number more (7 symbols need at
+        // most 7 more non-empty pieces).
+        let least = regex::at_least(&r, n);
+        same_language(&what, |w| accepts(&least, w), |w| (n..=n + 7).any(|k| in_power(w, k)));
+    }
+    let both = regex::any_of(&ALPHABET);
+    same_language("any_of", |w| accepts(&both, w), |w| w.chars().count() == 1);
+    assert_eq!(regex::any_of(&[]), Regex::Empty);
+}

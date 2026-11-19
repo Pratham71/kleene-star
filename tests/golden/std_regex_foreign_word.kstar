@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.regex.ends_with(B, "012")

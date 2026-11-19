@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_regex_parse_error.kstar, line 1, in <main>
+    print std.regex.parse("(0|1")
+                          ^^^^^^
+ValueError[E0105]: in regex: this `(` is never closed
+  hint: a regex is made of symbols, `|` for or, `*` for repeat, and `( )` for grouping, as in "(0|1)*01"

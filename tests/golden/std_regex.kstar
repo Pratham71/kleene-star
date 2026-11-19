@@ -1,0 +1,16 @@
+# Every function of std.regex, through each way of reaching it.
+import std.regex
+import std.regex as rx
+from std.regex import seq, power as times
+alphabet B = {0, 1}
+
+print std.regex.parse("(0|1)*01"), std.regex.parse(""), std.regex.parse("[]")
+print regex.literal("abc"), regex.literal(""), rx.any_of(B)
+print rx.alt(/ab/, /c/), seq(/a|b/, /c/), seq(/[]/, /a/), rx.alt(/[]/, /a/)
+print rx.zero_or_more(/ab/), rx.one_or_more(/a/), rx.optional(/ab/), rx.zero_or_more(/a*/)
+print times(/ab/, 3), times(/ab/, 0), times(/[]/, 2)
+print rx.repeat_between(/a/, 0, 2), rx.repeat_between(/a/, 2, 2), rx.at_least(/ab/, 0), rx.at_least(/a/, 3)
+print rx.starts_with(B, "01"), rx.ends_with(B, ""), rx.contains(B, "11")
+print rx.size(/(0|1)*01/), rx.text(/(0|1)*01/), rx.size(times(/a/, 100))
+test equivalent(rx.parse(rx.text(/(ab|c)*d?/)), /(ab|c)*d?/)
+test rx.power(rx.any_of(B), 4) accepts "0110"

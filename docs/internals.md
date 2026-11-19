@@ -181,7 +181,7 @@ is one whose expression contains nothing but literals.
 | File | Contents |
 |---|---|
 | `dfa.rs`, `nfa.rs` | The two machine types, running them on a word, printing them as tables. |
-| `regex.rs` | The regex tree, its own small parser, and a printer that adds as few parentheses as possible. |
+| `regex.rs` | The regex tree, its own small parser, a printer that adds as few parentheses as possible, and builders for words, alphabets and counted repetition. |
 | `convert.rs` | Thompson's construction, eps removal, the subset construction, state elimination. |
 | `minimize.rs` | DFA minimisation and NFA reduction, both by partition refinement. |
 | `ops.rs` | The product construction, complement, concatenation, star, reversal, emptiness, equivalence. |

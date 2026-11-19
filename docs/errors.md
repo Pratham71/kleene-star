@@ -123,7 +123,9 @@ SyntaxError[E0104]: unexpected `;`
 
 A regex literal between slashes must be a well-formed regular expression:
 symbols, `|` for "or", `*` for "any number of times", and parentheses for
-grouping. `eps` is written inside a regex as `()`.
+grouping. `eps` is written inside a regex as `()`. The same goes for the
+text given to `std.regex.parse`, which is read while the program runs, so
+there a bad regex is a `ValueError` with the same message.
 
 ```kstar-error
 let r = /(0|1*/
