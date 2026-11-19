@@ -1,0 +1,1 @@
+print std.automata.words_up_to(/(0|1)*/, 20)

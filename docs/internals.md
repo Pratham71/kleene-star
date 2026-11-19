@@ -191,6 +191,8 @@ is one whose expression contains nothing but literals.
 | `grammar.rs` | Context-free grammars: CNF, CYK, emptiness, derivations, grammars from DFAs. |
 | `pda.rs` | Pushdown automata: the configuration search, PDAs from grammars. |
 | `tm.rs` | Turing machines: the tape, running with a step limit. |
+| `patterns.rs` | Ready-made minimal DFAs: prefixes, suffixes and substrings (the Knuth-Morris-Pratt automaton), counting a symbol, remainders, lengths. |
+| `questions.rs` | Questions about a DFA's language: a shortest word, finiteness, counting and listing the words of a length. |
 
 A state is just a number: its position in the machine's list of state names.
 A DFA's transitions are a table indexed by state and symbol, so a DFA is
@@ -519,7 +521,11 @@ Say the new module is `std.string`.
    that works for any kind of set uses `Ty::Elem`, the type variable `T`:
    `Ty::Set(&Ty::Elem)` is a `Set[T]`. `check_arguments` decides `T` from
    the first argument that shows it and requires the rest to agree
-   (`std.collections` is the example).
+   (`std.collections` is the example). A function that takes any regular
+   language, the way the built-ins do, uses `Ty::Lang`: the checker accepts
+   a `Dfa`, `Nfa`, `Regex` or `Set[Str]` for it, and the function turns the
+   value into a DFA with `lang::langs` (`to_dfas`), which applies the same
+   alphabet rules as the built-ins (`std.automata` is the example).
 2. **Implement each function** as `fn name(args: &[Value]) -> Result<Value, Failure>`.
    The checker has already made sure each argument has its declared type,
    so take them apart with `match` and `unreachable!` for the impossible

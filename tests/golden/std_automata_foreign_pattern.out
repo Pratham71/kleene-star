@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_foreign_pattern.kstar, line 2, in <main>
+    print std.automata.contains_substring(B, "0120")
+                                             ^^^^^^
+AlphabetError[E0501]: the pattern contains `2`, which is not in the alphabet
+  hint: the alphabet is {0, 1}

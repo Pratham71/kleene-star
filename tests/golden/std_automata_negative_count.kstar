@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.automata.at_least(B, "1", 0 - 3)

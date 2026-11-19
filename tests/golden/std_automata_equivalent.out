@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_equivalent.kstar, line 1, in <main>
+    print std.automata.distinguishing_word(/(0|1)*/, /(0*1*)*/)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0615]: the two languages are equivalent, so no word tells them apart
+  hint: check `equivalent(a, b)` first

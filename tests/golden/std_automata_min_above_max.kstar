@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.automata.length_between(B, 5, 2)

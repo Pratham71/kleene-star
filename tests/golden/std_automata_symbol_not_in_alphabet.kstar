@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.automata.count_mod(B, "2", 2, 0)

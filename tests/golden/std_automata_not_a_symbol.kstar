@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.automata.exactly(B, "01", 2)

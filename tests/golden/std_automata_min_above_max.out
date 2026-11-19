@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_min_above_max.kstar, line 2, in <main>
+    print std.automata.length_between(B, 5, 2)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MathError[E0609]: there is no length from 5 to 2
+  hint: `min` must not be larger than `max`

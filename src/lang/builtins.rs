@@ -181,10 +181,7 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
                     .to_string(),
                 );
             } else if matches!(param, Lang) && (is_context_free(arg) || *arg == Type::Tm) {
-                err.hint = Some(format!(
-                    "`{name}` works on regular languages only; {} can describe a language that is not regular",
-                    article(arg)
-                ));
+                err.hint = Some(regular_only_hint(name, arg));
             }
             if matches!(param, Grammar) && *arg == Type::Pda {
                 err.hint = Some("only grammars can be converted this way; there is no built-in that turns a PDA back into a grammar".into());
@@ -193,6 +190,12 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
         }
     }
     Ok(ret)
+}
+
+/// The hint for a grammar, PDA or Turing machine given where a regular
+/// language is needed, by a built-in or a library function.
+pub fn regular_only_hint(name: &str, ty: &Type) -> String {
+    format!("`{name}` works on regular languages only; {} can describe a language that is not regular", article(ty))
 }
 
 /// "an Int", "a Dfa": a type name with the right article.

@@ -1022,7 +1022,8 @@ AlphabetError[E0500]: symbol `2` is not in alphabet `B`
 ## E0501: A word with symbols the machine does not know
 
 The word given to `accepts`, `trace` or `run` contains a symbol outside the
-machine's alphabet. A machine cannot read such a symbol, so instead of
+machine's alphabet. (The pattern given to a `std.automata` function, such as
+`starts_with(B, "012")`, must keep to its alphabet in the same way.) A machine cannot read such a symbol, so instead of
 answering "no", this is an error.
 
 ```kstar-error
@@ -1308,7 +1309,9 @@ LimitError[E0608]: the regex for this language would be too large (over 100000 p
 
 A function of `std.math` was given an argument it has no answer for: a
 square root or factorial of a negative number, the logarithm of a number
-below 1, a negative power, or division by zero in `div`. The hint says
+below 1, a negative power, or division by zero in `div`. The same goes for
+`std.automata`: a modulus below 1, a remainder outside 0 to `m - 1`, or a
+`min` length larger than `max`. The hint says
 which numbers the function accepts.
 
 ```kstar-error
@@ -1329,7 +1332,8 @@ MathError[E0609]: the square root of -9 is not a whole number
 A function of `std.string` or `std.collections` was given a position or a
 count outside what makes sense: an index past the end of the string
 (`char_at`, `substring`), a negative index, a negative repeat count or word
-length (`repeat`, `words`), or the empty string to `count`.
+length (`repeat`, `words`, and the counts and lengths of `std.automata`), or
+the empty string to `count`.
 Indices count characters from 0. The hint says which values work.
 
 ```kstar-error
@@ -1401,6 +1405,52 @@ Traceback (most recent call last):
                               ^^
 ValueError[E0613]: the largest member of an empty set is not defined
   hint: check `size(s) > 0` before asking for the largest member
+```
+
+## E0614: A string that should be one symbol
+
+A function of `std.automata` that counts a symbol (`exactly`, `at_least`,
+`at_most`, `count_mod`) takes the symbol as a string, and that string must be
+exactly one symbol long. Empty strings and longer words are refused.
+
+```kstar-error
+alphabet B = {0, 1}
+let M = std.automata.exactly(B, "01", 2)
+```
+
+```text
+Warning in demo.kstar, line 2:
+    let M = std.automata.exactly(B, "01", 2)
+        ^
+Warning[W0200]: value `M` is never used
+  hint: remove it, or start its name with `_` (`_M`) to keep it quietly
+
+Traceback (most recent call last):
+  demo.kstar, line 2, in <main>
+    let M = std.automata.exactly(B, "01", 2)
+                                    ^^^^
+ValueError[E0614]: "01" is not one symbol
+  hint: write a single symbol of the alphabet, such as "0"
+```
+
+## E0615: No word with the asked-for property
+
+`std.automata.shortest_word` was given an empty language, which has no
+words at all, or `std.automata.distinguishing_word` was given two languages
+that are equivalent, so no word is in one but not the other. Check with
+`is_empty` or `equivalent` first.
+
+```kstar-error
+print std.automata.distinguishing_word(/a*/, /(aa*)?/)
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 1, in <main>
+    print std.automata.distinguishing_word(/a*/, /(aa*)?/)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0615]: the two languages are equivalent, so no word tells them apart
+  hint: check `equivalent(a, b)` first
 ```
 
 ## W0100: A state that can never be reached

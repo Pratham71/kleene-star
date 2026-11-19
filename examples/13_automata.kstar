@@ -1,0 +1,39 @@
+# Chapter 9: the standard library's std.automata. Machines for common
+# patterns come ready-made and already minimal, and the library answers
+# questions about languages that the built-ins only answer with yes or no.
+
+alphabet B = {0, 1}
+
+# Binary strings that contain 101, and those with an odd number of 0s.
+let Has101 = std.automata.contains_substring(B, "101")
+let OddZeros = std.automata.count_mod(B, "0", 2, 1)
+print Has101
+
+# They are ordinary machines: combine them with the built-ins.
+let Both = intersect(Has101, OddZeros)
+print states(Both), states(minimize(Both))
+print "shortest word in both:", std.automata.shortest_word(Both)
+print "words of length 5 in both:", std.automata.count_words(Both, 5)
+
+# A hand-written machine for "ends in 01", checked against the library's.
+dfa EndsIn01 over B {
+    start  s
+    accept seen01
+    s      --0--> seen0
+    s      --1--> s
+    seen0  --0--> seen0
+    seen0  --1--> seen01
+    seen01 --0--> seen0
+    seen01 --1--> s
+}
+test equivalent(EndsIn01, std.automata.ends_with(B, "01"))
+
+# A mistake: this regex is meant to be "ends in 01" but is not. The
+# library finds the shortest word on which the two disagree.
+let attempt = /(0|1)*0(0|1)/
+print "first difference:", std.automata.distinguishing_word(EndsIn01, attempt)
+
+# Finite or not: a language is infinite when its DFA can loop on the way
+# to acceptance.
+print std.automata.is_finite(std.automata.length_between(B, 1, 3)), std.automata.is_finite(Has101)
+print std.automata.words_up_to(std.automata.exactly(B, "1", 2), 3)

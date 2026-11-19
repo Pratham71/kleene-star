@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_empty_language.kstar, line 1, in <main>
+    print std.automata.shortest_word(intersect(/0+/, /1+/))
+                                     ^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0615]: the language is empty, so it has no shortest word
+  hint: check `is_empty(lang)` first

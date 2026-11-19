@@ -12,6 +12,19 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Added
+
+- **`std.automata`**: ready-made minimal DFAs for common patterns
+  (`starts_with`, `ends_with`, `contains_substring`, `exactly`, `at_least`,
+  `at_most`, `count_mod` for parity and remainders, `length_mod`,
+  `length_between`), with states named after what they remember, and
+  questions the built-ins only answer with yes or no: `shortest_word`,
+  `distinguishing_word` (the shortest word that shows two languages are not
+  `equivalent`), `is_finite`, `count_words` and `words_up_to`. The questions
+  take any regular language, like the built-ins do.
+- Two new error codes: E0614 (a string that should be one symbol) and E0615
+  (no word with the asked-for property).
+
 ## [0.3.0] - 2026-11-19
 
 The first stable release since 0.2.3. It brings together everything from

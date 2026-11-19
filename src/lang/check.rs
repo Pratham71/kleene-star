@@ -1237,16 +1237,20 @@ fn check_arguments(name: &str, signature: &Signature, types: &[Type], args: &[Ex
     let mut element: Option<Type> = None;
     for (i, (wanted, actual)) in signature.params.iter().zip(types).enumerate() {
         if !fits_generic(wanted, actual, &mut element) {
-            return Err(type_error(
+            let wanted_text = match wanted {
+                Type::Lang => "a regular language (Dfa, Nfa, Regex or Set[Str])".to_string(),
+                _ => article(&fill_in(wanted, &element)),
+            };
+            let mut err = type_error(
                 args[i].span,
-                format!(
-                    "argument {} of `{}` must be {}, but this is {}",
-                    i + 1,
-                    name,
-                    article(&fill_in(wanted, &element)),
-                    article(actual)
-                ),
-            ));
+                format!("argument {} of `{}` must be {wanted_text}, but this is {}", i + 1, name, article(actual)),
+            );
+            // The same hint the built-ins give: a grammar, PDA or Turing
+            // machine can describe a language no finite automaton accepts.
+            if *wanted == Type::Lang && (is_context_free(actual) || *actual == Type::Tm) {
+                err = err.hint(builtins::regular_only_hint(name, actual));
+            }
+            return Err(err);
         }
     }
     // With `T` still unknown (every set given was `{}`), the result is as
@@ -1267,6 +1271,7 @@ fn fits_generic(wanted: &Type, actual: &Type, element: &mut Option<Type>) -> boo
         (Type::Var, found) => decide(found),
         (Type::Set(w), Type::Set(found)) if **w == Type::Var => decide(found),
         (Type::Set(w), Type::EmptySet) if **w == Type::Var => true,
+        (Type::Lang, found) => is_lang(found),
         _ => fits(wanted, actual),
     }
 }
@@ -1379,6 +1384,24 @@ print u + 1").expect_err("a set plus an Int");
             "TypeError: argument 2 of `std.collections.union` must be a Set[Int], but this is a Set[Str]"
         );
         assert!(error("print std.collections.size(1)").contains("must be a Set[T]"));
+    }
+
+    /// A library parameter of type `Lang` takes any regular language, the
+    /// same four types the built-ins on languages take, and nothing else.
+    #[test]
+    fn a_lang_parameter_takes_any_regular_language() {
+        check(&format!(
+            "{B}dfa D over B {{ start a  accept a  a --0,1--> a }}
+print std.automata.shortest_word(D), std.automata.shortest_word(/01/), std.automata.shortest_word({{\"0\"}})
+print std.automata.shortest_word(to_nfa(D)), std.automata.is_finite({{}})"
+        ))
+        .unwrap();
+        assert_eq!(
+            error("print std.automata.shortest_word(3)"),
+            "TypeError: argument 1 of `std.automata.shortest_word` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is an Int"
+        );
+        let d = check(&format!("{B}grammar G over B {{ S -> 0 }}\nprint std.automata.is_finite(G)")).unwrap_err();
+        assert!(d.hint.as_deref().unwrap_or("").contains("regular languages only"), "{:?}", d.hint);
     }
 
     #[test]

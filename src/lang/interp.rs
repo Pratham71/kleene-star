@@ -18,13 +18,14 @@ use super::error::{Diag, ErrorKind, TraceFrame};
 use super::machine::{self, Built, MachineSpec, Transition};
 use super::source::SourceMap;
 use super::token::{FileId, Span};
+use super::langs::{self, symbols_of, to_dfa, to_nfa};
 use super::value::Value;
 use super::trace as show_trace;
 use super::machine::GrammarSpec;
 use crate::automata::grammar::{DeriveError, Grammar};
 use crate::automata::pda::{self, Outcome, Pda};
 use crate::automata::tm::{self, Halt, Tm};
-use crate::automata::{codegen, convert, dot, fmt_alphabet, minimize, ops, trace, Dfa, Nfa};
+use crate::automata::{codegen, convert, dot, fmt_alphabet, minimize, ops, trace};
 use std::collections::{BTreeSet, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
@@ -814,11 +815,13 @@ impl Interp {
             Callee::Std(function) => {
                 return (function.run)(&args).map_err(|failure| {
                     let span = failure.arg.map_or(call_site, |i| spans[i]);
-                    // Arithmetic that fails is a MathError; a value the
-                    // function cannot use is a ValueError; a result too big
-                    // to build is a LimitError.
+                    // Arithmetic that fails is a MathError; a symbol or an
+                    // alphabet that does not fit is an AlphabetError; a
+                    // result too big to build is a LimitError; any other
+                    // value the function cannot use is a ValueError.
                     let kind = match failure.code {
                         codes::OVERFLOW | codes::MATH_DOMAIN => ErrorKind::Math,
+                        codes::NOT_IN_ALPHABET | codes::FOREIGN_WORD | codes::ALPHABET_MISMATCH => ErrorKind::Alphabet,
                         codes::RESULT_TOO_LARGE => ErrorKind::Limit,
                         _ => ErrorKind::Value,
                     };
@@ -966,104 +969,13 @@ impl Interp {
         }
     }
 
-    /// Picks the alphabet an operation works over.
-    ///
-    /// Machines have a fixed alphabet, and all machines involved must agree.
-    /// Regexes and finite sets are flexible: they adopt the machines' alphabet
-    /// (or the explicit one), or failing that, the symbols they mention.
-    fn common_alphabet(
-        &self,
-        langs: &[Value],
-        spans: &[Span],
-        explicit: Option<&[char]>,
-    ) -> Run<Vec<char>> {
-        let mut fixed: Option<Vec<char>> = explicit.map(<[char]>::to_vec);
-        for (lang, &span) in langs.iter().zip(spans) {
-            let own = match lang {
-                Value::Dfa(dfa) => &dfa.alphabet,
-                Value::Nfa(nfa) => &nfa.alphabet,
-                _ => continue,
-            };
-            match &fixed {
-                Some(other) if other != own => {
-                    return Err(self
-                        .error(
-                            ErrorKind::Alphabet,
-                            span,
-                            format!(
-                                "this machine is over {}, but {} is needed here",
-                                fmt_alphabet(own),
-                                fmt_alphabet(other)
-                            ),
-                        )
-                        .code(codes::ALPHABET_MISMATCH)
-                        .hint("languages can only be combined when they share an alphabet; build both machines `over` the same one"));
-                }
-                _ => fixed = Some(own.clone()),
-            }
-        }
-        let alphabet = fixed.clone().unwrap_or_else(|| {
-            let all: BTreeSet<char> = langs.iter().flat_map(symbols_of).collect();
-            all.into_iter().collect()
-        });
-        for (lang, &span) in langs.iter().zip(spans) {
-            if matches!(lang, Value::Dfa(_) | Value::Nfa(_)) {
-                continue;
-            }
-            if let Some(c) = symbols_of(lang).into_iter().find(|c| !alphabet.contains(c)) {
-                return Err(self
-                    .error(
-                        ErrorKind::Alphabet,
-                        span,
-                        format!("this uses the symbol `{c}`, which is not in the alphabet {}", fmt_alphabet(&alphabet)),
-                    )
-                    .hint("every symbol must belong to the alphabet being used"));
-            }
-        }
-        Ok(alphabet)
+    /// Picks the alphabet an operation works over, by the rules in
+    /// `langs::common_alphabet`, and turns a problem into an error at the
+    /// argument that does not fit.
+    fn common_alphabet(&self, langs: &[Value], spans: &[Span], explicit: Option<&[char]>) -> Run<Vec<char>> {
+        langs::common_alphabet(langs, explicit).map_err(|problem| {
+            self.error(ErrorKind::Alphabet, spans[problem.arg], problem.message).code(problem.code).hint(problem.hint)
+        })
     }
 }
 
-/// The symbols a regex or a finite set of words mentions, sorted.
-fn symbols_of(lang: &Value) -> Vec<char> {
-    let mut symbols = BTreeSet::new();
-    match lang {
-        Value::Regex(regex) => regex.symbols(&mut symbols),
-        Value::Set(words) => {
-            for word in words.iter() {
-                if let Value::Str(word) = word {
-                    symbols.extend(word.chars());
-                }
-            }
-        }
-        Value::Dfa(dfa) => symbols.extend(&dfa.alphabet),
-        Value::Nfa(nfa) => symbols.extend(&nfa.alphabet),
-        _ => {}
-    }
-    symbols.into_iter().collect()
-}
-
-/// Any language value as an NFA over `alphabet`.
-fn to_nfa(lang: &Value, alphabet: &[char]) -> Nfa {
-    match lang {
-        Value::Nfa(nfa) => (**nfa).clone(),
-        Value::Dfa(dfa) => convert::dfa_to_nfa(dfa),
-        Value::Regex(regex) => convert::regex_to_nfa(regex, alphabet),
-        Value::Set(words) => {
-            let words = words.iter().filter_map(|w| match w {
-                Value::Str(word) => Some(&**word),
-                _ => None,
-            });
-            convert::regex_to_nfa(&convert::finite_to_regex(words), alphabet)
-        }
-        other => unreachable!("checker allowed {other:?} as a language"),
-    }
-}
-
-/// Any language value as a DFA over `alphabet`.
-fn to_dfa(lang: &Value, alphabet: &[char]) -> Dfa {
-    match lang {
-        Value::Dfa(dfa) => (**dfa).clone(),
-        other => convert::nfa_to_dfa(&to_nfa(other, alphabet)),
-    }
-}

@@ -254,6 +254,99 @@ file: `import std.math` (bound as `math`), `import std.math as m`, or
 library. Hovering over a library function in an editor shows the same
 descriptions as below.
 
+### `std.automata`
+
+Ready-made DFAs for common patterns (prefixes, suffixes, substrings, counting, parity, lengths), and questions about regular languages: a shortest word, a word that tells two languages apart, finiteness and counting words.
+
+| Function | What it does |
+|---|---|
+| `starts_with(alphabet: Alphabet, prefix: Str) -> Dfa` | The smallest DFA for the strings over `alphabet` that begin with `prefix`. |
+| `ends_with(alphabet: Alphabet, suffix: Str) -> Dfa` | The smallest DFA for the strings over `alphabet` that end with `suffix`. |
+| `contains_substring(alphabet: Alphabet, part: Str) -> Dfa` | The smallest DFA for the strings over `alphabet` that contain `part` somewhere. |
+| `exactly(alphabet: Alphabet, symbol: Str, n: Int) -> Dfa` | The smallest DFA for the strings with exactly `n` copies of `symbol`. |
+| `at_least(alphabet: Alphabet, symbol: Str, n: Int) -> Dfa` | The smallest DFA for the strings with at least `n` copies of `symbol`. |
+| `at_most(alphabet: Alphabet, symbol: Str, n: Int) -> Dfa` | The smallest DFA for the strings with at most `n` copies of `symbol`. |
+| `count_mod(alphabet: Alphabet, symbol: Str, m: Int, r: Int) -> Dfa` | The smallest DFA for the strings whose number of `symbol`s leaves remainder `r` when divided by `m`; `m = 2` gives parity. |
+| `length_mod(alphabet: Alphabet, m: Int, r: Int) -> Dfa` | The smallest DFA for the strings whose length leaves remainder `r` when divided by `m`. |
+| `length_between(alphabet: Alphabet, min: Int, max: Int) -> Dfa` | The smallest DFA for the strings of length `min` to `max`, both included. |
+| `shortest_word(lang: Lang) -> Str` | A shortest word of the language (the first in alphabet order if there are several); the language must not be empty. |
+| `distinguishing_word(a: Lang, b: Lang) -> Str` | A shortest word in one language but not the other, showing why they are not `equivalent`; they must differ. |
+| `is_finite(lang: Lang) -> Bool` | Whether the language has only finitely many words. |
+| `count_words(lang: Lang, n: Int) -> Int` | How many words of length exactly `n` the language has. |
+| `words_up_to(lang: Lang, n: Int) -> Set[Str]` | The words of the language of length at most `n`, as a set; there may be at most 100000 of them. |
+
+**Pattern machines.** The first nine functions build a `Dfa` over the
+alphabet they are given. It is already minimal, so `minimize` leaves it the
+same size, and its states are named after what they remember:
+
+- `starts_with`: `p0`, `p1`, ... for how much of the prefix has been read,
+  and `dead` after a wrong symbol;
+- `ends_with`, `contains_substring`: `m0`, `m1`, ... for the longest end of
+  the input that begins the pattern (the Knuth-Morris-Pratt automaton);
+- `exactly`, `at_least`, `at_most`: `c0`, `c1`, ... for how many copies so
+  far, and `more` for more than `n`;
+- `count_mod`, `length_mod`: `r0`, `r1`, ... for the remainder so far;
+- `length_between`: `l0`, `l1`, ... for the length so far, and `long` for
+  longer than `max`.
+
+A state that cannot be reached is left out: over the alphabet `{a}`,
+`starts_with(A, "aa")` has no `dead` state. The result is an ordinary
+machine, so it combines with the built-ins:
+`intersect(std.automata.ends_with(B, "0"), std.automata.count_mod(B, "1", 2, 0))`
+is "ends in 0 and has an even number of 1s".
+
+A `symbol` is a string of one symbol of the alphabet (E0614 if it is longer
+or empty, E0500 if the alphabet does not have it). Every symbol of a pattern
+must be in the alphabet (E0501). Counts and lengths cannot be negative
+(E0610); a modulus `m` must be at least 1 and the remainder `r` from 0 to
+`m - 1`, and `min` must not be larger than `max` (E0609). A machine needing
+more than 10000 states is a `LimitError` (E0612).
+
+**Questions.** In the signatures, `Lang` means any regular language: a
+`Dfa`, `Nfa`, `Regex` or `Set[Str]`, the types the built-ins on languages
+take. The alphabet is chosen the same way as for the built-ins (see
+[alphabets in operations](#alphabets-in-operations)), so the two languages
+of `distinguishing_word` must share it. A grammar, PDA or Turing machine is
+refused when the program is checked. The questions extend the built-ins:
+
+- `equivalent(a, b)` says whether two languages differ;
+  `distinguishing_word(a, b)` gives the shortest word that shows it, and is
+  a `ValueError` (E0615) if they do not differ.
+- `is_empty(lang)` says whether there is a word; `shortest_word(lang)` gives
+  one, and is E0615 for the empty language.
+- `is_finite` uses the idea behind the pumping lemma: a language is infinite
+  exactly when its DFA has a loop on the way to an accepting state.
+- `count_words(lang, n)` counts the words of one length without listing
+  them, for lengths up to 10000 (a `MathError`, E0600, past the largest
+  Int); `words_up_to(lang, n)` lists them, and is E0612 when they are too
+  many.
+
+```kstar
+alphabet B = {0, 1}
+let EndsIn01 = std.automata.ends_with(B, "01")
+print EndsIn01
+let EvenOnes = std.automata.count_mod(B, "1", 2, 0)
+print states(EvenOnes), EvenOnes accepts "0110", EvenOnes accepts "010"
+let Both = intersect(EndsIn01, EvenOnes)
+print std.automata.shortest_word(Both)
+print std.automata.distinguishing_word(EndsIn01, /(0|1)*1/)
+print std.automata.is_finite(std.automata.length_between(B, 2, 3)), std.automata.is_finite(EvenOnes)
+print std.automata.count_words(EvenOnes, 4), std.automata.words_up_to(Both, 4)
+```
+
+```text
+DFA with 3 states over {0, 1}
+       | 0  | 1
+->  m0 | m1 | m0
+    m1 | m1 | m2
+   *m2 | m1 | m0
+2 true false
+101
+1
+true false
+8 {"0101", "1001", "101"}
+```
+
 ### `std.collections`
 
 Sets: membership, subsets, union, intersection, difference, size, smallest, largest and sum, and every word of a given length over an alphabet.

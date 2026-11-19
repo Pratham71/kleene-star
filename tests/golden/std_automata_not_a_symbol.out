@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_not_a_symbol.kstar, line 2, in <main>
+    print std.automata.exactly(B, "01", 2)
+                                  ^^^^
+ValueError[E0614]: "01" is not one symbol
+  hint: write a single symbol of the alphabet, such as "0"
