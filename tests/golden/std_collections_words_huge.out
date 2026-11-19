@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_collections_words_huge.kstar, line 5, in <main>
+    print std.collections.words(One, 1000000000000)
+                                     ^^^^^^^^^^^^^
+LimitError[E0612]: a word of length 1000000000000 is longer than the limit of 1000000 characters
+  hint: ask for shorter words

@@ -1231,21 +1231,53 @@ fn check_arguments(name: &str, signature: &Signature, types: &[Type], args: &[Ex
         )
         .code(codes::ARGUMENT_COUNT));
     }
+    // A generic library function, like `contains(s: Set[T], x: T)`, has the
+    // type variable `T` in its signature. The first argument that shows what
+    // `T` is decides it, and every later one has to agree.
+    let mut element: Option<Type> = None;
     for (i, (wanted, actual)) in signature.params.iter().zip(types).enumerate() {
-        if !fits(wanted, actual) {
+        if !fits_generic(wanted, actual, &mut element) {
             return Err(type_error(
                 args[i].span,
                 format!(
                     "argument {} of `{}` must be {}, but this is {}",
                     i + 1,
                     name,
-                    article(wanted),
+                    article(&fill_in(wanted, &element)),
                     article(actual)
                 ),
             ));
         }
     }
-    Ok(signature.ret.clone())
+    // With `T` still unknown (every set given was `{}`), the result is as
+    // unknown as `{}` itself.
+    Ok(match fill_in(&signature.ret, &element) {
+        Type::Set(inner) if *inner == Type::Var => Type::EmptySet,
+        ty => ty,
+    })
+}
+
+/// Like `fits`, but a `T` in `wanted` may be decided here: it can be an Int,
+/// a Str or a Bool (what a set can hold), the same for the whole call.
+fn fits_generic(wanted: &Type, actual: &Type, element: &mut Option<Type>) -> bool {
+    let mut decide = |found: &Type| {
+        matches!(found, Type::Int | Type::Str | Type::Bool) && element.get_or_insert_with(|| found.clone()) == found
+    };
+    match (wanted, actual) {
+        (Type::Var, found) => decide(found),
+        (Type::Set(w), Type::Set(found)) if **w == Type::Var => decide(found),
+        (Type::Set(w), Type::EmptySet) if **w == Type::Var => true,
+        _ => fits(wanted, actual),
+    }
+}
+
+/// `ty` with `T` replaced by what the call decided it is, if it did.
+fn fill_in(ty: &Type, element: &Option<Type>) -> Type {
+    match (ty, element) {
+        (Type::Var, Some(e)) => e.clone(),
+        (Type::Set(inner), Some(_)) => Type::Set(Box::new(fill_in(inner, element))),
+        _ => ty.clone(),
+    }
 }
 
 /// The error for a function name that Rust would not accept, in `to_rust`.
@@ -1330,6 +1362,24 @@ mod tests {
     }
 
     const B: &str = "alphabet B = {0, 1}\n";
+
+    /// A generic library function takes its `T` from the first argument that
+    /// shows it, and the result has that type.
+    #[test]
+    fn generic_library_functions_agree_on_their_element_type() {
+        check("let u = std.collections.union({1}, {2})
+print u + 1").expect_err("a set plus an Int");
+        check("print std.collections.contains({\"a\"}, \"b\"), std.collections.union({}, {}) == {}").unwrap();
+        assert_eq!(
+            error("print std.collections.contains({1}, \"a\")"),
+            "TypeError: argument 2 of `std.collections.contains` must be an Int, but this is a Str"
+        );
+        assert_eq!(
+            error("print std.collections.union({1}, {\"a\"})"),
+            "TypeError: argument 2 of `std.collections.union` must be a Set[Int], but this is a Set[Str]"
+        );
+        assert!(error("print std.collections.size(1)").contains("must be a Set[T]"));
+    }
 
     #[test]
     fn accepts_a_good_program() {

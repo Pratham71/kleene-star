@@ -1,0 +1,5 @@
+# A run-time error of std.collections, with its hint.
+alphabet B = {0, 1}
+alphabet One = {a}
+print "before"
+print std.collections.words(B, 0 - 1)

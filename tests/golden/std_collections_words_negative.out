@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_collections_words_negative.kstar, line 5, in <main>
+    print std.collections.words(B, 0 - 1)
+                                   ^^^^^
+ValueError[E0610]: there are no strings of length -1
+  hint: the length must be 0 or more; the only string of length 0 is the empty string

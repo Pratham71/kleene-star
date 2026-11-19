@@ -1,0 +1,27 @@
+# std.collections: ordinary use, and the edge cases.
+import std.collections as c
+from std.collections import is_subset, size as count_members
+
+let a = {1, 2, 3, 4}
+let b = {3, 4, 5}
+print c.union(a, b), c.intersect(a, b), c.difference(a, b), c.difference(b, a)
+print c.contains(a, 3), c.contains(a, 9), c.contains({"ab", ""}, ""), c.contains({true}, false)
+print is_subset({3, 4}, a), is_subset(a, b), is_subset({}, a), is_subset(a, a)
+print count_members(a), c.size({}), c.size({"x", "x"}), len(a)
+print c.min(a), c.max(a), c.sum(a), c.sum({}), c.min({0 - 5, 7}), c.max({0 - 5})
+
+# `{}` fits any set, and the result of a generic call has the right type.
+print c.union({}, {"a"}), c.union({}, {}), c.intersect(1..4, {2, 9})
+let both = c.union({"0"}, {"1"})
+print both, both == {"0", "1"}
+
+# Words over an alphabet.
+alphabet B = {0, 1}
+alphabet One = {a}
+alphabet None = {}
+alphabet XYZ = {x, y, z}
+print c.words(B, 0), c.words(B, 2), c.words(One, 4), c.words(None, 2), c.words(None, 0)
+print c.size(c.words(B, 16)), c.size(c.words(XYZ, 3))
+
+# The built-in union works on languages: it makes a machine, not a set.
+print equivalent(union({"a"}, {"b"}), {"b", "a"}), c.union({"a"}, {"b"})

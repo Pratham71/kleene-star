@@ -1324,11 +1324,12 @@ MathError[E0609]: the square root of -9 is not a whole number
   hint: `sqrt` needs a number from 0 up
 ```
 
-## E0610: An index or count a string function does not accept
+## E0610: An index or count a library function does not accept
 
-A function of `std.string` was given a position or a count outside what
-makes sense: an index past the end of the string (`char_at`, `substring`),
-a negative index, a negative repeat count, or the empty string to `count`.
+A function of `std.string` or `std.collections` was given a position or a
+count outside what makes sense: an index past the end of the string
+(`char_at`, `substring`), a negative index, a negative repeat count or word
+length (`repeat`, `words`), or the empty string to `count`.
 Indices count characters from 0. The hint says which values work.
 
 ```kstar-error
@@ -1365,9 +1366,10 @@ ValueError[E0611]: "12a" is not a whole number
 
 ## E0612: A result too large to build
 
-A library function was asked for a result with more than 1000000
-characters (for a set of strings, counting every member), such as
-`repeat("ab", 1000000000000)` or the substrings of a very long string.
+A library function was asked for a result that is too big: more than
+1000000 characters (for a set of strings, counting every member), such as
+`repeat("ab", 1000000000000)` or the substrings of a very long string, or,
+for `std.collections.words`, more than 100000 words.
 Rather than run until the memory is gone, it stops with this error.
 
 ```kstar-error
@@ -1381,6 +1383,24 @@ Traceback (most recent call last):
                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 LimitError[E0612]: `repeat` of a string of length 2 by 1000000000000 would be too large to build (over 1000000 characters)
   hint: use a shorter string, or reason about the language instead of building every word
+```
+
+## E0613: The smallest or largest member of an empty set
+
+`std.collections.min` and `max` have no answer for a set with no members.
+Check `size(s) > 0` first.
+
+```kstar-error
+print std.collections.max({})
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 1, in <main>
+    print std.collections.max({})
+                              ^^
+ValueError[E0613]: the largest member of an empty set is not defined
+  hint: check `size(s) > 0` before asking for the largest member
 ```
 
 ## W0100: A state that can never be reached

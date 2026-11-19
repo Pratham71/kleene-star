@@ -254,6 +254,69 @@ file: `import std.math` (bound as `math`), `import std.math as m`, or
 library. Hovering over a library function in an editor shows the same
 descriptions as below.
 
+### `std.collections`
+
+Sets: membership, subsets, union, intersection, difference, size, smallest, largest and sum, and every word of a given length over an alphabet.
+
+| Function | What it does |
+|---|---|
+| `contains(s: Set[T], x: T) -> Bool` | Whether `x` is a member of the set `s`. |
+| `difference(a: Set[T], b: Set[T]) -> Set[T]` | The members of the set `a` that are not in `b`. |
+| `intersect(a: Set[T], b: Set[T]) -> Set[T]` | The members that the sets `a` and `b` have in common. |
+| `is_subset(a: Set[T], b: Set[T]) -> Bool` | Whether every member of the set `a` is also in `b`; the empty set is a subset of every set. |
+| `max(s: Set[Int]) -> Int` | The largest member of a set of Ints; the set must not be empty. |
+| `min(s: Set[Int]) -> Int` | The smallest member of a set of Ints; the set must not be empty. |
+| `size(s: Set[T]) -> Int` | The number of members of the set `s`; the same as `len(s)`. |
+| `sum(s: Set[Int]) -> Int` | The members of a set of Ints added up; the sum of the empty set is 0. |
+| `union(a: Set[T], b: Set[T]) -> Set[T]` | The members that are in the set `a`, in `b`, or in both. |
+| `words(alphabet: Alphabet, n: Int) -> Set[Str]` | Every string of length `n` over `alphabet`, as a set; `n` must not be negative, and there may be at most 100000 of them. |
+
+A set holds `Int`, `Str` or `Bool` values. In the signatures, `T` stands for
+that element type: `contains(s, x)` works for a set of Ints with an Int and
+for a set of Strs with a Str, and `union(a, b)` needs both sets to hold the
+same kind of value. `{}` fits any `Set[T]`. `min`, `max` and `sum` need a set
+of Ints. `min` and `max` of the empty set are a `ValueError` (E0613) with a
+hint, and a sum that does not fit in an Int is a `MathError` (E0600).
+
+`words(alphabet, n)` lists all `size^n` strings of length `n`, so
+`words(B, 3)` over `{0, 1}` has 8 words, and `words(B, 0)` is `{""}`. When
+the result would have more than 100000 words, it is a `LimitError` (E0612)
+whose message names that limit, instead of a program that never finishes;
+a negative `n` is E0610.
+
+**Names that also belong to the built-ins.** The built-ins `union`,
+`intersect` and `difference` combine *languages* into a machine:
+`union({"a"}, {"b"})` is a `Dfa`. The functions here are different: they
+combine the *members of sets* and give a set back. Call them by their full
+names (`std.collections.union(a, b)`) or import them under other names
+(`from std.collections import union as set_union`). Taking one under its own
+name, as in `from std.collections import union`, is an error (E0203), because
+that name already means the built-in. `size` is the same as the built-in
+`len` on a set.
+
+**What is not here.** There is no power set and no set of pairs (a product
+of two sets), because both are sets of sets or sets of tuples, and a set can
+only hold `Int`, `Str` or `Bool` values.
+
+```kstar
+let a = {1, 2, 3, 4}
+let b = {3, 4, 5}
+print std.collections.union(a, b), std.collections.intersect(a, b)
+print std.collections.difference(a, b), std.collections.is_subset({3, 4}, a)
+print std.collections.size(a), std.collections.min(a), std.collections.max(a), std.collections.sum(a)
+print std.collections.contains({"", "ab"}, "ab"), std.collections.contains(a, 9)
+alphabet B = {0, 1}
+print std.collections.words(B, 2), std.collections.size(std.collections.words(B, 10))
+```
+
+```text
+{1, 2, 3, 4, 5} {3, 4}
+{1, 2} true
+4 1 4 10
+true false
+{"00", "01", "10", "11"} 1024
+```
+
 ### `std.math`
 
 Whole-number arithmetic: division, powers, roots, divisors and primes.

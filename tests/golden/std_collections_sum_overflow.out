@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_collections_sum_overflow.kstar, line 3, in <main>
+    print std.collections.sum({9223372036854775807, 1})
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+MathError[E0600]: the sum is too large for an Int
+  hint: Ints are 64-bit: about plus or minus 9 * 10^18

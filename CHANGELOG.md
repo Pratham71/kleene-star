@@ -14,6 +14,16 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Added
 
+- `std.collections`, the third standard-library module: set helpers
+  `contains`, `is_subset`, `union`, `intersect`, `difference`, `size`, `min`,
+  `max`, `sum`, and `words(alphabet, n)`, every string of length `n` over an
+  alphabet (at most 100000, or a clear error naming the limit). The
+  functions are generic over the element type of a set (Int, Str or Bool);
+  `min` and `max` of an empty set are an error with a hint (new code
+  E0613). Its `union`, `intersect` and `difference` act on set members, not
+  on languages like the built-ins of those names, so
+  `from std.collections import union` is an error that points to `as`. There
+  is no power set or set of pairs, because sets of sets do not exist yet.
 - `std.string`, the second standard-library module: `length`, `reverse`,
   `repeat`, `contains`, `starts_with`, `ends_with`, `index_of` (-1 when
   absent), `count` (non-overlapping), `substring`, `char_at`, `to_int`,

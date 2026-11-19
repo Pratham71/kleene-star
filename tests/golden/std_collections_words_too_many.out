@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_collections_words_too_many.kstar, line 5, in <main>
+    print std.collections.words(B, 17)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0612]: the 2 symbols would make more than 100000 words of length 17, which is the limit
+  hint: ask for shorter words (at most 100000 are built), or reason about the language without listing it

@@ -1,0 +1,3 @@
+# A run-time error of std.collections, with its hint.
+print "before"
+print std.collections.sum({9223372036854775807, 1})
