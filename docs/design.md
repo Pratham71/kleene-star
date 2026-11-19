@@ -1,17 +1,19 @@
 # Kleene Star: a small, well-designed language for Theory of Computation
 
-> Status: version 0.3.0 (2026-11-19), MIT licensed. Stages 0 to 9 below are built, and so is most of
+> Status: version 0.4.0 (2026-11-19), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
 > Version 0.3 added imports between files, `kstar export` to Rust and a standard library with
-> three modules: `std.math`, `std.string` and `std.collections`. This is the design as agreed on
+> three modules: `std.math`, `std.string` and `std.collections`. Version 0.4 added four more,
+> `std.automata`, `std.regex`, `std.binary` and `std.testing`, and machines as JSON
+> (`to_json`, `from_json`, `kstar export --format json`). This is the design as agreed on
 > 2026-11-10, with the layout, error format and test sections updated to match the code.
 >
-> Roadmap, in order. **Next:** JSON import and export, so machines can move to and from other
-> tools. **Version 0.4:** more libraries, `std.automata`, `std.regex`, `std.binary` and
-> `std.testing`, and a list type (sets are still the only collection, which is why there is no
-> power set or set of pairs yet). **After that:** packages, so a program can use libraries
-> that are not part of the standard library.
+> Roadmap, in order. **Next:** a list type (sets are still the only collection, which is why
+> there is no power set or set of pairs yet), reading files from a program (so a JSON machine
+> can be loaded from disk), and libraries for grammars, PDAs and Turing machines (`std.grammar`,
+> `std.pda`, `std.tm`). **After that:** packages, so a program can use libraries that are not
+> part of the standard library.
 
 ## Context
 
