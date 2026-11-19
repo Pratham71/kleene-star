@@ -1,12 +1,17 @@
 # Kleene Star: a small, well-designed language for Theory of Computation
 
-> Status: version 0.2.5-beta (2026-11-13), MIT licensed. Stages 0 to 9 below are built, and so is most of
+> Status: version 0.3.0 (2026-11-19), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
-> Version 0.3 (in progress) adds imports between files, `export` to Rust and a standard
-> library. All three are on `main` and in the 0.2.5-beta pre-release; `std.math` is the first library module, and
-> `std.string` and `std.collections` come next. This is the design as agreed on 2026-11-10,
-> with the layout, error format and test sections updated to match the code.
+> Version 0.3 added imports between files, `kstar export` to Rust and a standard library with
+> three modules: `std.math`, `std.string` and `std.collections`. This is the design as agreed on
+> 2026-11-10, with the layout, error format and test sections updated to match the code.
+>
+> Roadmap, in order. **Next:** JSON import and export, so machines can move to and from other
+> tools. **Version 0.4:** more libraries, `std.automata`, `std.regex`, `std.binary` and
+> `std.testing`, and a list type (sets are still the only collection, which is why there is no
+> power set or set of pairs yet). **After that:** packages, so a program can use libraries
+> that are not part of the standard library.
 
 ## Context
 
@@ -82,7 +87,12 @@ My calls:
 - The standard library is a table of functions (`src/lang/stdlib/`), each with its types, a
   one-line description and its code; everything else (checking, hover, completion, the
   reference test) reads the table. `std.math` came first. Its `div` goes with `%` (Euclid's
-  division), so `a == b * div(a, b) + a % b` always holds.
+  division), so `a == b * div(a, b) + a % b` always holds. `std.string` and `std.collections`
+  followed. A library function's signature may use the type variable `T` for the element type
+  of a set, which the checker fills in from the call. A library function that shares a name
+  with a built-in (`reverse`, `union`, `intersect`, `difference`, `len`) is reached by its full
+  name; importing it under the built-in's own name is an error. The library has no power set
+  or pairs because sets of sets do not exist.
 
 ## Design principles and where they come from
 
