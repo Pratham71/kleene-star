@@ -31,7 +31,13 @@ pub const NAMES: &[&str] = &[
     "derive",
     "run",
     "to_rust",
+    "to_json",
+    "from_json",
 ];
+
+/// The kinds `from_json` can read, as the type names its first argument
+/// is written with.
+pub const JSON_KINDS: &[&str] = &["Dfa", "Nfa", "Regex", "Grammar", "Pda", "Tm"];
 
 /// What kind of argument a built-in accepts.
 enum Param {
@@ -49,6 +55,8 @@ enum Param {
     Alphabet,
     Grammar,
     Str,
+    /// Anything `to_json` can write: a machine, a regex or a grammar.
+    Exportable,
 }
 
 /// True for the types that describe a regular language.
@@ -137,6 +145,11 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
         "derive" => (&[Grammar, Str], Type::Str),
         "run" => (&[Tm, Str], Type::Str),
         "to_rust" => (&[Lang, Str], Type::Str),
+        "to_json" => match args.len() {
+            1 => (&[Exportable], Type::Str),
+            2 => (&[Exportable, Str], Type::Str),
+            n => return Err(error(None, format!("`to_json` takes 1 or 2 arguments, but {n} were given"))),
+        },
         _ => unreachable!("not a built-in: {name}"),
     };
     if args.len() != params.len() {
@@ -165,6 +178,10 @@ pub fn result_type(name: &str, args: &[Type]) -> Result<Type, CallError> {
             Alphabet => (*arg == Type::Alphabet, "an Alphabet"),
             Grammar => (*arg == Type::Grammar, "a Grammar"),
             Str => (*arg == Type::Str, "a Str"),
+            Exportable => (
+                matches!(arg, Type::Dfa | Type::Nfa | Type::Regex | Type::Grammar | Type::Pda | Type::Tm),
+                "a machine, regex or grammar (Dfa, Nfa, Regex, Grammar, Pda or Tm)",
+            ),
         };
         if !ok {
             let mut err = error(
@@ -239,6 +256,8 @@ pub fn doc(name: &str) -> Option<BuiltinDoc> {
         "to_grammar" => ("to_grammar(lang) -> Grammar", &["lang"], "A right-linear grammar for a regular language."),
         "derive" => ("derive(grammar, word) -> Str", &["grammar", "word"], "A shortest leftmost derivation of the word, one sentential form per line."),
         "run" => ("run(tm, word) -> Str", &["tm", "word"], "Runs a Turing machine until it halts and returns what is left on the tape."),
+        "to_json" => ("to_json(machine, name?) -> Str", &["machine", "name"], "The machine, regex or grammar in Kleene Star's JSON format (version 1), with `name` if given; `from_json` reads it back."),
+        "from_json" => ("from_json(Kind, text) -> Kind", &["Kind", "text"], "Reads a machine, regex or grammar from JSON. `Kind` is the type expected: `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`."),
         "to_rust" => ("to_rust(lang, fn_name) -> Str", &["lang", "fn_name"], "Rust source for `pub fn fn_name(input: &str) -> bool`, a dependency-free matcher made from the language's DFA, with tests."),
         _ => return None,
     };

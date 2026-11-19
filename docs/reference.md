@@ -880,6 +880,20 @@ be a valid Rust function name and not a Rust keyword (E0308). Grammars,
 PDAs and Turing machines are refused when the program is checked. The
 command `kstar export` does the same from the command line.
 
+### Machines as JSON
+
+| Function | Returns | What it does |
+|---|---|---|
+| `to_json(m)`, `to_json(m, name)` | `Str` | `m` (a `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`) in [Kleene Star's JSON format](#the-json-format), with `name` if given. |
+| `from_json(Kind, text)` | `Kind` | The machine, regex or grammar in `text`. `Kind` is the type expected, written as a type name: `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`. |
+
+`from_json`'s first argument is a type name, not a value, so the checker
+knows what the call returns: `from_json(Dfa, text)` is a `Dfa`. If `text` is
+not valid JSON, not in the format, or holds another kind, the program stops
+with a `ValueError` (E0616) that says where the problem is. A string cannot
+span lines, so JSON written into a program goes on one line, which JSON
+allows. The command `kstar export --format json` writes a file.
+
 ### Alphabets in operations
 
 - A `Dfa` or `Nfa` has a fixed alphabet. When an operation takes two machines,
@@ -888,6 +902,88 @@ command `kstar export` does the same from the command line.
   machine's alphabet. On its own, it uses the symbols it mentions.
 - `machine accepts word` is an error if `word` has a symbol outside the
   machine's alphabet. `regex accepts word` is simply false in that case.
+
+## The JSON format
+
+`to_json` and `kstar export --format json` write, and `from_json` reads, one
+JSON object per machine. Version 1 of the format looks like this for a DFA:
+
+```kstar
+alphabet B = {0, 1}
+dfa EvenZeros over B {
+    start  even
+    accept even
+    even --0--> odd
+    even --1--> even
+    odd  --0--> even
+    odd  --1--> odd
+}
+print to_json(EvenZeros, "EvenZeros")
+```
+
+```text
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "dfa",
+  "name": "EvenZeros",
+  "alphabet": ["0", "1"],
+  "states": ["even", "odd"],
+  "start": "even",
+  "accept": ["even"],
+  "transitions": [
+    {"from": "even", "symbol": "0", "to": "odd"},
+    {"from": "even", "symbol": "1", "to": "even"},
+    {"from": "odd", "symbol": "0", "to": "even"},
+    {"from": "odd", "symbol": "1", "to": "odd"}
+  ]
+}
+```
+
+Every file has these fields first:
+
+| Field | Value |
+|---|---|
+| `format` | always `"kleene-star"` |
+| `version` | `1`; a reader refuses a version newer than its own |
+| `kind` | `"dfa"`, `"nfa"`, `"regex"`, `"grammar"`, `"pda"` or `"tm"` |
+| `name` | optional: the machine's name |
+
+Then, by kind (states, variables and symbols are always written by name,
+so the names survive a round trip):
+
+| Kind | Fields |
+|---|---|
+| `dfa` | `alphabet`: symbols; `states`: names, in order; `start`; `accept`: states; `transitions`: `{"from", "symbol", "to"}`, exactly one for each state and symbol |
+| `nfa` | the same, with any number of transitions; `"symbol": null` is an eps move |
+| `regex` | `regex`: the regex in the language's syntax, without the slashes |
+| `grammar` | `alphabet`; `variables`: names; `start`: a variable; `rules`: `{"head", "body"}`, where `body` is a list of `{"terminal": "0"}` and `{"variable": "S"}` (an empty list is eps) |
+| `pda` | `alphabet`; `states`; `start`; `accept`; `bottom`: the stack symbol the stack starts with; `moves`: `{"from", "read", "pop", "push", "to"}`, where `read` and `pop` may be `null` (eps) and `push` lists stack symbols, top first |
+| `tm` | `alphabet`; `states`; `start`; `accept`; `reject`; `moves`: `{"from", "read", "write", "move", "to"}`, where `move` is `"L"`, `"R"` or `"S"` and `"_"` is the blank |
+
+A symbol is a string of one letter or digit. A grammar body says which items
+are terminals and which are variables because they can look alike: over the
+alphabet `{A, B}`, `to_grammar` makes both a terminal `A` and a variable `A`.
+
+**Reading is strict**, because a file may come from anywhere:
+
+- the text may be at most 1 MiB, and JSON nesting is limited (to 128 levels;
+  a valid file never goes deeper than 4);
+- at most 10000 states, variables or symbols, at most 100000 transitions,
+  rules or moves, at most 1000 symbols in a rule body or a push;
+- names have 1 to 200 characters and no control characters, and no state
+  or variable is declared twice;
+- every state, variable and symbol that is used must be declared, and every
+  symbol must be in the alphabet;
+- a DFA must be total and deterministic, a Turing machine deterministic, and
+  no state both accepts and rejects;
+- a field the format does not have is an error, so a misspelt `"acept"` is
+  reported instead of meaning "accepts nothing".
+
+An error names the place as a path, such as `transitions[3].to`. The round trip
+keeps everything: `from_json(Dfa, to_json(D))` has the same states, with the
+same names, in the same order, and the same transitions as `D`. A regex
+comes back as an equivalent regex (its text is read again).
 
 ## Errors
 
@@ -1113,6 +1209,7 @@ cannot be defined either (E0209).
 | `kstar new <name>` | Writes `<name>.kstar`, a small working program to start from. Never overwrites. |
 | `kstar trace <file> <M> <word>` | Runs the file without showing its output, then traces machine `M` (any expression) on `word`. |
 | `kstar export <file> <M> [--fn name] [-o out.rs] [--minimize]` | Runs the file without showing its output, then writes the regular language `M` as a standalone Rust function (see [`to_rust`](#generating-rust)). |
+| `kstar export --format json <file> <M> [-o out.json]` | The same, but writes `M` (any `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`) in [the JSON format](#the-json-format), with its name. |
 | `kstar explain <code>` | Explains an error or warning code; `--list` lists them all. |
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
 | `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |

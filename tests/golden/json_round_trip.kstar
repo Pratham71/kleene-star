@@ -1,0 +1,52 @@
+# Every kind writes to JSON and reads back the same, names and all.
+alphabet B = {0, 1}
+dfa EvenZeros over B {
+    start  even
+    accept even
+    even --0--> odd
+    even --1--> even
+    odd  --0--> even
+    odd  --1--> odd
+}
+nfa EndsIn01 over B {
+    start  s
+    accept f
+    s --0,1--> s
+    s --0-->   m
+    m --1-->   f
+    f --eps--> s
+}
+grammar Balanced over B {
+    S -> 0 S 1 | eps
+}
+tm Flip over B {
+    start  go
+    accept done
+    go --0/1,R--> go
+    go --1/0,R--> go
+    go --_/_,S--> done
+}
+
+print to_json(EvenZeros, "EvenZeros")
+print to_json(EndsIn01)
+print to_json(/(0|1)*01/, "Ends01")
+print to_json(Balanced)
+print to_json(to_pda(Balanced))
+print to_json(Flip, "Flip")
+
+let D = from_json(Dfa, to_json(EvenZeros))
+test equivalent(D, EvenZeros) and states(D) == 2
+print D
+let N = from_json(Nfa, to_json(EndsIn01))
+test equivalent(N, EndsIn01)
+let R = from_json(Regex, to_json(/(0|1)*01/))
+test equivalent(R, EndsIn01)
+let G = from_json(Grammar, to_json(Balanced))
+print G
+test std.testing.agree_up_to(G, Balanced, 6)
+let P = from_json(Pda, to_json(to_pda(Balanced)))
+test std.testing.agree_up_to(P, Balanced, 6)
+let M = from_json(Tm, to_json(Flip))
+print run(M, "0110")
+let compact = "{\"format\": \"kleene-star\", \"version\": 1, \"kind\": \"regex\", \"regex\": \"a*b\"}"
+print from_json(Regex, compact)

@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print from_json(Dfa, to_json(nfa over B { start s  accept s  s --0--> s }))

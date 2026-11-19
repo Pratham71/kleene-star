@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  json_unknown_field.kstar, line 1, in <main>
+    print from_json(Regex, "{\"format\": \"kleene-star\", \"version\": 1, \"kind\": \"regex\", \"regex\": \"a\", \"flags\": \"i\"}")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0616]: this is not a machine in Kleene Star's JSON format: unknown field `flags`; the fields here are format, version, kind, name, regex
+  hint: `to_json` writes the format; docs/reference.md describes every field

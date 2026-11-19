@@ -1456,6 +1456,36 @@ ValueError[E0615]: the two languages are equivalent, so no word tells them apart
   hint: check `equivalent(a, b)` first
 ```
 
+## E0616: Text that is not a machine in the JSON format
+
+`from_json(Kind, text)` reads a machine, regex or grammar written in Kleene
+Star's JSON format (the reference describes it under "The JSON format").
+The text was not valid JSON, missed a field or had one the format does not
+know, used a state or symbol it never declared, broke a rule of its kind (a
+DFA must be total and deterministic), or held another kind than the one
+asked for. The message says where, as a path like `transitions[3].to`.
+`to_json(m, name)` with a name that cannot be written (empty, or with a
+control character) is the same error.
+
+```kstar-error
+alphabet B = {0, 1}
+let N = nfa over B {
+    start  s
+    accept s
+    s --0--> s
+}
+print from_json(Dfa, to_json(N))
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 7, in <main>
+    print from_json(Dfa, to_json(N))
+                         ^^^^^^^^^^
+ValueError[E0616]: this JSON holds a Nfa, not a Dfa
+  hint: read it as what it is, `from_json(Nfa, text)`, and convert it if needed
+```
+
 ## W0100: A state that can never be reached
 
 No sequence of moves from the start state leads to this state, so it does

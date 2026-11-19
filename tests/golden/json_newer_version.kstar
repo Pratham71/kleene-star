@@ -1,0 +1,1 @@
+print from_json(Regex, "{\"format\": \"kleene-star\", \"version\": 2, \"kind\": \"regex\", \"regex\": \"a\"}")

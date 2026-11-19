@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  json_not_json.kstar, line 1, in <main>
+    print from_json(Dfa, "{ not json")
+                         ^^^^^^^^^^^^
+ValueError[E0616]: this is not a machine in Kleene Star's JSON format: this is not valid JSON: key must be a string at line 1 column 3
+  hint: `to_json` writes the format; docs/reference.md describes every field

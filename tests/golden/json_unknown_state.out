@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  json_unknown_state.kstar, line 1, in <main>
+    print from_json(Dfa, "{\"format\": \"kleene-star\", \"version\": 1, \"kind\": \"dfa\", \"alphabet\": [\"0\"], \"states\": [\"a\"], \"start\": \"a\", \"accept\": [\"b\"], \"transitions\": []}")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0616]: this is not a machine in Kleene Star's JSON format: at `accept[0]`: "b" is not one of the declared states
+  hint: `to_json` writes the format; docs/reference.md describes every field

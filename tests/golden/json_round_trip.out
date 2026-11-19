@@ -1,0 +1,94 @@
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "dfa",
+  "name": "EvenZeros",
+  "alphabet": ["0", "1"],
+  "states": ["even", "odd"],
+  "start": "even",
+  "accept": ["even"],
+  "transitions": [
+    {"from": "even", "symbol": "0", "to": "odd"},
+    {"from": "even", "symbol": "1", "to": "even"},
+    {"from": "odd", "symbol": "0", "to": "even"},
+    {"from": "odd", "symbol": "1", "to": "odd"}
+  ]
+}
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "nfa",
+  "alphabet": ["0", "1"],
+  "states": ["s", "m", "f"],
+  "start": "s",
+  "accept": ["f"],
+  "transitions": [
+    {"from": "s", "symbol": "0", "to": "s"},
+    {"from": "s", "symbol": "0", "to": "m"},
+    {"from": "s", "symbol": "1", "to": "s"},
+    {"from": "m", "symbol": "1", "to": "f"},
+    {"from": "f", "symbol": null, "to": "s"}
+  ]
+}
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "regex",
+  "name": "Ends01",
+  "regex": "(0|1)*01"
+}
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "grammar",
+  "alphabet": ["0", "1"],
+  "variables": ["S"],
+  "start": "S",
+  "rules": [
+    {"head": "S", "body": [{"terminal": "0"}, {"variable": "S"}, {"terminal": "1"}]},
+    {"head": "S", "body": []}
+  ]
+}
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "pda",
+  "alphabet": ["0", "1"],
+  "states": ["start", "loop", "accept"],
+  "start": "start",
+  "accept": ["accept"],
+  "bottom": "Z",
+  "moves": [
+    {"from": "start", "read": null, "pop": "Z", "push": ["S", "Z"], "to": "loop"},
+    {"from": "loop", "read": null, "pop": "S", "push": ["0", "S", "1"], "to": "loop"},
+    {"from": "loop", "read": null, "pop": "S", "push": [], "to": "loop"},
+    {"from": "loop", "read": "0", "pop": "0", "push": [], "to": "loop"},
+    {"from": "loop", "read": "1", "pop": "1", "push": [], "to": "loop"},
+    {"from": "loop", "read": null, "pop": "Z", "push": ["Z"], "to": "accept"}
+  ]
+}
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "tm",
+  "name": "Flip",
+  "alphabet": ["0", "1"],
+  "states": ["go", "done"],
+  "start": "go",
+  "accept": ["done"],
+  "reject": [],
+  "moves": [
+    {"from": "go", "read": "0", "write": "1", "move": "R", "to": "go"},
+    {"from": "go", "read": "1", "write": "0", "move": "R", "to": "go"},
+    {"from": "go", "read": "_", "write": "_", "move": "S", "to": "done"}
+  ]
+}
+DFA with 2 states over {0, 1}
+         | 0    | 1
+-> *even | odd  | even
+    odd  | even | odd
+Grammar with 1 variable over {0, 1}, start S
+S -> 0 S 1 | eps
+1001
+/a*b/
+tests: 5 passed, 0 failed

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  json_wrong_kind.kstar, line 2, in <main>
+    print from_json(Dfa, to_json(nfa over B { start s  accept s  s --0--> s }))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0616]: this JSON holds a Nfa, not a Dfa
+  hint: read it as what it is, `from_json(Nfa, text)`, and convert it if needed

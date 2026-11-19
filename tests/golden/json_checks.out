@@ -1,0 +1,38 @@
+Error in json_checks.kstar, line 3:
+    print from_json(Machine, "{}")
+                    ^^^^^^^
+TypeError[E0300]: the first argument of `from_json` must be the kind to read: `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`
+  hint: write the type name itself, without quotes, as in `from_json(Dfa, text)`
+
+Error in json_checks.kstar, line 4:
+    print from_json("Dfa", "{}")
+                    ^^^^^
+TypeError[E0300]: the first argument of `from_json` must be the kind to read: `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`
+  hint: write the type name itself, without quotes, as in `from_json(Dfa, text)`
+
+Error in json_checks.kstar, line 5:
+    print from_json(Dfa, 3)
+                         ^
+TypeError[E0300]: argument 2 of `from_json` must be a Str, but this is an Int
+
+Error in json_checks.kstar, line 6:
+    print from_json(Dfa)
+          ^^^^^^^^^^^^^^
+TypeError[E0301]: `from_json` takes 2 arguments, but 1 was given
+
+Error in json_checks.kstar, line 7:
+    print to_json({"a"})
+                  ^^^^^
+TypeError[E0300]: argument 1 of `to_json` must be a machine, regex or grammar (Dfa, Nfa, Regex, Grammar, Pda or Tm), but this is a Set[Str]
+
+Error in json_checks.kstar, line 8:
+    print to_json(/a/, 1)
+                       ^
+TypeError[E0300]: argument 2 of `to_json` must be a Str, but this is an Int
+
+Error in json_checks.kstar, line 9:
+    print states(from_json(Regex, "{}"))
+                 ^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0300]: argument 1 of `states` must be a machine (Dfa, Nfa, Pda or Tm), but this is a Regex
+
+7 errors found
