@@ -1,0 +1,27 @@
+Error in std_binary_checks.kstar, line 2:
+    print std.binary.divisible_by("3")
+                                  ^^^
+TypeError[E0300]: argument 1 of `std.binary.divisible_by` must be an Int, but this is a Str
+
+Error in std_binary_checks.kstar, line 3:
+    print std.binary.no_leading_zeros(1)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0301]: `std.binary.no_leading_zeros` takes 0 arguments, but 1 was given
+
+Error in std_binary_checks.kstar, line 4:
+    print std.binary.run_at_most(1, 1)
+                                 ^
+TypeError[E0300]: argument 1 of `std.binary.run_at_most` must be a Str, but this is an Int
+
+Error in std_binary_checks.kstar, line 5:
+    print std.binary.to_binary(5) + 1
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is a Str and the right side is an Int
+  hint: an Int is not turned into a Str by itself; `print` can show both: `print "n =", n`
+
+Error in std_binary_checks.kstar, line 6:
+    print std.binary.from_binary(101)
+                                 ^^^
+TypeError[E0300]: argument 1 of `std.binary.from_binary` must be a Str, but this is an Int
+
+5 errors found

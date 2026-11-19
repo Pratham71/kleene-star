@@ -8,7 +8,7 @@
 //! run time (`parse`). To go the other way, from a machine back to a regex,
 //! use the built-in `to_regex`.
 
-use super::{Failure, Function, Module, Ty};
+use super::{alphabet_arg, str_arg, Failure, Function, Module, Ty};
 use crate::automata::regex::{self, Regex};
 use crate::lang::codes;
 use crate::lang::value::Value;
@@ -47,20 +47,6 @@ fn re(args: &[Value], i: usize) -> &Regex {
     match &args[i] {
         Value::Regex(r) => r,
         other => unreachable!("the checker allowed {other:?} as a Regex"),
-    }
-}
-
-fn text_arg(args: &[Value], i: usize) -> &str {
-    match &args[i] {
-        Value::Str(s) => s,
-        other => unreachable!("the checker allowed {other:?} as a Str"),
-    }
-}
-
-fn alphabet(args: &[Value]) -> &[char] {
-    match &args[0] {
-        Value::Alphabet(symbols) => symbols,
-        other => unreachable!("the checker allowed {other:?} as an Alphabet"),
     }
 }
 
@@ -104,7 +90,7 @@ fn value(r: Regex) -> Result<Value, Failure> {
 // ---- building ----
 
 fn parse(args: &[Value]) -> Result<Value, Failure> {
-    let parsed = regex::parse(text_arg(args, 0)).map_err(|(_, message)| Failure {
+    let parsed = regex::parse(str_arg(args, 0)).map_err(|(_, message)| Failure {
         code: codes::BAD_REGEX,
         arg: Some(0),
         message: format!("in regex: {message}"),
@@ -114,13 +100,13 @@ fn parse(args: &[Value]) -> Result<Value, Failure> {
 }
 
 fn literal(args: &[Value]) -> Result<Value, Failure> {
-    let word = text_arg(args, 0);
+    let word = str_arg(args, 0);
     fits(2 * word.chars().count() as u128)?;
     value(regex::literal(word))
 }
 
 fn any_of(args: &[Value]) -> Result<Value, Failure> {
-    value(regex::any_of(alphabet(args)))
+    value(regex::any_of(alphabet_arg(args, 0)))
 }
 
 fn alt(args: &[Value]) -> Result<Value, Failure> {
@@ -179,8 +165,8 @@ fn at_least(args: &[Value]) -> Result<Value, Failure> {
 /// symbol must be in the alphabet), and the regex for any string over the
 /// alphabet, `(0|1)*`.
 fn word_and_anything(args: &[Value]) -> Result<(Regex, Regex), Failure> {
-    let symbols = alphabet(args);
-    let word = text_arg(args, 1);
+    let symbols = alphabet_arg(args, 0);
+    let word = str_arg(args, 1);
     super::word_over(word, symbols, 1, "the word")?;
     fits(2 * word.chars().count() as u128 + 4 * symbols.len() as u128 + 4)?;
     Ok((regex::literal(word), Regex::star(regex::any_of(symbols))))

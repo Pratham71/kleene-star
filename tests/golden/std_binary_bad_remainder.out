@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_bad_remainder.kstar, line 1, in <main>
+    print std.binary.remainder(3, 5)
+                                  ^
+MathError[E0609]: a remainder after dividing by 3 cannot be 5
+  hint: the remainder must be from 0 to 2

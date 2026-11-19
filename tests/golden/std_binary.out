@@ -1,0 +1,39 @@
+DFA with 3 states over {0, 1}
+       | 0  | 1
+-> *r0 | r0 | r1
+    r1 | r2 | r0
+    r2 | r1 | r2
+DFA with 4 states over {0, 1}
+       | 0  | 1
+->  r0 | r0 | r1
+   *r1 | r2 | r3
+    r2 | r0 | r1
+    r3 | r2 | r3
+DFA with 4 states over {0, 1}
+           | 0      | 1
+->  start  | zero   | number
+   *zero   | dead   | dead
+   *number | number | number
+    dead   | dead   | dead
+DFA with 4 states over {0, 1}
+         | 0    | 1
+->  l0   | l1   | l1
+    l1   | l2   | l2
+   *l2   | long | long
+    long | long | long
+DFA with 2 states over {0, 1}
+       | 0  | 1
+-> *r0 | r0 | r1
+    r1 | r1 | r0
+DFA with 2 states over {0, 1}
+       | 0  | 1
+->  r0 | r0 | r1
+   *r1 | r1 | r0
+DFA with 3 states over {0, 1}
+         | 0    | 1
+-> *run0 | run0 | run1
+   *run1 | run0 | dead
+    dead | dead | dead
+0 101 111111111111111111111111111111111111111111111111111111111111111
+0 0 5 9223372036854775807
+tests: 603 passed, 0 failed

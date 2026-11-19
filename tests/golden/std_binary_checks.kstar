@@ -1,0 +1,6 @@
+# Mistakes the checker finds before anything runs.
+print std.binary.divisible_by("3")
+print std.binary.no_leading_zeros(1)
+print std.binary.run_at_most(1, 1)
+print std.binary.to_binary(5) + 1
+print std.binary.from_binary(101)

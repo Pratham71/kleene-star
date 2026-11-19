@@ -453,3 +453,67 @@ fn regex_builders_match_their_definitions() {
     same_language("any_of", |w| accepts(&both, w), |w| w.chars().count() == 1);
     assert_eq!(regex::any_of(&[]), Regex::Empty);
 }
+
+/// Every bit string of length at most `max`, shortest first.
+fn bit_strings(max: usize) -> Vec<String> {
+    let mut all = vec![String::new()];
+    let mut layer = vec![String::new()];
+    for _ in 0..max {
+        layer = layer.iter().flat_map(|w| ['0', '1'].map(|c| format!("{w}{c}"))).collect();
+        all.extend(layer.iter().cloned());
+    }
+    all
+}
+
+/// The machines of `std.binary` against arithmetic and plain definitions on
+/// every bit string up to 10 bits.
+#[test]
+fn binary_machines_match_their_definitions() {
+    use kstar::automata::binary;
+    let all = bit_strings(10);
+    // Read most significant bit first; leading zeros do not count, and the
+    // empty string is 0.
+    let value = |w: &str| w.chars().fold(0u64, |v, c| 2 * v + (c == '1') as u64);
+    for n in 1..=12usize {
+        for r in 0..n {
+            let d = binary::remainder(n, r);
+            assert_eq!(d.states.len(), n, "one state per remainder");
+            for w in &all {
+                assert_eq!(d.accepts(w).unwrap(), value(w) % n as u64 == r as u64, "{w} mod {n} = {r}?");
+            }
+        }
+    }
+    let d = binary::no_leading_zeros();
+    for w in &all {
+        let expected = w == "0" || w.starts_with('1');
+        assert_eq!(d.accepts(w).unwrap(), expected, "{w:?}");
+    }
+    for bit in ['0', '1'] {
+        for k in 0..4 {
+            let d = binary::run_at_most(bit, k);
+            for w in &all {
+                let longest = w.split(|c| c != bit).map(str::len).max().unwrap_or(0);
+                assert_eq!(d.accepts(w).unwrap(), longest <= k, "{w:?}: run of {bit} at most {k}?");
+            }
+            assert_eq!(d.states.len(), minimize::minimize(&d).states.len(), "run_at_most({bit}, {k}) is minimal");
+        }
+    }
+}
+
+/// Writing a number in binary and reading it back gives the number.
+#[test]
+fn binary_numbers_round_trip() {
+    use kstar::automata::binary::{from_binary, to_binary};
+    let mut rng = Rng::new(seed());
+    for _ in 0..CASES {
+        let n = (rng.below(1 << 30) as i64) << rng.below(33);
+        let bits = to_binary(n as u64);
+        assert!(bits == "0" || bits.starts_with('1'), "{n} written as {bits}");
+        assert_eq!(from_binary(&bits), Some(n as u64));
+        assert_eq!(from_binary(&format!("000{bits}")), Some(n as u64), "leading zeros do not count");
+    }
+    assert_eq!(to_binary(0), "0");
+    assert_eq!(from_binary(""), Some(0));
+    assert_eq!(from_binary(&to_binary(u64::MAX)), Some(u64::MAX));
+    assert_eq!(from_binary(&format!("1{}", to_binary(u64::MAX))), None, "65 bits do not fit");
+}

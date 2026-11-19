@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_not_bits.kstar, line 1, in <main>
+    print std.binary.from_binary("10a1")
+                                 ^^^^^^
+ValueError[E0611]: "10a1" is not a bit string: it contains `a`
+  hint: a bit string is made of 0s and 1s only

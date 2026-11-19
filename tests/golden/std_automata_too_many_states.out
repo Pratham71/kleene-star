@@ -3,4 +3,4 @@ Traceback (most recent call last):
     print std.automata.exactly(B, "1", 1000000)
                                        ^^^^^^^
 LimitError[E0612]: a count of 1000000 would need more than 10000 states
-  hint: pattern machines are limited to 10000 states
+  hint: the machines of the standard library are limited to 10000 states

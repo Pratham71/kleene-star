@@ -191,6 +191,7 @@ is one whose expression contains nothing but literals.
 | `grammar.rs` | Context-free grammars: CNF, CYK, emptiness, derivations, grammars from DFAs. |
 | `pda.rs` | Pushdown automata: the configuration search, PDAs from grammars. |
 | `tm.rs` | Turing machines: the tape, running with a step limit. |
+| `binary.rs` | Machines for binary numbers (one state per remainder) and bit strings, and converting numbers to and from bits. |
 | `patterns.rs` | Ready-made minimal DFAs: prefixes, suffixes and substrings (the Knuth-Morris-Pratt automaton), counting a symbol, remainders, lengths. |
 | `questions.rs` | Questions about a DFA's language: a shortest word, finiteness, counting and listing the words of a length. |
 

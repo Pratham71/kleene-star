@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_not_a_bit.kstar, line 1, in <main>
+    print std.binary.run_at_most("2", 1)
+                                 ^^^
+AlphabetError[E0500]: `2` is not a bit
+  hint: write "0" or "1"

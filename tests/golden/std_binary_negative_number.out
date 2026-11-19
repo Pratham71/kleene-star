@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_binary_negative_number.kstar, line 1, in <main>
+    print std.binary.to_binary(0 - 6)
+                               ^^^^^
+MathError[E0609]: -6 is negative, and bit strings here stand for numbers from 0 up
+  hint: write the sign separately, or work with a number from 0 up
