@@ -517,3 +517,71 @@ fn binary_numbers_round_trip() {
     assert_eq!(from_binary(&to_binary(u64::MAX)), Some(u64::MAX));
     assert_eq!(from_binary(&format!("1{}", to_binary(u64::MAX))), None, "65 bits do not fit");
 }
+
+/// `std.testing` through its table, as a program would call it: whether
+/// the check passed and, if not, its explanation; or the code of the error.
+fn testing_call(name: &str, args: &[kstar::lang::value::Value]) -> Result<(bool, String), &'static str> {
+    use kstar::lang::stdlib::testing::MODULE;
+    let f = MODULE.functions.iter().find(|f| f.name == name).unwrap();
+    let passed = (f.run)(args).map_err(|failure| failure.code)? == kstar::lang::value::Value::Bool(true);
+    Ok((passed, if passed { String::new() } else { (MODULE.explain.unwrap())(name, args) }))
+}
+
+/// A grammar and the PDA built from it agree on every short word, and
+/// `agree_up_to` says so; a grammar and a different one are caught exactly
+/// when brute force finds a difference.
+#[test]
+fn testing_agrees_with_brute_force() {
+    use kstar::lang::value::Value;
+    use std::rc::Rc;
+    let mut rng = Rng::new(seed());
+    let mut answered = 0;
+    for case in 0..CASES / 4 {
+        let g = random_grammar(&mut rng);
+        let h = random_grammar(&mut rng);
+        let (gv, hv) = (Value::Grammar(Rc::new(g.clone())), Value::Grammar(Rc::new(h.clone())));
+        let pda = Value::Pda(Rc::new(Pda::from_grammar(&g)));
+        // The PDA's search may give up (left recursion makes it endless);
+        // then the check is an error, never a wrong "no".
+        match testing_call("agree_up_to", &[gv.clone(), pda, Value::Int(4)]) {
+            Ok((ok, why)) => {
+                assert!(ok, "case {case}: a grammar and its PDA disagree: {why}");
+                answered += 1;
+            }
+            Err(code) => assert_eq!(code, kstar::lang::codes::GAVE_UP, "case {case}"),
+        }
+        let differs = words(4).iter().any(|w| g.accepts(w) != h.accepts(w));
+        let (ok, why) = testing_call("agree_up_to", &[gv, hv, Value::Int(4)]).expect("grammars always answer");
+        assert_eq!(ok, !differs, "case {case}: {why}");
+        assert_eq!(why.is_empty(), ok, "case {case}: a failure explains itself, a success says nothing");
+    }
+    eprintln!("agree_up_to answered for {answered} of {} grammar/PDA pairs", CASES / 4);
+    assert!(answered >= CASES / 8, "the PDA gave up too often: {answered} answers");
+}
+
+/// `equal_sets` explains a failure with exactly the members that are missing
+/// and those that should not be there.
+#[test]
+fn equal_sets_explains_the_symmetric_difference() {
+    use kstar::lang::value::Value;
+    use std::rc::Rc;
+    let mut rng = Rng::new(seed());
+    for _ in 0..CASES {
+        let a: BTreeSet<i64> = (0..rng.below(6)).map(|_| rng.below(8) as i64).collect();
+        let b: BTreeSet<i64> = (0..rng.below(6)).map(|_| rng.below(8) as i64).collect();
+        let set = |s: &BTreeSet<i64>| Value::Set(Rc::new(s.iter().map(|&n| Value::Int(n)).collect()));
+        let (ok, why) = testing_call("equal_sets", &[set(&a), set(&b)]).unwrap();
+        assert_eq!(ok, a == b);
+        let show = |s: BTreeSet<i64>| set(&s).to_string();
+        let missing: BTreeSet<i64> = a.difference(&b).copied().collect();
+        let extra: BTreeSet<i64> = b.difference(&a).copied().collect();
+        assert_eq!(why.contains("missing:"), !missing.is_empty(), "{why}");
+        assert_eq!(why.contains("unexpected:"), !extra.is_empty(), "{why}");
+        if !missing.is_empty() {
+            assert!(why.contains(&format!("missing:    {}", show(missing))), "{why}");
+        }
+        if !extra.is_empty() {
+            assert!(why.contains(&format!("unexpected: {}", show(extra))), "{why}");
+        }
+    }
+}

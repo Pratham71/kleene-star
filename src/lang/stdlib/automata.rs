@@ -51,6 +51,7 @@ pub const MODULE: Module = Module {
         Function { name: "count_words", params: &[("lang", Ty::Lang), ("n", Ty::Int)], ret: Ty::Int, doc: "How many words of length exactly `n` the language has.", run: count_words },
         Function { name: "words_up_to", params: &[("lang", Ty::Lang), ("n", Ty::Int)], ret: Ty::Set(&Ty::Str), doc: "The words of the language of length at most `n`, as a set; there may be at most 100000 of them.", run: words_up_to },
     ],
+    explain: None,
 };
 
 // ---- reading the arguments ----
@@ -144,12 +145,7 @@ fn modulus(args: &[Value], i: usize) -> Result<(usize, usize), Failure> {
 
 /// The language arguments as DFAs over one alphabet.
 fn dfas(langs: &[Value]) -> Result<Vec<Dfa>, Failure> {
-    langs::to_dfas(langs).map_err(|problem| Failure {
-        code: problem.code,
-        arg: Some(problem.arg),
-        message: problem.message,
-        hint: problem.hint,
-    })
+    Ok(langs::to_dfas(langs)?)
 }
 
 fn dfa(args: &[Value]) -> Dfa {

@@ -1,0 +1,5 @@
+# The tests of an imported module are not run, so its failing checks stay
+# quiet; its functions still work.
+import "modules/checked.kstar"
+print checked.double(4)
+test std.testing.equal(8, checked.double(4))

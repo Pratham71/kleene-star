@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_testing_too_many_words.kstar, line 1, in <main>
+    test std.testing.agree_up_to(/(a|b|c)*/, /(a|b|c)*/, 12)
+                                                         ^^
+LimitError[E0612]: there are more than 10000 words of length up to 12 over {a, b, c}
+  hint: use a smaller length; at most 10000 words are tried

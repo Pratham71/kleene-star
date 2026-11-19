@@ -527,6 +527,8 @@ Say the new module is `std.string`.
    a `Dfa`, `Nfa`, `Regex` or `Set[Str]` for it, and the function turns the
    value into a DFA with `lang::langs` (`to_dfas`), which applies the same
    alphabet rules as the built-ins (`std.automata` is the example).
+   `Ty::Acceptor` is anything `accepts` takes, asked with
+   `langs::accepts` (`std.testing` is the example).
 2. **Implement each function** as `fn name(args: &[Value]) -> Result<Value, Failure>`.
    The checker has already made sure each argument has its declared type,
    so take them apart with `match` and `unreachable!` for the impossible
@@ -556,6 +558,14 @@ Say the new module is `std.string`.
 
 Nothing else changes: hover, completion, signature help, `from std.string
 import ...` and the checker's errors all come from the table.
+
+A module of checks can also fill in its table's `explain`: given a
+function's name and its arguments, it says why that call returned `false`.
+When a library call returns `false`, the interpreter keeps that
+explanation (`explanations`), and a `test` statement whose condition fails
+prints what its own condition collected. The explanation is worked out only
+for a failing check, so passing tests cost nothing extra. `std.testing` is
+the only module that uses it.
 
 ## Testing
 

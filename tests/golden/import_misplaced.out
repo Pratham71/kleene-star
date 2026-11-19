@@ -20,7 +20,7 @@ Error in import_misplaced.kstar, line 6:
     from std.nothing import x
          ^^^^^^^^^^^
 NameError[E0208]: the standard library has no module called `nothing`
-  hint: its modules are `std.automata`, `std.binary`, `std.collections`, `std.math`, `std.regex`, `std.string`
+  hint: its modules are `std.automata`, `std.binary`, `std.collections`, `std.math`, `std.regex`, `std.string`, `std.testing`
 
 Error in import_misplaced.kstar, line 8:
     print m

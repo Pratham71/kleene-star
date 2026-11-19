@@ -655,6 +655,73 @@ true 010101
 {"", "a", "ab"} {"a", "b"}
 ```
 
+### `std.testing`
+
+Checks for `test` statements that explain a failure: equality with the difference shown, sets of words a machine must accept or reject, equal languages with a word that tells them apart, and two acceptors that must agree on sample words.
+
+| Function | What it does |
+|---|---|
+| `equal(expected: T, actual: T) -> Bool` | Whether `actual` is `expected`; a failing test shows both, with the first difference of two strings marked. |
+| `equal_sets(expected: Set[T], actual: Set[T]) -> Bool` | Whether two sets are equal; a failing test lists the members that are missing and those that should not be there. |
+| `accepts_all(machine: Acceptor, words: Set[Str]) -> Bool` | Whether `machine` accepts every word of `words`; a failing test lists the words it rejects. |
+| `rejects_all(machine: Acceptor, words: Set[Str]) -> Bool` | Whether `machine` rejects every word of `words`; a failing test lists the words it accepts. |
+| `same_language(expected: Lang, actual: Lang) -> Bool` | Whether two regular languages are `equivalent`; a failing test shows a shortest word that is in one but not the other. |
+| `agree_on(a: Acceptor, b: Acceptor, words: Set[Str]) -> Bool` | Whether `a` and `b` accept the same words of `words`; a failing test lists the words only one of them accepts. |
+| `agree_up_to(a: Acceptor, b: Acceptor, n: Int) -> Bool` | Whether `a` and `b` accept the same words of length up to `n` over their symbols, at most 10000 words; a failing test lists the words only one accepts. |
+
+**Use them in `test`.** Each function is an ordinary check that returns a
+`Bool`, so it can go anywhere a condition can. Its point is what happens
+when it is the condition of a `test` that fails: under the usual two lines,
+the test prints *why*.
+
+```kstar-error
+alphabet B = {0, 1}
+let EndsIn1 = std.automata.ends_with(B, "1")
+test std.testing.equal("10110", std.binary.to_binary(21))
+test std.testing.accepts_all(EndsIn1, {"1", "01", "10"})
+test std.testing.same_language(EndsIn1, /(0|1)*1(0|1)?/)
+```
+
+```text
+test failed: demo.kstar, line 3
+    test std.testing.equal("10110", std.binary.to_binary(21))
+    expected: "10110"
+    actual:   "10101"
+                  ^ first difference, at index 3
+test failed: demo.kstar, line 4
+    test std.testing.accepts_all(EndsIn1, {"1", "01", "10"})
+    should accept, but rejects: "10"
+test failed: demo.kstar, line 5
+    test std.testing.same_language(EndsIn1, /(0|1)*1(0|1)?/)
+    "10" is in the actual language but not in the expected one
+tests: 0 passed, 3 failed
+```
+
+The explanation comes from every `std.testing` check in the condition that
+returned `false`, so `test equal(a, b) or equal(a, c)` explains both. A
+check outside `test` (in `print`, `if` or `let`) explains nothing; it is
+just a `Bool`.
+
+**In imported modules, nothing changes.** `test` statements of a file that
+is imported are skipped (see [modules](#modules)), so a module's own checks
+stay quiet when another program uses it, and run when the module is run by
+itself.
+
+**`Acceptor`** in the signatures means anything the `accepts` operator
+works on: a `Dfa`, `Nfa`, `Regex`, `Set[Str]`, `Grammar`, `Pda` or `Tm`.
+A word with a symbol outside a machine's alphabet is an `AlphabetError`
+(E0501), as with `accepts`; a PDA that gives up (E0605) or a Turing
+machine that does not halt (E0604) is a `LimitError`.
+
+**How they relate to the built-ins.** `same_language` is `equivalent` plus a
+shortest word that shows the difference (`std.automata.distinguishing_word`).
+`equivalent` refuses grammars, PDAs and Turing machines because their
+equivalence is undecidable; for them, `agree_on` compares the answers on
+chosen words, and `agree_up_to` on every word up to a length, over the
+symbols of both. That cannot prove two of them equal, but it finds a
+difference whenever one is that short. `agree_up_to` tries at most 10000
+words (E0612 otherwise; a negative length is E0610).
+
 ## Types
 
 | Type | Values | Written as |

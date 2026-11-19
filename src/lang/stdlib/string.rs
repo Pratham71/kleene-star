@@ -45,6 +45,7 @@ pub const MODULE: Module = Module {
         Function { name: "symbols", params: &[("s", Ty::Str)], ret: STR_SET, doc: "The distinct characters of `s`, each as a string of length 1; the empty string is not one of them.", run: symbols },
         Function { name: "to_int", params: &[("s", Ty::Str)], ret: Ty::Int, doc: "The number written in `s`: digits with an optional leading `-` or `+`, and nothing else.", run: to_int },
     ],
+    explain: None,
 };
 
 /// The text of argument `i`. The checker has made sure it is a `Str`.

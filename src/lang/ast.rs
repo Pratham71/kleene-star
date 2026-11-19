@@ -377,6 +377,9 @@ pub enum Type {
     /// or `Set[Str]`, the same types the built-ins on languages take. Like
     /// `Var`, only library tables write it.
     Lang,
+    /// Anything `accepts` works on, as a library parameter: a regular
+    /// language, a `Grammar`, a `Pda` or a `Tm`. Only library tables write it.
+    Acceptor,
 }
 
 impl std::fmt::Display for Type {
@@ -396,6 +399,7 @@ impl std::fmt::Display for Type {
             Type::EmptySet => write!(f, "Set[?]"),
             Type::Var => write!(f, "T"),
             Type::Lang => write!(f, "Lang"),
+            Type::Acceptor => write!(f, "Acceptor"),
         }
     }
 }

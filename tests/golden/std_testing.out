@@ -1,0 +1,32 @@
+test failed: std_testing.kstar, line 28
+    test equal(10, 2 * 4)
+    expected: 10
+    actual:   8
+test failed: std_testing.kstar, line 29
+    test equal("binary", "bimary")
+    expected: "binary"
+    actual:   "bimary"
+                 ^ first difference, at index 2
+test failed: std_testing.kstar, line 30
+    test t.equal_sets({"a", "b"}, {"b", "c"})
+    missing:    {"a"}
+    unexpected: {"c"}
+test failed: std_testing.kstar, line 31
+    test t.accepts_all(EvenZeros, {"", "0", "00", "000"})
+    should accept, but rejects: "0", "000"
+test failed: std_testing.kstar, line 32
+    test t.rejects_all(EvenZeros, {"0", "00", "11"})
+    should reject, but accepts: "00", "11"
+test failed: std_testing.kstar, line 33
+    test t.same_language(EvenZeros, /(1|01*0)+/)
+    "" is in the expected language but not in the actual one
+test failed: std_testing.kstar, line 34
+    test t.agree_up_to(Balanced, /(01)*/, 4)
+    accepted only by the first: "0011"
+    accepted only by the second: "0101"
+false true
+test failed: std_testing.kstar, line 39
+    test t.equal_sets({1}, {2}) or false
+    missing:    {1}
+    unexpected: {2}
+tests: 8 passed, 8 failed
