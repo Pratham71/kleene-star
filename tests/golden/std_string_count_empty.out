@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_string_count_empty.kstar, line 3, in <main>
+    print std.string.count("abc", "")
+                                  ^^
+ValueError[E0610]: cannot count the empty string
+  hint: the empty string sits between every two characters; count a string with at least one character

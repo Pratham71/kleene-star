@@ -234,6 +234,31 @@ print std.math.is_prime(97), std.math.pow(2, 10)
 true 1024
 ```
 
+`std.string` treats a word as data. Every index counts characters from 0,
+and the sets it returns (`prefixes`, `suffixes`, `substrings`) include the
+empty string, which is a prefix, a suffix and a substring of every word:
+
+```kstar
+let w = "banana"
+print std.string.length(w), std.string.index_of(w, "nan"), std.string.count(w, "an")
+print std.string.substring(w, 1, 4), std.string.reverse(w)
+print std.string.prefixes("ab"), std.string.symbols(w)
+```
+
+```text
+6 2 2
+ana ananab
+{"", "a", "ab"} {"a", "b", "n"}
+```
+
+`std.string.length(w)` is the same as the built-in `len(w)`; the library
+version is there so that all string work reads alike. The built-in
+`reverse` reverses a language, so `from std.string import reverse` is an
+error: write `std.string.reverse`, or take it under another name with
+`as`. Asking for a character that is not there is an error with a hint, and
+so is a result that would be too big to build, such as
+`std.string.repeat("ab", 1000000000000)`.
+
 ## Summary
 
 | You write | You get |
@@ -241,4 +266,4 @@ true 1024
 | `import "lib/parity.kstar"` | the module as `parity`; its names as `parity.EvenZeros` |
 | `import "parity.kstar" as p` | the module as `p` |
 | `from "parity.kstar" import EvenZeros, ends_in as ending` | `EvenZeros` and `ending` in your file |
-| `std.math.gcd(4, 6)`, `import std.math` | the standard library |
+| `std.math.gcd(4, 6)`, `std.string.length("ab")`, `import std.math` | the standard library |

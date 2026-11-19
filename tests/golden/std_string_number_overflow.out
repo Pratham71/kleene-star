@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_string_number_overflow.kstar, line 3, in <main>
+    print std.string.to_int("9223372036854775808")
+                            ^^^^^^^^^^^^^^^^^^^^^
+MathError[E0600]: "9223372036854775808" is too large for an Int
+  hint: Ints are 64-bit: about plus or minus 9 * 10^18

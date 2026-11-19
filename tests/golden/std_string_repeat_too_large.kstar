@@ -1,0 +1,3 @@
+# A run-time error of std.string, with its hint.
+print "before"
+print len(std.string.repeat("ab", 1000000000000))

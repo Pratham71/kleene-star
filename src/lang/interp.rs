@@ -814,7 +814,15 @@ impl Interp {
             Callee::Std(function) => {
                 return (function.run)(&args).map_err(|failure| {
                     let span = failure.arg.map_or(call_site, |i| spans[i]);
-                    self.error(ErrorKind::Math, span, failure.message).code(failure.code).hint(failure.hint)
+                    // Arithmetic that fails is a MathError; a value the
+                    // function cannot use is a ValueError; a result too big
+                    // to build is a LimitError.
+                    let kind = match failure.code {
+                        codes::OVERFLOW | codes::MATH_DOMAIN => ErrorKind::Math,
+                        codes::RESULT_TOO_LARGE => ErrorKind::Limit,
+                        _ => ErrorKind::Value,
+                    };
+                    self.error(kind, span, failure.message).code(failure.code).hint(failure.hint)
                 });
             }
         };

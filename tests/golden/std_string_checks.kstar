@@ -1,0 +1,8 @@
+# Mistakes the checker finds before anything runs.
+from std.string import reverse
+from std.string import union as u
+import std.string as len
+print std.string.lenght("abc")
+print std.string.length(3)
+print std.string.substring("abc", 1)
+print std.string.symbols("a") + "b"

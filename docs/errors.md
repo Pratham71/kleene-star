@@ -1324,6 +1324,65 @@ MathError[E0609]: the square root of -9 is not a whole number
   hint: `sqrt` needs a number from 0 up
 ```
 
+## E0610: An index or count a string function does not accept
+
+A function of `std.string` was given a position or a count outside what
+makes sense: an index past the end of the string (`char_at`, `substring`),
+a negative index, a negative repeat count, or the empty string to `count`.
+Indices count characters from 0. The hint says which values work.
+
+```kstar-error
+print std.string.char_at("abc", 3)
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 1, in <main>
+    print std.string.char_at("abc", 3)
+                                    ^
+ValueError[E0610]: index 3 is outside a string of length 3
+  hint: indices run from 0 to 2
+```
+
+## E0611: Text that is not a number
+
+`std.string.to_int` reads digits with an optional leading `-` or `+`. It
+does not accept an empty string, spaces, a decimal point or any other
+character.
+
+```kstar-error
+print std.string.to_int("12a")
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 1, in <main>
+    print std.string.to_int("12a")
+                            ^^^^^
+ValueError[E0611]: "12a" is not a whole number
+  hint: `to_int` takes digits with an optional leading `-` or `+`, such as "42" or "-7"
+```
+
+## E0612: A result too large to build
+
+A library function was asked for a result with more than 1000000
+characters (for a set of strings, counting every member), such as
+`repeat("ab", 1000000000000)` or the substrings of a very long string.
+Rather than run until the memory is gone, it stops with this error.
+
+```kstar-error
+print std.string.length(std.string.repeat("ab", 1000000000000))
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 1, in <main>
+    print std.string.length(std.string.repeat("ab", 1000000000000))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0612]: `repeat` of a string of length 2 by 1000000000000 would be too large to build (over 1000000 characters)
+  hint: use a shorter string, or reason about the language instead of building every word
+```
+
 ## W0100: A state that can never be reached
 
 No sequence of moves from the start state leads to this state, so it does

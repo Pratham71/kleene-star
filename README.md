@@ -100,8 +100,8 @@ showing states, sets of states, a PDA's stack or a Turing machine's tape.
 as a standalone Rust function.
 
 **Programs that grow.** Functions, loops and `test` statements; `import` to
-split a program over several files; a standard library, starting with
-`std.math`; a formatter (`kstar fmt`) and a REPL (`kstar repl`).
+split a program over several files; a standard library (`std.math`,
+`std.string`); a formatter (`kstar fmt`) and a REPL (`kstar repl`).
 
 **Mistakes caught early.** A DFA with a missing transition, a symbol outside
 the alphabet or a type mix-up is reported before anything runs, every error

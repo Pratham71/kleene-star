@@ -1,0 +1,40 @@
+Error in std_string_checks.kstar, line 2:
+    from std.string import reverse
+                           ^^^^^^^
+NameError[E0203]: `reverse` is a built-in function and cannot be redefined
+  hint: import it under another name with `as`, such as `... as my_reverse`, or call it by its full name
+
+Error in std_string_checks.kstar, line 3:
+    from std.string import union as u
+                           ^^^^^
+NameError[E0208]: `std.string` has no `union`
+  hint: it defines `char_at`, `contains`, `count`, `ends_with`, `from_int`, `index_of` and 11 more
+
+Error in std_string_checks.kstar, line 4:
+    import std.string as len
+                         ^^^
+NameError[E0203]: `len` is a built-in function and cannot be redefined
+  hint: import it under another name with `as`, such as `... as my_len`, or call it by its full name
+
+Error in std_string_checks.kstar, line 5:
+    print std.string.lenght("abc")
+                     ^^^^^^
+NameError[E0208]: `std.string` has no `lenght`
+  hint: did you mean `length`?
+
+Error in std_string_checks.kstar, line 6:
+    print std.string.length(3)
+                            ^
+TypeError[E0300]: argument 1 of `std.string.length` must be a Str, but this is an Int
+
+Error in std_string_checks.kstar, line 7:
+    print std.string.substring("abc", 1)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0301]: `std.string.substring` takes 3 arguments, but 2 were given
+
+Error in std_string_checks.kstar, line 8:
+    print std.string.symbols("a") + "b"
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is a Set[Str] and the right side is a Str
+
+7 errors found

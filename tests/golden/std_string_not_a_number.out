@@ -1,0 +1,7 @@
+before
+Traceback (most recent call last):
+  std_string_not_a_number.kstar, line 3, in <main>
+    print std.string.to_int("12a")
+                            ^^^^^
+ValueError[E0611]: "12a" is not a whole number
+  hint: `to_int` takes digits with an optional leading `-` or `+`, such as "42" or "-7"
