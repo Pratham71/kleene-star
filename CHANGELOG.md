@@ -33,6 +33,14 @@ its GitHub release, so write it for people who use Kleene Star.
   `even_parity`, `odd_parity`, `run_at_most`) and the conversions
   `to_binary` and `from_binary`. A bit string is read most significant bit
   first; leading zeros do not count, and the empty string is 0.
+- **`std.testing`**: checks for `test` statements that say why they
+  failed: `equal` (with the first difference of two strings marked),
+  `equal_sets` (what is missing and what should not be there),
+  `accepts_all` and `rejects_all` (the words that went wrong),
+  `same_language` (a shortest word that is in one language but not the
+  other), and `agree_on` and `agree_up_to` to compare grammars, PDAs and
+  Turing machines on sample words. A failing `test` prints the explanation
+  under its line; `test` statements in imported files are still skipped.
 - Two new error codes: E0614 (a string that should be one symbol) and E0615
   (no word with the asked-for property).
 

@@ -1239,6 +1239,9 @@ fn check_arguments(name: &str, signature: &Signature, types: &[Type], args: &[Ex
         if !fits_generic(wanted, actual, &mut element) {
             let wanted_text = match wanted {
                 Type::Lang => "a regular language (Dfa, Nfa, Regex or Set[Str])".to_string(),
+                Type::Acceptor => "something `accepts` works on (Dfa, Nfa, Regex, Set[Str], Grammar, Pda or Tm)".to_string(),
+                // `T` not decided yet: say what it may be.
+                Type::Var if element.is_none() => "an Int, a Str or a Bool".to_string(),
                 _ => article(&fill_in(wanted, &element)),
             };
             let mut err = type_error(
@@ -1272,6 +1275,7 @@ fn fits_generic(wanted: &Type, actual: &Type, element: &mut Option<Type>) -> boo
         (Type::Set(w), Type::Set(found)) if **w == Type::Var => decide(found),
         (Type::Set(w), Type::EmptySet) if **w == Type::Var => true,
         (Type::Lang, found) => is_lang(found),
+        (Type::Acceptor, found) => is_lang(found) || matches!(found, Type::Grammar | Type::Pda | Type::Tm),
         _ => fits(wanted, actual),
     }
 }
@@ -1384,6 +1388,21 @@ print u + 1").expect_err("a set plus an Int");
             "TypeError: argument 2 of `std.collections.union` must be a Set[Int], but this is a Set[Str]"
         );
         assert!(error("print std.collections.size(1)").contains("must be a Set[T]"));
+    }
+
+    /// A library parameter of type `Acceptor` takes anything `accepts` works
+    /// on: regular languages, grammars, PDAs and Turing machines.
+    #[test]
+    fn an_acceptor_parameter_takes_anything_accepts_takes() {
+        check(&format!(
+            "{B}grammar G over B {{ S -> 0 S | eps }}
+print std.testing.accepts_all(G, {{\"0\"}}), std.testing.accepts_all(/0/, {{}}), std.testing.rejects_all(to_pda(G), {{\"1\"}})"
+        ))
+        .unwrap();
+        assert_eq!(
+            error("print std.testing.accepts_all(1, {\"0\"})"),
+            "TypeError: argument 1 of `std.testing.accepts_all` must be something `accepts` works on (Dfa, Nfa, Regex, Set[Str], Grammar, Pda or Tm), but this is an Int"
+        );
     }
 
     /// A library parameter of type `Lang` takes any regular language, the

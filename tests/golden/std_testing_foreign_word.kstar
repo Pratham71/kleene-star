@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+test std.testing.accepts_all(std.automata.ends_with(B, "1"), {"1", "21"})

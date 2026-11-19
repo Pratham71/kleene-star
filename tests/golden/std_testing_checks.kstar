@@ -1,0 +1,8 @@
+# Mistakes the checker finds before anything runs.
+alphabet B = {0, 1}
+test std.testing.equal(1, "1")
+test std.testing.equal_sets({1}, {"1"})
+test std.testing.accepts_all(B, {"0"})
+test std.testing.same_language(to_pda(grammar over B { S -> 0 }), /0/)
+test std.testing.agree_up_to(/0/, /1/, "3")
+test std.testing.equal({1}, {1})

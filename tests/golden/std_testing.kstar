@@ -1,0 +1,39 @@
+# std.testing: passing checks count like any test; failing ones say why.
+import std.testing as t
+from std.testing import equal
+alphabet B = {0, 1}
+dfa EvenZeros over B {
+    start  e
+    accept e
+    e --0--> o
+    e --1--> e
+    o --0--> e
+    o --1--> o
+}
+grammar Balanced over B {
+    S -> 0 S 1 | eps
+}
+
+# These pass.
+test equal(3, 1 + 2)
+test equal("ab", "a" + "b")
+test t.equal_sets({1, 2}, {2, 1})
+test t.accepts_all(EvenZeros, {"", "00", "1001"})
+test t.rejects_all(EvenZeros, {"0", "011"})
+test t.same_language(EvenZeros, /(1|01*0)*/)
+test t.agree_on(Balanced, to_pda(Balanced), {"", "01", "0011", "0101", "10"})
+test t.agree_up_to(Balanced, to_pda(Balanced), 6)
+
+# These fail, and each says why under its line.
+test equal(10, 2 * 4)
+test equal("binary", "bimary")
+test t.equal_sets({"a", "b"}, {"b", "c"})
+test t.accepts_all(EvenZeros, {"", "0", "00", "000"})
+test t.rejects_all(EvenZeros, {"0", "00", "11"})
+test t.same_language(EvenZeros, /(1|01*0)+/)
+test t.agree_up_to(Balanced, /(01)*/, 4)
+
+# A check is an ordinary Bool outside `test`, and says nothing there.
+print equal(1, 2), t.accepts_all(/0*/, {"0"})
+# In a larger condition, the failing check still explains the failure.
+test t.equal_sets({1}, {2}) or false

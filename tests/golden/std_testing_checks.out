@@ -1,0 +1,32 @@
+Error in std_testing_checks.kstar, line 3:
+    test std.testing.equal(1, "1")
+                              ^^^
+TypeError[E0300]: argument 2 of `std.testing.equal` must be an Int, but this is a Str
+
+Error in std_testing_checks.kstar, line 4:
+    test std.testing.equal_sets({1}, {"1"})
+                                     ^^^^^
+TypeError[E0300]: argument 2 of `std.testing.equal_sets` must be a Set[Int], but this is a Set[Str]
+
+Error in std_testing_checks.kstar, line 5:
+    test std.testing.accepts_all(B, {"0"})
+                                 ^
+TypeError[E0300]: argument 1 of `std.testing.accepts_all` must be something `accepts` works on (Dfa, Nfa, Regex, Set[Str], Grammar, Pda or Tm), but this is an Alphabet
+
+Error in std_testing_checks.kstar, line 6:
+    test std.testing.same_language(to_pda(grammar over B { S -> 0 }), /0/)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0300]: argument 1 of `std.testing.same_language` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Pda
+  hint: `std.testing.same_language` works on regular languages only; a Pda can describe a language that is not regular
+
+Error in std_testing_checks.kstar, line 7:
+    test std.testing.agree_up_to(/0/, /1/, "3")
+                                           ^^^
+TypeError[E0300]: argument 3 of `std.testing.agree_up_to` must be an Int, but this is a Str
+
+Error in std_testing_checks.kstar, line 8:
+    test std.testing.equal({1}, {1})
+                           ^^^
+TypeError[E0300]: argument 1 of `std.testing.equal` must be an Int, a Str or a Bool, but this is a Set[Int]
+
+6 errors found

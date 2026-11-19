@@ -32,6 +32,7 @@ pub const MODULE: Module = Module {
         Function { name: "to_binary", params: &[("n", Ty::Int)], ret: Ty::Str, doc: "`n` written in binary without leading zeros; `n` must not be negative, and 0 is `\"0\"`.", run: to_binary },
         Function { name: "from_binary", params: &[("bits", Ty::Str)], ret: Ty::Int, doc: "The value of a bit string, most significant bit first; leading zeros do not count and `\"\"` is 0.", run: from_binary },
     ],
+    explain: None,
 };
 
 /// The largest machine built here, as in `std.automata`.

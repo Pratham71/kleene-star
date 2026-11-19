@@ -45,6 +45,7 @@ pub const MODULE: Module = Module {
         Function { name: "union", params: &[("a", SET_T), ("b", SET_T)], ret: SET_T, doc: "The members that are in the set `a`, in `b`, or in both.", run: union },
         Function { name: "words", params: &[("alphabet", Ty::Alphabet), ("n", Ty::Int)], ret: Ty::Set(&Ty::Str), doc: "Every string of length `n` over `alphabet`, as a set; `n` must not be negative, and there may be at most 100000 of them.", run: words },
     ],
+    explain: None,
 };
 
 fn set(args: &[Value], i: usize) -> &BTreeSet<Value> {

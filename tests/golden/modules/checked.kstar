@@ -1,0 +1,7 @@
+# A module with failing tests of its own: they run only when this file is
+# run by itself, never when it is imported.
+fn double(n: Int) -> Int {
+    return 2 * n
+}
+test std.testing.equal(5, double(2))
+print "this line is not printed when imported"

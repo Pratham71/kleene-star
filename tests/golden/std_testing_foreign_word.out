@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_testing_foreign_word.kstar, line 2, in <main>
+    test std.testing.accepts_all(std.automata.ends_with(B, "1"), {"1", "21"})
+                                                                 ^^^^^^^^^^^
+AlphabetError[E0501]: the word "21" contains `2`, which is not in the alphabet of argument 1
+  hint: that argument is over {0, 1}; test it on words over that alphabet

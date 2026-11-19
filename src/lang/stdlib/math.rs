@@ -25,6 +25,7 @@ pub const MODULE: Module = Module {
         Function { name: "pow", params: &[("base", Ty::Int), ("exp", Ty::Int)], ret: Ty::Int, doc: "`base` to the power `exp`; `exp` must not be negative.", run: pow },
         Function { name: "sqrt", params: &[("n", Ty::Int)], ret: Ty::Int, doc: "The square root of `n`, rounded down; `n` must not be negative.", run: sqrt },
     ],
+    explain: None,
 };
 
 /// The arguments as numbers. The checker has made sure they are `Int`s.

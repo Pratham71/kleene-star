@@ -1,0 +1,35 @@
+# Chapter 9: the standard library's std.testing. Checks that say why they
+# failed. Every test here passes; change a word or a machine to see what a
+# failing one prints (or look at the reference, under std.testing).
+
+alphabet B = {0, 1}
+
+# A hand-written DFA for "contains 11" ...
+dfa Has11 over B {
+    start  none
+    accept both
+    none --0  --> none
+    none --1  --> one
+    one  --0  --> none
+    one  --1  --> both
+    both --0,1--> both
+}
+
+# ... checked on sample words, on the whole language, and against the
+# library's own machine.
+test std.testing.accepts_all(Has11, {"11", "0110", "111"})
+test std.testing.rejects_all(Has11, {"", "0", "10101"})
+test std.testing.same_language(Has11, /(0|1)*11(0|1)*/)
+test std.testing.same_language(Has11, std.automata.contains_substring(B, "11"))
+
+# Equal values and equal sets.
+test std.testing.equal("1011", std.binary.to_binary(11))
+test std.testing.equal_sets({"11", "011", "110", "111"}, std.automata.words_up_to(intersect(Has11, std.automata.length_between(B, 2, 3)), 3))
+
+# A grammar and its PDA cannot be compared with `equivalent` (that is
+# undecidable), but they can be compared on every word up to a length.
+grammar Palindromes over B {
+    S -> 0 S 0 | 1 S 1 | 0 | 1 | eps
+}
+test std.testing.agree_up_to(Palindromes, to_pda(Palindromes), 6)
+test std.testing.agree_on(Palindromes, {"", "0", "1", "00", "11", "010"}, {"", "0", "1", "00", "01", "010", "011"})

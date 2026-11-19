@@ -23,6 +23,7 @@ pub mod collections;
 pub mod math;
 pub mod regex;
 pub mod string;
+pub mod testing;
 
 use super::ast::Type;
 use super::index::{Def, DefKind};
@@ -52,6 +53,9 @@ pub enum Ty {
     /// function converts it with the helpers in `lang::langs`, so it picks
     /// the alphabet the way the built-ins do.
     Lang,
+    /// Anything the `accepts` operator works on: a regular language, a
+    /// `Grammar`, a `Pda` or a `Tm`. The function asks with `langs::accepts`.
+    Acceptor,
 }
 
 impl Ty {
@@ -71,6 +75,7 @@ impl Ty {
             Ty::Set(inner) => Type::Set(Box::new(inner.to_type())),
             Ty::Elem => Type::Var,
             Ty::Lang => Type::Lang,
+            Ty::Acceptor => Type::Acceptor,
         }
     }
 }
@@ -130,6 +135,15 @@ pub fn word_over(word: &str, alphabet: &[char], arg: usize, what: &str) -> Resul
     }
 }
 
+/// Languages that do not share an alphabet are a library failure at the
+/// argument that does not fit, so `langs::to_dfas(args)?` works in a library
+/// function.
+impl From<super::langs::AlphabetProblem> for Failure {
+    fn from(problem: super::langs::AlphabetProblem) -> Failure {
+        Failure { code: problem.code, arg: Some(problem.arg), message: problem.message, hint: problem.hint }
+    }
+}
+
 /// One library function.
 pub struct Function {
     pub name: &'static str,
@@ -157,10 +171,14 @@ pub struct Module {
     /// One line about what the module is for.
     pub doc: &'static str,
     pub functions: &'static [Function],
+    /// For modules of checks (`std.testing`): says why a call that returned
+    /// `false` failed, given the function's name and the same arguments. A
+    /// failing `test` statement prints it under the test's line.
+    pub explain: Option<fn(&str, &[Value]) -> String>,
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[automata::MODULE, binary::MODULE, collections::MODULE, math::MODULE, regex::MODULE, string::MODULE];
+pub const MODULES: &[Module] = &[automata::MODULE, binary::MODULE, collections::MODULE, math::MODULE, regex::MODULE, string::MODULE, testing::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

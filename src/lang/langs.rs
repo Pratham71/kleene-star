@@ -115,6 +115,55 @@ pub fn to_dfa(lang: &Value, alphabet: &[char]) -> Dfa {
     }
 }
 
+/// Why `accepts` could not answer yes or no.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Refusal {
+    /// The word has a symbol outside the machine's (or grammar's) alphabet.
+    Foreign { symbol: char, alphabet: Vec<char> },
+    /// The PDA's search looked at `pda::STEP_LIMIT` configurations without
+    /// an answer: the answer is unknown, not "no".
+    PdaGaveUp,
+    /// The Turing machine was still running after `tm::STEP_LIMIT` steps.
+    TmStillRunning,
+}
+
+/// Whether `lang` (anything the `accepts` operator takes) contains `word`.
+///
+/// A machine or grammar refuses a word with a symbol outside its alphabet.
+/// A regex or a set of words has no fixed alphabet, so such a word is simply
+/// not in its language.
+pub fn accepts(lang: &Value, word: &str) -> Result<bool, Refusal> {
+    use crate::automata::pda::{self, Outcome};
+    use crate::automata::tm::{self, Halt};
+    let foreign = |symbol: char, alphabet: &[char]| Refusal::Foreign { symbol, alphabet: alphabet.to_vec() };
+    match lang {
+        Value::Dfa(dfa) => dfa.accepts(word).map_err(|c| foreign(c, &dfa.alphabet)),
+        Value::Nfa(nfa) => nfa.accepts(word).map_err(|c| foreign(c, &nfa.alphabet)),
+        Value::Grammar(g) => g.accepts(word).map_err(|c| foreign(c, &g.alphabet)),
+        Value::Set(words) => Ok(words.contains(&Value::str(word))),
+        Value::Pda(p) => match p.search(word, pda::STEP_LIMIT).outcome {
+            Outcome::Accepted => Ok(true),
+            Outcome::Rejected => Ok(false),
+            Outcome::Foreign { symbol, .. } => Err(foreign(symbol, &p.alphabet)),
+            Outcome::GaveUp => Err(Refusal::PdaGaveUp),
+        },
+        Value::Tm(m) => match m.run(word, tm::STEP_LIMIT, false).halt {
+            Halt::Foreign { symbol, .. } => Err(foreign(symbol, &m.alphabet)),
+            Halt::GaveUp => Err(Refusal::TmStillRunning),
+            halt => Ok(halt == Halt::Accepted),
+        },
+        regex => {
+            // Over the regex's own symbols plus the word's, so a foreign
+            // symbol just fails to match.
+            let mut alphabet = symbols_of(regex);
+            alphabet.extend(word.chars());
+            alphabet.sort();
+            alphabet.dedup();
+            Ok(to_nfa(regex, &alphabet).accepts(word) == Ok(true))
+        }
+    }
+}
+
 /// The languages `langs` as DFAs over one common alphabet.
 pub fn to_dfas(langs: &[Value]) -> Result<Vec<Dfa>, AlphabetProblem> {
     let alphabet = common_alphabet(langs, None)?;

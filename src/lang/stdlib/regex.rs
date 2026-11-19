@@ -35,6 +35,7 @@ pub const MODULE: Module = Module {
         Function { name: "size", params: &[("r", Ty::Regex)], ret: Ty::Int, doc: "The number of parts of the regex: its symbols, operators and joins.", run: size },
         Function { name: "text", params: &[("r", Ty::Regex)], ret: Ty::Str, doc: "The regex written out as a string, without the slashes.", run: text },
     ],
+    explain: None,
 };
 
 /// The largest regex these functions build, in parts (`Regex::size`): the

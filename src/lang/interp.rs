@@ -18,12 +18,12 @@ use super::error::{Diag, ErrorKind, TraceFrame};
 use super::machine::{self, Built, MachineSpec, Transition};
 use super::source::SourceMap;
 use super::token::{FileId, Span};
-use super::langs::{self, symbols_of, to_dfa, to_nfa};
+use super::langs::{self, symbols_of, to_dfa, to_nfa, Refusal};
 use super::value::Value;
 use super::trace as show_trace;
 use super::machine::GrammarSpec;
 use crate::automata::grammar::{DeriveError, Grammar};
-use crate::automata::pda::{self, Outcome, Pda};
+use crate::automata::pda::{self, Pda};
 use crate::automata::tm::{self, Halt, Tm};
 use crate::automata::{codegen, convert, dot, fmt_alphabet, minimize, ops, trace};
 use std::collections::{BTreeSet, HashMap};
@@ -96,7 +96,7 @@ impl ModuleState {
 /// standard library's.
 enum Callee {
     User { module: FileId, def: Rc<FnDef> },
-    Std(&'static super::stdlib::Function),
+    Std(&'static super::stdlib::Module, &'static super::stdlib::Function),
 }
 
 /// What happened when a statement ran.
@@ -126,6 +126,9 @@ pub struct Interp {
     pub passed: usize,
     pub failed: usize,
     drawings: usize,
+    /// What the `std.testing` checks that failed since the current `test`
+    /// began said about why; printed if the test fails.
+    explanations: Vec<String>,
     /// The program's files, only needed to quote a failing `test` line.
     sources: SourceMap,
 }
@@ -152,6 +155,7 @@ impl Interp {
             passed: 0,
             failed: 0,
             drawings: 0,
+            explanations: Vec::new(),
             sources: SourceMap::default(),
         }
     }
@@ -403,6 +407,8 @@ impl Interp {
                 let _ = writeln!(self.out, "{}", parts.join(" "));
             }
             StmtKind::Test(cond) => {
+                // Only the checks made by this test's condition explain it.
+                self.explanations.clear();
                 if self.eval_bool(cond)? {
                     self.passed += 1;
                 } else {
@@ -417,6 +423,13 @@ impl Interp {
                         stmt.span.line,
                         first_line
                     );
+                    // What the `std.testing` checks in the condition said,
+                    // indented under the test's line.
+                    for explanation in std::mem::take(&mut self.explanations) {
+                        for line in explanation.lines() {
+                            let _ = writeln!(self.out, "    {line}");
+                        }
+                    }
                 }
             }
             StmtKind::Draw(value) => self.draw(value)?,
@@ -699,35 +712,15 @@ impl Interp {
         })
     }
 
-    /// Does the language `lang` contain `word`?
+    /// Does the language `lang` contain `word`? The answer comes from
+    /// `langs::accepts`, which the standard library uses too; this turns a
+    /// refusal into an error at the word.
     fn accepts(&self, lang: &Value, word: &str, word_span: Span) -> Run<bool> {
-        let result = match lang {
-            Value::Dfa(dfa) => dfa.accepts(word).map_err(|c| (c, &dfa.alphabet)),
-            Value::Nfa(nfa) => nfa.accepts(word).map_err(|c| (c, &nfa.alphabet)),
-            Value::Set(words) => return Ok(words.contains(&Value::str(word))),
-            Value::Grammar(g) => g.accepts(word).map_err(|c| (c, &g.alphabet)),
-            Value::Pda(p) => {
-                return match p.search(word, pda::STEP_LIMIT).outcome {
-                    Outcome::Accepted => Ok(true),
-                    Outcome::Rejected => Ok(false),
-                    Outcome::Foreign { symbol, .. } => Err(self.foreign_word(symbol, &p.alphabet, word_span)),
-                    Outcome::GaveUp => Err(self.pda_gave_up(word_span)),
-                };
-            }
-            Value::Tm(m) => {
-                let run = self.run_tm(m, word, word_span)?;
-                return Ok(run.halt == Halt::Accepted);
-            }
-            // A regex has no fixed alphabet, so a foreign symbol just fails to match.
-            regex => {
-                let mut alphabet = symbols_of(regex);
-                alphabet.extend(word.chars());
-                alphabet.sort();
-                alphabet.dedup();
-                return Ok(to_nfa(regex, &alphabet).accepts(word) == Ok(true));
-            }
-        };
-        result.map_err(|(c, alphabet)| self.foreign_word(c, alphabet, word_span))
+        langs::accepts(lang, word).map_err(|refusal| match refusal {
+            Refusal::Foreign { symbol, alphabet } => self.foreign_word(symbol, &alphabet, word_span),
+            Refusal::PdaGaveUp => self.pda_gave_up(word_span),
+            Refusal::TmStillRunning => self.tm_still_running(word_span),
+        })
     }
 
     fn foreign_word(&self, c: char, alphabet: &[char], word_span: Span) -> Diag {
@@ -745,16 +738,15 @@ impl Interp {
         let run = m.run(word, tm::STEP_LIMIT, false);
         match run.halt {
             Halt::Foreign { symbol, .. } => Err(self.foreign_word(symbol, &m.alphabet, span)),
-            Halt::GaveUp => Err(self
-                .error(
-                    ErrorKind::Limit,
-                    span,
-                    format!("the Turing machine is still running after {} steps", tm::STEP_LIMIT),
-                )
-                .code(codes::STEP_LIMIT)
-                .hint("it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so Kleene Star stops here instead of waiting forever")),
+            Halt::GaveUp => Err(self.tm_still_running(span)),
             _ => Ok(run),
         }
+    }
+
+    fn tm_still_running(&self, span: Span) -> Diag {
+        self.error(ErrorKind::Limit, span, format!("the Turing machine is still running after {} steps", tm::STEP_LIMIT))
+            .code(codes::STEP_LIMIT)
+            .hint("it may never halt. By the halting problem, no program can decide in general whether a Turing machine halts, so Kleene Star stops here instead of waiting forever")
     }
 
     fn pda_gave_up(&self, span: Span) -> Diag {
@@ -789,8 +781,9 @@ impl Interp {
         let file = match target {
             ModuleRef::File(file) => file,
             ModuleRef::Std(module) => {
-                let function = super::stdlib::function(&module, &member);
-                return Ok(Callee::Std(function.expect("the checker found the function in the library")));
+                let found = super::stdlib::module(&module).zip(super::stdlib::function(&module, &member));
+                let (module, function) = found.expect("the checker found the function in the library");
+                return Ok(Callee::Std(module, function));
             }
         };
         self.run_module(file, name.span)?;
@@ -812,8 +805,13 @@ impl Interp {
     fn call(&mut self, name: &Name, args: Vec<Value>, spans: &[Span], call_site: Span) -> Run<Value> {
         let (module, f) = match self.callee(name)? {
             Callee::User { module, def } => (module, def),
-            Callee::Std(function) => {
-                return (function.run)(&args).map_err(|failure| {
+            Callee::Std(module, function) => {
+                let result = (function.run)(&args);
+                // A check that failed says why, for the `test` around it.
+                if let (Ok(Value::Bool(false)), Some(explain)) = (&result, module.explain) {
+                    self.explanations.push(explain(function.name, &args));
+                }
+                return result.map_err(|failure| {
                     let span = failure.arg.map_or(call_site, |i| spans[i]);
                     // Arithmetic that fails is a MathError; a symbol or an
                     // alphabet that does not fit is an AlphabetError; a
@@ -822,7 +820,7 @@ impl Interp {
                     let kind = match failure.code {
                         codes::OVERFLOW | codes::MATH_DOMAIN => ErrorKind::Math,
                         codes::NOT_IN_ALPHABET | codes::FOREIGN_WORD | codes::ALPHABET_MISMATCH => ErrorKind::Alphabet,
-                        codes::RESULT_TOO_LARGE => ErrorKind::Limit,
+                        codes::RESULT_TOO_LARGE | codes::GAVE_UP | codes::STEP_LIMIT => ErrorKind::Limit,
                         _ => ErrorKind::Value,
                     };
                     self.error(kind, span, failure.message).code(failure.code).hint(failure.hint)

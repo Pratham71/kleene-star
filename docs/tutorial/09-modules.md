@@ -321,6 +321,28 @@ print states(Div5), std.binary.to_binary(10), std.binary.from_binary("1010")
 tests: 100 passed, 0 failed
 ```
 
+`std.testing` makes failing tests say why. Each check returns a `Bool`
+and goes in a `test`; when the test fails, the reason is printed under it:
+
+```kstar-error
+let Even = std.binary.divisible_by(2)
+test std.testing.rejects_all(Even, {"1", "11", "100"})
+test std.testing.equal_sets({2, 4}, {4, 2, 6})
+```
+
+```text
+test failed: demo.kstar, line 2
+    test std.testing.rejects_all(Even, {"1", "11", "100"})
+    should reject, but accepts: "100"
+test failed: demo.kstar, line 3
+    test std.testing.equal_sets({2, 4}, {4, 2, 6})
+    unexpected: {6}
+tests: 0 passed, 2 failed
+```
+
+A module's `test` statements, and so its checks, are skipped when another
+file imports it.
+
 `std.regex` keeps regexes as regexes. The built-in `concat(/a/, /b/)` is
 an `Nfa`; `std.regex.seq(/a/, /b/)` is the regex `/ab/`. It can also read a
 regex from a string made at run time:
