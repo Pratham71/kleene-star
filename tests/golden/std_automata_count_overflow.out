@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_count_overflow.kstar, line 1, in <main>
+    print std.automata.count_words(/(0|1)*/, 70)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MathError[E0600]: the number of words of length 70 is too large for an Int
+  hint: Ints are 64-bit: about plus or minus 9 * 10^18

@@ -15,6 +15,7 @@ pub mod error;
 pub mod format;
 pub mod index;
 pub mod interp;
+pub mod langs;
 pub mod lexer;
 pub mod lint;
 pub mod machine;

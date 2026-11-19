@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_alphabet_mismatch.kstar, line 3, in <main>
+    print std.automata.distinguishing_word(std.automata.ends_with(B, "0"), std.automata.ends_with(C, "a"))
+                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AlphabetError[E0502]: this machine is over {a, b}, but {0, 1} is needed here
+  hint: languages can only be combined when they share an alphabet; build both machines `over` the same one

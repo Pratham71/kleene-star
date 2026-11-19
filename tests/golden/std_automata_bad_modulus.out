@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_bad_modulus.kstar, line 2, in <main>
+    print std.automata.length_mod(B, 0, 0)
+                                     ^
+MathError[E0609]: cannot divide by 0
+  hint: the modulus `m` must be 1 or more

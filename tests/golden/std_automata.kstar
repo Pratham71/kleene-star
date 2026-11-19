@@ -1,0 +1,28 @@
+# Every function of std.automata, through each way of reaching it.
+import std.automata
+import std.automata as auto
+from std.automata import ends_with as suffix, shortest_word
+alphabet B = {0, 1}
+alphabet A = {a}
+
+print std.automata.starts_with(B, "01")
+print automata.ends_with(B, "011")
+print suffix(B, "")
+print auto.contains_substring(B, "11")
+print std.automata.exactly(B, "1", 2)
+print std.automata.at_least(B, "0", 1)
+print std.automata.at_most(B, "0", 1)
+print std.automata.count_mod(B, "1", 3, 2)
+print std.automata.length_mod(B, 2, 0)
+print std.automata.length_between(B, 1, 2)
+print std.automata.starts_with(A, "aa")
+print std.automata.length_between(A, 0, 0)
+
+# Questions take a Dfa, an Nfa, a regex or a set of words.
+print shortest_word(std.automata.exactly(B, "1", 2)), shortest_word(/(10)+/), shortest_word({"b", "ab"})
+print shortest_word(to_nfa(/1*0/)), "[" + shortest_word(/0*/) + "]"
+print std.automata.distinguishing_word(/0*/, /0+/) == "", std.automata.distinguishing_word(/0(0|1)*/, /0(0|1)*1/)
+print std.automata.is_finite({}), std.automata.is_finite({"0", "11"}), std.automata.is_finite(/0*1/)
+print std.automata.count_words(/(0|1)*/, 10), std.automata.count_words(/0*/, 10000), std.automata.count_words(/1/, 0)
+print std.automata.words_up_to(/1(0|1)*/, 2), std.automata.words_up_to(/[]/, 5), std.automata.words_up_to(/0*/, 0)
+test equivalent(std.automata.count_mod(B, "0", 2, 0), minimize(std.automata.count_mod(B, "0", 2, 0)))

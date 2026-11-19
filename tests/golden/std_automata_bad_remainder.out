@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_bad_remainder.kstar, line 2, in <main>
+    print std.automata.count_mod(B, "1", 2, 2)
+                                            ^
+MathError[E0609]: a remainder after dividing by 2 cannot be 2
+  hint: the remainder `r` must be from 0 to 1

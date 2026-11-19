@@ -289,3 +289,116 @@ fn turing_machines_always_stop_within_the_limit() {
         }
     }
 }
+
+/// A random word over {a, b} of length at most `max`.
+fn random_word(rng: &mut Rng, max: usize) -> Vec<char> {
+    (0..rng.below(max + 1)).map(|_| *rng.pick(&ALPHABET)).collect()
+}
+
+/// Each pattern machine of `std.automata` accepts exactly the words its
+/// definition describes (checked against the plain definition on every word
+/// up to length 7), and is already as small as a DFA for it can be.
+#[test]
+fn pattern_machines_match_their_definitions() {
+    use kstar::automata::patterns;
+    let minimal = |what: &str, d: &Dfa| {
+        assert_eq!(d.states.len(), minimize::minimize(d).states.len(), "{what}: not minimal: {d}");
+    };
+    let mut rng = Rng::new(seed());
+    for case in 0..CASES {
+        let w = random_word(&mut rng, 4);
+        let text: String = w.iter().collect();
+        let what = format!("case {case}, pattern {text:?}");
+        let d = patterns::starts_with(&ALPHABET, &w);
+        same_language(&what, |x| d.accepts(x).unwrap(), |x| x.starts_with(&text));
+        minimal(&what, &d);
+        let d = patterns::ends_with(&ALPHABET, &w);
+        same_language(&what, |x| d.accepts(x).unwrap(), |x| x.ends_with(&text));
+        minimal(&what, &d);
+        let d = patterns::contains(&ALPHABET, &w);
+        same_language(&what, |x| d.accepts(x).unwrap(), |x| x.contains(&text));
+        minimal(&what, &d);
+
+        let symbol = *rng.pick(&ALPHABET);
+        let n = rng.below(5);
+        let count = |x: &str| x.chars().filter(|&c| c == symbol).count();
+        let what = format!("case {case}, symbol {symbol}, n = {n}");
+        for (d, holds) in [
+            (patterns::count_exactly(&ALPHABET, symbol, n), Box::new(|x: &str| count(x) == n) as Box<dyn Fn(&str) -> bool>),
+            (patterns::count_at_least(&ALPHABET, symbol, n), Box::new(|x: &str| count(x) >= n)),
+            (patterns::count_at_most(&ALPHABET, symbol, n), Box::new(|x: &str| count(x) <= n)),
+        ] {
+            same_language(&what, |x| d.accepts(x).unwrap(), &holds);
+            minimal(&what, &d);
+        }
+        let m = 1 + rng.below(4);
+        let r = rng.below(m);
+        let what = format!("case {case}, symbol {symbol}, mod {m} = {r}");
+        let d = patterns::count_mod(&ALPHABET, symbol, m, r);
+        same_language(&what, |x| d.accepts(x).unwrap(), |x| count(x) % m == r);
+        minimal(&what, &d);
+        let d = patterns::length_mod(&ALPHABET, m, r);
+        same_language(&what, |x| d.accepts(x).unwrap(), |x| x.chars().count() % m == r);
+        minimal(&what, &d);
+        let (lo, hi) = (rng.below(4), rng.below(4));
+        let (lo, hi) = (lo.min(hi), lo.max(hi));
+        let what = format!("case {case}, length {lo} to {hi}");
+        let d = patterns::length_between(&ALPHABET, lo, hi);
+        same_language(&what, |x| d.accepts(x).unwrap(), |x| (lo..=hi).contains(&x.chars().count()));
+        minimal(&what, &d);
+    }
+}
+
+/// The pattern machines over alphabets with no symbol or one symbol: no
+/// state that cannot be reached, and still correct.
+#[test]
+fn pattern_machines_over_tiny_alphabets() {
+    use kstar::automata::patterns;
+    let d = patterns::starts_with(&[], &[]);
+    assert_eq!((d.states.len(), d.accepts("")), (1, Ok(true)));
+    let d = patterns::length_between(&[], 1, 3);
+    assert_eq!((d.states.len(), d.accepts("")), (1, Ok(false)));
+    let d = patterns::starts_with(&['a'], &['a', 'a']);
+    assert_eq!(d.states.len(), 3, "no dead state when every symbol matches: {d}");
+    assert_eq!(d.accepts("a"), Ok(false));
+    assert_eq!(d.accepts("aaa"), Ok(true));
+}
+
+/// The questions of `std.automata`, against brute force over every word up
+/// to length 7 (random machines have at most 5 states, so every answer
+/// shows up by then).
+#[test]
+fn language_questions_agree_with_brute_force() {
+    use kstar::automata::questions;
+    let mut rng = Rng::new(seed());
+    let all = words(7);
+    for case in 0..CASES {
+        let d = random_dfa(&mut rng);
+        let what = format!("case {case}: {d:?}");
+        let accepted: Vec<&String> = all.iter().filter(|w| d.accepts(w).unwrap()).collect();
+        // `words` lists shortest first, then in alphabet order.
+        assert_eq!(questions::shortest_word(&d).as_ref(), accepted.first().copied(), "{what}");
+        for n in 0..=7 {
+            let by_hand = accepted.iter().filter(|w| w.chars().count() == n).count() as i64;
+            assert_eq!(questions::count_words(&d, n), Some(by_hand), "{what}, n = {n}");
+        }
+        let listed = questions::words_up_to(&d, 5, 1_000_000).expect("small enough");
+        let by_hand: Vec<String> = accepted.iter().filter(|w| w.chars().count() <= 5).map(|w| w.to_string()).collect();
+        assert_eq!(listed, by_hand, "{what}");
+        // A DFA with n states has an infinite language exactly when it
+        // accepts some word of length n to 2n - 1 (the pumping lemma).
+        let n = d.states.len();
+        let infinite = (n..2 * n).any(|len| questions::count_words(&d, len).unwrap() > 0);
+        assert_eq!(questions::is_finite(&d), !infinite, "{what}");
+    }
+}
+
+#[test]
+fn listing_words_stops_at_its_budget() {
+    use kstar::automata::{patterns, questions};
+    let everything = patterns::length_mod(&ALPHABET, 1, 0);
+    assert_eq!(questions::words_up_to(&everything, 30, 10_000), None);
+    assert_eq!(questions::words_up_to(&everything, 2, 10_000).map(|w| w.len()), Some(7));
+    assert_eq!(questions::count_words(&everything, 70), None, "2^70 does not fit in an Int");
+    assert_eq!(questions::count_words(&everything, 62), Some(1 << 62));
+}

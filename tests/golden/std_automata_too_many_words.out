@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_too_many_words.kstar, line 1, in <main>
+    print std.automata.words_up_to(/(0|1)*/, 20)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0612]: the words of length up to 20 are too many to list
+  hint: ask for shorter words (at most 100000 are listed), or use `count_words` to count them

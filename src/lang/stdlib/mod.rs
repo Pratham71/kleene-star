@@ -17,6 +17,7 @@
 //! To add a module, see "Adding a standard-library module" in
 //! `docs/internals.md`.
 
+pub mod automata;
 pub mod collections;
 pub mod math;
 pub mod string;
@@ -45,6 +46,10 @@ pub enum Ty {
     /// The element type `T` of a generic function: `Set(&Ty::Elem)` is a
     /// `Set[T]`. The checker fills it in from the arguments of each call.
     Elem,
+    /// Any regular language: a `Dfa`, `Nfa`, `Regex` or `Set[Str]`. The
+    /// function converts it with the helpers in `lang::langs`, so it picks
+    /// the alphabet the way the built-ins do.
+    Lang,
 }
 
 impl Ty {
@@ -63,6 +68,7 @@ impl Ty {
             Ty::Tm => Type::Tm,
             Ty::Set(inner) => Type::Set(Box::new(inner.to_type())),
             Ty::Elem => Type::Var,
+            Ty::Lang => Type::Lang,
         }
     }
 }
@@ -108,7 +114,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[collections::MODULE, math::MODULE, string::MODULE];
+pub const MODULES: &[Module] = &[automata::MODULE, collections::MODULE, math::MODULE, string::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

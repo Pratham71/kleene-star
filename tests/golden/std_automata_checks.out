@@ -1,0 +1,38 @@
+Error in std_automata_checks.kstar, line 4:
+    print std.automata.starts_with("01", B)
+                                   ^^^^
+TypeError[E0300]: argument 1 of `std.automata.starts_with` must be an Alphabet, but this is a Str
+
+Error in std_automata_checks.kstar, line 5:
+    print std.automata.exactly(B, 1, 2)
+                                  ^
+TypeError[E0300]: argument 2 of `std.automata.exactly` must be a Str, but this is an Int
+
+Error in std_automata_checks.kstar, line 6:
+    print std.automata.shortest_word(3)
+                                     ^
+TypeError[E0300]: argument 1 of `std.automata.shortest_word` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is an Int
+
+Error in std_automata_checks.kstar, line 7:
+    print std.automata.is_finite(G)
+                                 ^
+TypeError[E0300]: argument 1 of `std.automata.is_finite` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Grammar
+  hint: `std.automata.is_finite` works on regular languages only; a Grammar can describe a language that is not regular
+
+Error in std_automata_checks.kstar, line 8:
+    print std.automata.count_words(/0/)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0301]: `std.automata.count_words` takes 2 arguments, but 1 was given
+
+Error in std_automata_checks.kstar, line 9:
+    print std.automata.prefix(B, "0")
+                       ^^^^^^
+NameError[E0208]: `std.automata` has no `prefix`
+  hint: it defines `at_least`, `at_most`, `contains_substring`, `count_mod`, `count_words`, `distinguishing_word` and 8 more
+
+Error in std_automata_checks.kstar, line 10:
+    print std.automata.is_finite(/0*/) + 1
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is a Bool and the right side is an Int
+
+7 errors found

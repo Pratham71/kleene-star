@@ -373,6 +373,10 @@ pub enum Type {
     /// `contains(s: Set[T], x: T)`: it stands for whatever the arguments
     /// show it to be. Only library tables write it; a program never has it.
     Var,
+    /// Any regular language, as a library parameter: a `Dfa`, `Nfa`, `Regex`
+    /// or `Set[Str]`, the same types the built-ins on languages take. Like
+    /// `Var`, only library tables write it.
+    Lang,
 }
 
 impl std::fmt::Display for Type {
@@ -391,6 +395,7 @@ impl std::fmt::Display for Type {
             Type::Set(inner) => write!(f, "Set[{inner}]"),
             Type::EmptySet => write!(f, "Set[?]"),
             Type::Var => write!(f, "T"),
+            Type::Lang => write!(f, "Lang"),
         }
     }
 }

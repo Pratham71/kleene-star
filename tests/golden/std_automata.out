@@ -1,0 +1,66 @@
+DFA with 4 states over {0, 1}
+         | 0    | 1
+->  p0   | p1   | dead
+    p1   | dead | p2
+    dead | dead | dead
+   *p2   | p2   | p2
+DFA with 4 states over {0, 1}
+       | 0  | 1
+->  m0 | m1 | m0
+    m1 | m1 | m2
+    m2 | m1 | m3
+   *m3 | m1 | m0
+DFA with 1 state over {0, 1}
+       | 0  | 1
+-> *m0 | m0 | m0
+DFA with 3 states over {0, 1}
+       | 0  | 1
+->  m0 | m0 | m1
+    m1 | m0 | m2
+   *m2 | m2 | m2
+DFA with 4 states over {0, 1}
+         | 0    | 1
+->  c0   | c0   | c1
+    c1   | c1   | c2
+   *c2   | c2   | more
+    more | more | more
+DFA with 2 states over {0, 1}
+       | 0  | 1
+->  c0 | c1 | c0
+   *c1 | c1 | c1
+DFA with 3 states over {0, 1}
+         | 0    | 1
+-> *c0   | c1   | c0
+   *c1   | more | c1
+    more | more | more
+DFA with 3 states over {0, 1}
+       | 0  | 1
+->  r0 | r0 | r1
+    r1 | r1 | r2
+   *r2 | r2 | r0
+DFA with 2 states over {0, 1}
+       | 0  | 1
+-> *r0 | r1 | r1
+    r1 | r0 | r0
+DFA with 4 states over {0, 1}
+         | 0    | 1
+->  l0   | l1   | l1
+   *l1   | l2   | l2
+   *l2   | long | long
+    long | long | long
+DFA with 3 states over {a}
+       | a
+->  p0 | p1
+    p1 | p2
+   *p2 | p2
+DFA with 2 states over {a}
+         | a
+-> *l0   | long
+    long | long
+11 10 b
+0 []
+true 0
+true true false
+1024 1 0
+{"1", "10", "11"} {} {""}
+tests: 1 passed, 0 failed

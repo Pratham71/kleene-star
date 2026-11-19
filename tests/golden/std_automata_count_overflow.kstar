@@ -1,0 +1,1 @@
+print std.automata.count_words(/(0|1)*/, 70)

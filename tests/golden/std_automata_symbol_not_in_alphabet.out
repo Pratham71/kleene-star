@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_automata_symbol_not_in_alphabet.kstar, line 2, in <main>
+    print std.automata.count_mod(B, "2", 2, 0)
+                                    ^^^
+AlphabetError[E0500]: symbol `2` is not in the alphabet
+  hint: the alphabet is {0, 1}

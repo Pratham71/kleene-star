@@ -284,6 +284,26 @@ of the same names. The built-ins take two languages and make a machine
 full name. There is no power set and no set of pairs, because a set cannot
 hold other sets.
 
+`std.automata` builds the machines that come up again and again, already
+minimal and with states named after what they remember, and answers
+questions the built-ins leave open. `equivalent` says *whether* two
+languages differ; `distinguishing_word` says *where*:
+
+```kstar
+alphabet B = {0, 1}
+let EvenOnes = std.automata.count_mod(B, "1", 2, 0)
+let Ends0 = std.automata.ends_with(B, "0")
+print states(EvenOnes), std.automata.shortest_word(intersect(EvenOnes, Ends0))
+print std.automata.distinguishing_word(EvenOnes, /0*/)
+print std.automata.is_finite(EvenOnes), std.automata.count_words(EvenOnes, 3)
+```
+
+```text
+2 0
+11
+false 4
+```
+
 ## Summary
 
 | You write | You get |
@@ -291,4 +311,4 @@ hold other sets.
 | `import "lib/parity.kstar"` | the module as `parity`; its names as `parity.EvenZeros` |
 | `import "parity.kstar" as p` | the module as `p` |
 | `from "parity.kstar" import EvenZeros, ends_in as ending` | `EvenZeros` and `ending` in your file |
-| `std.math.gcd(4, 6)`, `std.string.length("ab")`, `import std.math` | the standard library |
+| `std.math.gcd(4, 6)`, `std.string.length("ab")`, `std.automata.ends_with(B, "01")`, `import std.math` | the standard library |

@@ -2,7 +2,7 @@
 //! plus the questions you can ask about them.
 
 use super::{fresh_name, Dfa, Nfa, State};
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::BTreeMap;
 
 /// The product construction: runs both DFAs side by side. A pair `(p,q)`
 /// accepts when `accept(p accepts, q accepts)` says so, which gives union
@@ -69,25 +69,10 @@ pub fn equivalent(a: &Dfa, b: &Dfa) -> bool {
     is_empty(&product(a, b, |x, y| x != y))
 }
 
-/// The shortest word accepted by exactly one of the two machines, if any.
+/// The shortest word accepted by exactly one of the two machines, if any:
+/// the shortest word of the machine that accepts exactly those words.
 pub fn distinguishing_word(a: &Dfa, b: &Dfa) -> Option<String> {
-    let diff = product(a, b, |x, y| x != y);
-    let mut word_to: Vec<Option<String>> = vec![None; diff.states.len()];
-    word_to[diff.start] = Some(String::new());
-    let mut queue = VecDeque::from([diff.start]);
-    while let Some(s) = queue.pop_front() {
-        let word = word_to[s].clone().unwrap();
-        if diff.accept.contains(&s) {
-            return Some(word);
-        }
-        for (i, &t) in diff.delta[s].iter().enumerate() {
-            if word_to[t].is_none() {
-                word_to[t] = Some(format!("{word}{}", diff.alphabet[i]));
-                queue.push_back(t);
-            }
-        }
-    }
-    None
+    super::questions::shortest_word(&product(a, b, |x, y| x != y))
 }
 
 /// Copies the states and edges of `from` into `into`, renaming on clashes.

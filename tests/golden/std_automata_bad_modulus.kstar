@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.automata.length_mod(B, 0, 0)
