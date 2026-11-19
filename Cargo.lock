@@ -214,6 +214,7 @@ name = "kstar"
 version = "0.3.0"
 dependencies = [
  "rustyline",
+ "serde_json",
  "tokio",
  "tower-lsp-server",
  "winresource",

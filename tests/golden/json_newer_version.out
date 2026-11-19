@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  json_newer_version.kstar, line 1, in <main>
+    print from_json(Regex, "{\"format\": \"kleene-star\", \"version\": 2, \"kind\": \"regex\", \"regex\": \"a\"}")
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError[E0616]: this is not a machine in Kleene Star's JSON format: at `version`: version 2 was written by a newer Kleene Star; this one reads version 1
+  hint: `to_json` writes the format; docs/reference.md describes every field

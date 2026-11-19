@@ -1,0 +1,39 @@
+# Machines as JSON. `to_json` writes any machine, regex or grammar in a
+# documented format that other programs can read; `from_json` reads it
+# back. `kstar export --format json examples/17_json.kstar Div3` writes the
+# same JSON to a file.
+
+alphabet B = {0, 1}
+
+dfa Div3 over B {
+    start  r0
+    accept r0
+    r0 --0--> r0
+    r0 --1--> r1
+    r1 --0--> r2
+    r1 --1--> r0
+    r2 --0--> r1
+    r2 --1--> r2
+}
+
+let text = to_json(Div3, "Div3")
+print text
+
+# Reading it back gives the same machine: same states, same names.
+let Again = from_json(Dfa, text)
+test equivalent(Again, Div3) and states(Again) == 3
+trace Again on "110"
+
+# JSON written by hand, or by another tool, on one line: a regex for the
+# binary numbers that end in 0.
+let Even = from_json(Regex, "{\"format\": \"kleene-star\", \"version\": 1, \"kind\": \"regex\", \"name\": \"Even\", \"regex\": \"(0|1)*0\"}")
+# Even and divisible by 3 is divisible by 6, except that `(0|1)*0` has no
+# empty word, which the binary machines read as 0.
+test std.testing.same_language(intersect(Even, Div3), difference(std.binary.divisible_by(6), {""}))
+
+# Grammars round-trip too; their rules say which symbols are variables.
+grammar Balanced over B {
+    S -> 0 S 1 | eps
+}
+print to_json(Balanced)
+test std.testing.agree_up_to(from_json(Grammar, to_json(Balanced)), Balanced, 8)

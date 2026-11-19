@@ -1,0 +1,9 @@
+# Mistakes the checker finds before anything runs.
+alphabet B = {0, 1}
+print from_json(Machine, "{}")
+print from_json("Dfa", "{}")
+print from_json(Dfa, 3)
+print from_json(Dfa)
+print to_json({"a"})
+print to_json(/a/, 1)
+print states(from_json(Regex, "{}"))

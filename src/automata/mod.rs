@@ -10,6 +10,7 @@ pub mod convert;
 pub mod dfa;
 pub mod dot;
 pub mod grammar;
+pub mod json;
 pub mod minimize;
 pub mod nfa;
 pub mod ops;

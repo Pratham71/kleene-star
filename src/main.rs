@@ -95,8 +95,13 @@ exactly the machine's words, with a `#[cfg(test)]` module of sample words.
 <machine> may be any regular language (Dfa, Nfa, Regex or Set[Str]), such as
 `EvenZeros` or `to_dfa(r)`; it is turned into a DFA first.
 
+With --format json it writes <machine> in Kleene Star's JSON format instead,
+which `from_json` reads back: any Dfa, Nfa, Regex, Grammar, Pda or Tm, kept as
+it is, with its state names.
+
 Options:
-  --fn <name>        the function's name (default: <machine> in snake_case)
+  --format <format>  rust (default) or json
+  --fn <name>        the Rust function's name (default: <machine> in snake_case)
   -o, --out <file>   write to <file> instead of standard output
   --minimize         minimize the DFA first, for the smallest table
   --color <when>     auto (default), always or never";
@@ -548,6 +553,7 @@ fn export_command(args: &[&str]) -> ExitCode {
     let mut fn_name = None;
     let mut out_file = None;
     let mut minimize = false;
+    let mut json = false;
     let mut rest = Vec::new();
     let mut iter = args.iter();
     while let Some(&arg) = iter.next() {
@@ -561,6 +567,12 @@ fn export_command(args: &[&str]) -> ExitCode {
                 None => return usage_error("`-o` needs a file name", EXPORT_HELP),
             },
             "--minimize" => minimize = true,
+            "--format" => match iter.next() {
+                Some(&"rust") => json = false,
+                Some(&"json") => json = true,
+                Some(other) => return usage_error(&format!("unknown format `{other}`: use `rust` or `json`"), EXPORT_HELP),
+                None => return usage_error("`--format` needs `rust` or `json`", EXPORT_HELP),
+            },
             other => rest.push(other),
         }
     }
@@ -580,13 +592,29 @@ fn export_command(args: &[&str]) -> ExitCode {
     };
     // The default name is the machine's, in Rust's style: EvenZeros -> even_zeros.
     let is_name = machine.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '.');
+    let fn_name_given = fn_name.is_some();
     let fn_name = fn_name.unwrap_or_else(|| {
         let base = if is_name { machine.rsplit('.').next().unwrap_or(machine) } else { "accepts" };
         kstar::automata::codegen::snake_case(base)
     });
+    if json && fn_name_given {
+        return usage_error("`--fn` names a Rust function; it does not go with `--format json`", EXPORT_HELP);
+    }
     let target = if minimize { format!("minimize({machine})") } else { machine.clone() };
-    let quoted = fn_name.replace('\\', "\\\\").replace('"', "\\\"");
-    let entry = format!("print to_rust({target}, \"{quoted}\")");
+    let quote = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
+    let entry = if json {
+        // The machine's name goes into the file when <machine> is a name.
+        let name = if is_name { machine.rsplit('.').next().unwrap_or(machine).to_string() } else { String::new() };
+        if name.is_empty() {
+            format!("print to_json({target})")
+        } else {
+            format!("print to_json({target}, \"{}\")", quote(&name))
+        }
+    } else {
+        format!("print to_rust({target}, \"{}\")", quote(&fn_name))
+    };
+    // What `-o` reports once the file is written.
+    let wrote = if json { format!("{machine} as JSON") } else { format!("`pub fn {fn_name}(input: &str) -> bool`") };
     let name = shown(Path::new(file));
     let color = options.color;
     kstar::with_big_stack(move || {
@@ -603,7 +631,11 @@ fn export_command(args: &[&str]) -> ExitCode {
             return ExitCode::FAILURE;
         }
         let mut code = String::from_utf8_lossy(&code.0.borrow()).to_string();
-        code.pop(); // the newline `print` adds
+        // Rust code already ends in a newline; drop the one `print` adds.
+        // JSON does not, so it keeps it, like any text file.
+        if !json {
+            code.pop();
+        }
         match out_file {
             None => {
                 print!("{code}");
@@ -611,7 +643,7 @@ fn export_command(args: &[&str]) -> ExitCode {
             }
             Some(out) => match std::fs::write(&out, code) {
                 Ok(()) => {
-                    eprintln!("wrote {out}: `pub fn {fn_name}(input: &str) -> bool`");
+                    eprintln!("wrote {out}: {wrote}");
                     ExitCode::SUCCESS
                 }
                 Err(e) => {

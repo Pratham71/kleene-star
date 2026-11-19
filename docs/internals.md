@@ -567,6 +567,37 @@ prints what its own condition collected. The explanation is worked out only
 for a failing check, so passing tests cost nothing extra. `std.testing` is
 the only module that uses it.
 
+## 16. Machines as JSON
+
+`src/automata/json.rs`, `to_json` and `from_json` in `src/lang/interp.rs`,
+`kstar export --format json` in `src/main.rs`
+
+Like the Rust generator, the format belongs to the automata library: a
+`Machine` (one of the six kinds) goes in and a `String` comes out, or the
+other way round, with no knowledge of the language.
+
+- **Writing** builds the text by hand rather than through `serde`, so the
+  fields come in a fixed, readable order (`format`, `version`, `kind`,
+  `name`, then the kind's fields) with one move per line. Strings go
+  through `serde_json` for JSON's escaping.
+- **Reading** first parses the text into a `serde_json::Value` (which
+  limits nesting), then walks it with `Obj`, a small helper that remembers
+  the path for messages, takes each field once, and refuses fields nobody
+  took (`done`). Every name is looked up in what was declared, and the
+  rules of the kind are checked, so what comes out is a machine the rest of
+  the library can trust: a DFA's table is complete, a Turing machine has
+  one move per state and symbol. The limits are constants at the top of
+  the file.
+- `serde_json` was already compiled for the language server, so using it
+  costs nothing new; parsing JSON by hand would be more code to get right
+  against hostile input.
+
+In the language, `to_json` is an ordinary built-in. `from_json` is the one
+built-in whose first argument is not a value: the checker
+(`check_from_json` in `check.rs`) reads it as a type name and makes it the call's type, and the
+interpreter reads it without evaluating it. That is how a program gets a
+statically typed `Dfa` out of text it only sees when it runs.
+
 ## Testing
 
 ```bash

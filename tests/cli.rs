@@ -290,6 +290,39 @@ fn export_writes_rust() {
     assert_eq!(usage.status.code(), Some(2));
 }
 
+#[test]
+fn export_writes_json_that_reads_back() {
+    let dir = scratch("export-json");
+    std::fs::write(
+        dir.join("m.kstar"),
+        "alphabet B = {0, 1}\ndfa EvenZeros over B { start e  accept e  e --0--> o  e --1--> e  o --0--> e  o --1--> o }\ngrammar G over B { S -> 0 S 1 | eps }\n",
+    )
+    .unwrap();
+    let out = kstar(&dir, &["export", "--format", "json", "m.kstar", "EvenZeros"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let text = stdout(&out);
+    assert!(text.starts_with("{\n  \"format\": \"kleene-star\",\n  \"version\": 1,\n  \"kind\": \"dfa\",\n  \"name\": \"EvenZeros\","), "{text}");
+    assert!(text.contains("\"states\": [\"e\", \"o\"]"), "the state names are kept: {text}");
+    // Any machine, regex or grammar can be written, not only DFAs.
+    let g = kstar(&dir, &["export", "--format", "json", "-o", "g.json", "m.kstar", "G"]);
+    assert!(g.status.success(), "{}", stderr(&g));
+    let file = std::fs::read_to_string(dir.join("g.json")).unwrap();
+    assert!(file.contains("\"kind\": \"grammar\"") && file.contains("\"name\": \"G\""), "{file}");
+    // And read back by a program.
+    // A string cannot span lines, but JSON does not mind being on one line.
+    let one_line = text.replace('\n', " ").replace('\\', "\\\\").replace('"', "\\\"");
+    std::fs::write(dir.join("back.kstar"), format!("let D = from_json(Dfa, \"{one_line}\")\nprint states(D), D accepts \"00\"\n")).unwrap();
+    let back = kstar(&dir, &["run", "back.kstar"]);
+    assert!(back.status.success(), "{}", stderr(&back));
+    assert_eq!(stdout(&back), "2 true\n");
+    // `--fn` belongs to Rust output; an unknown format is a usage error.
+    let fn_json = kstar(&dir, &["export", "--format", "json", "--fn", "x", "m.kstar", "EvenZeros"]);
+    assert_eq!(fn_json.status.code(), Some(2));
+    let other = kstar(&dir, &["export", "--format", "yaml", "m.kstar", "EvenZeros"]);
+    assert_eq!(other.status.code(), Some(2));
+    assert!(stderr(&other).contains("rust") && stderr(&other).contains("json"), "{}", stderr(&other));
+}
+
 /// The Windows programs link the C runtime in (see `.cargo/config.toml`), so
 /// they start on a machine without the Visual C++ Redistributable. A program
 /// built without it names `VCRUNTIME140.dll` and the `api-ms-win-crt-*`

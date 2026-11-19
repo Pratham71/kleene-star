@@ -1192,6 +1192,11 @@ impl Checker {
             }
             return Err(err);
         }
+        // `from_json(Dfa, text)`: the first argument is a type name, not a
+        // value, and it decides what the call returns.
+        if name.text == "from_json" {
+            return self.check_from_json(args, span);
+        }
         let types = args.iter().map(|arg| self.expr(arg)).collect::<Check<Vec<Type>>>()?;
 
         if builtin {
@@ -1211,6 +1216,45 @@ impl Checker {
         }
 
         check_arguments(&name.text, &self.funcs[&name.text], &types, args, span)
+    }
+}
+
+impl Checker {
+    /// The type of `from_json(Kind, text)`: `Kind`, which must be written
+    /// as one of the type names `from_json` can read.
+    fn check_from_json(&mut self, args: &[Expr], span: Span) -> Check<Type> {
+        if args.len() != 2 {
+            return Err(type_error(
+                span,
+                format!("`from_json` takes 2 arguments, but {} {} given", args.len(), if args.len() == 1 { "was" } else { "were" }),
+            )
+            .code(codes::ARGUMENT_COUNT));
+        }
+        let kind = match &args[0].kind {
+            ExprKind::Name(n) if builtins::JSON_KINDS.contains(&n.as_str()) => n.as_str(),
+            _ => {
+                return Err(type_error(
+                    args[0].span,
+                    "the first argument of `from_json` must be the kind to read: `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`",
+                )
+                .hint("write the type name itself, without quotes, as in `from_json(Dfa, text)`"));
+            }
+        };
+        let text = self.expr(&args[1])?;
+        if !fits(&Type::Str, &text) {
+            return Err(type_error(
+                args[1].span,
+                format!("argument 2 of `from_json` must be a Str, but this is {}", article(&text)),
+            ));
+        }
+        Ok(match kind {
+            "Dfa" => Type::Dfa,
+            "Nfa" => Type::Nfa,
+            "Regex" => Type::Regex,
+            "Grammar" => Type::Grammar,
+            "Pda" => Type::Pda,
+            _ => Type::Tm,
+        })
     }
 }
 
@@ -1388,6 +1432,31 @@ print u + 1").expect_err("a set plus an Int");
             "TypeError: argument 2 of `std.collections.union` must be a Set[Int], but this is a Set[Str]"
         );
         assert!(error("print std.collections.size(1)").contains("must be a Set[T]"));
+    }
+
+    /// `from_json` names the kind it reads with a type name, so the checker
+    /// knows what it returns; `to_json` takes any machine, regex or grammar.
+    #[test]
+    fn json_built_ins_are_typed() {
+        check(&format!(
+            "{B}let d = from_json(Dfa, \"...\")
+print states(d), to_json(d), to_json(/0*/, \"Zeros\"), to_json(grammar over B {{ S -> 0 }})
+let n = from_json(Nfa, to_json(d))
+print states(n)"
+        ))
+        .unwrap();
+        assert!(check("let d = from_json(Dfa, \"x\")\nprint d + 1").is_err(), "the result is a Dfa");
+        assert_eq!(
+            error("print from_json(Machine, \"x\")"),
+            "TypeError: the first argument of `from_json` must be the kind to read: `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`"
+        );
+        assert_eq!(error("print from_json(\"Dfa\", \"x\")").split(':').next(), Some("TypeError"));
+        assert_eq!(error("print from_json(Dfa, 3)"), "TypeError: argument 2 of `from_json` must be a Str, but this is an Int");
+        assert_eq!(error("print from_json(Dfa)"), "TypeError: `from_json` takes 2 arguments, but 1 was given");
+        assert_eq!(
+            error("print to_json({\"a\"})"),
+            "TypeError: argument 1 of `to_json` must be a machine, regex or grammar (Dfa, Nfa, Regex, Grammar, Pda or Tm), but this is a Set[Str]"
+        );
     }
 
     /// A library parameter of type `Acceptor` takes anything `accepts` works

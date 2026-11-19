@@ -41,8 +41,16 @@ its GitHub release, so write it for people who use Kleene Star.
   other), and `agree_on` and `agree_up_to` to compare grammars, PDAs and
   Turing machines on sample words. A failing `test` prints the explanation
   under its line; `test` statements in imported files are still skipped.
-- Two new error codes: E0614 (a string that should be one symbol) and E0615
-  (no word with the asked-for property).
+- **Machines as JSON**: a documented, versioned format (version 1) for
+  DFAs, NFAs (with eps moves), regexes, grammars, PDAs and Turing machines.
+  `to_json(m)` writes it, `from_json(Dfa, text)` reads it back (the first
+  argument names the kind expected), and `kstar export --format json` writes
+  a file. State names survive the round trip. Reading is strict and limited
+  (1 MiB, 10000 states, unknown fields refused), with errors that say where
+  the problem is (E0616).
+- Three new error codes: E0614 (a string that should be one symbol), E0615
+  (no word with the asked-for property) and E0616 (text that is not a
+  machine in the JSON format).
 
 ## [0.3.0] - 2026-11-19
 

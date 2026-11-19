@@ -1,0 +1,1 @@
+print from_json(Dfa, "{\"format\": \"kleene-star\", \"version\": 1, \"kind\": \"dfa\", \"alphabet\": [\"0\"], \"states\": [\"a\"], \"start\": \"a\", \"accept\": [\"b\"], \"transitions\": []}")

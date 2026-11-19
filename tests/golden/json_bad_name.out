@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  json_bad_name.kstar, line 1, in <main>
+    print to_json(/a/, "")
+                       ^^
+ValueError[E0616]: this cannot be the name in a JSON file: a name must have 1 to 200 characters, but this has 0

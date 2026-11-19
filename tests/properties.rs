@@ -585,3 +585,90 @@ fn equal_sets_explains_the_symmetric_difference() {
         }
     }
 }
+
+/// A random deterministic Turing machine over {a, b}.
+fn random_tm(rng: &mut Rng) -> Tm {
+    let n = 2 + rng.below(4);
+    let mut moves = Vec::new();
+    let tape = ['a', 'b', tm::BLANK];
+    for from in 0..n {
+        for &read in &tape {
+            if rng.chance(70) {
+                let dir = [Dir::Left, Dir::Right, Dir::Stay][rng.below(3)];
+                moves.push(tm::Move { from, read, write: *rng.pick(&tape), dir, to: rng.below(n) });
+            }
+        }
+    }
+    Tm {
+        alphabet: ALPHABET.to_vec(),
+        states: (0..n).map(|i| format!("t{i}")).collect(),
+        start: 0,
+        accept: BTreeSet::from([n - 1]),
+        reject: if n > 2 { BTreeSet::from([n - 2]) } else { BTreeSet::new() },
+        moves,
+    }
+}
+
+/// Writing a machine as JSON and reading it back gives the same machine:
+/// the same states with the same names, the same moves, so the same
+/// language. (A regex comes back as an equivalent regex: its text is
+/// re-read by the parser.)
+#[test]
+fn json_round_trips_keep_machines_and_names() {
+    use kstar::automata::json::{from_json, to_json, Machine};
+    let mut rng = Rng::new(seed());
+    let back = |m: &Machine| {
+        let text = to_json(m, Some("M"));
+        let (read, name) = from_json(&text).unwrap_or_else(|e| panic!("{e:?} reading back\n{text}"));
+        assert_eq!(name.as_deref(), Some("M"));
+        read
+    };
+    for case in 0..CASES {
+        let d = random_dfa(&mut rng);
+        assert_eq!(back(&Machine::Dfa(d.clone())), Machine::Dfa(d), "case {case}");
+        let n = random_nfa(&mut rng);
+        assert_eq!(back(&Machine::Nfa(n.clone())), Machine::Nfa(n), "case {case}");
+        let g = random_grammar(&mut rng);
+        assert_eq!(back(&Machine::Grammar(g.clone())), Machine::Grammar(g.clone()), "case {case}");
+        let p = Pda::from_grammar(&g);
+        assert_eq!(back(&Machine::Pda(p.clone())), Machine::Pda(p), "case {case}");
+        let m = random_tm(&mut rng);
+        assert_eq!(back(&Machine::Tm(m.clone())), Machine::Tm(m), "case {case}");
+        let r = random_regex(&mut rng, 4);
+        match back(&Machine::Regex(r.clone())) {
+            Machine::Regex(again) => assert!(ops::equivalent(&dfa(&r), &dfa(&again)), "case {case}: /{r}/ came back as /{again}/"),
+            other => panic!("case {case}: a regex came back as {other:?}"),
+        }
+    }
+}
+
+/// Damaged JSON is an error, never a crash: random edits of valid files.
+#[test]
+fn damaged_json_never_crashes() {
+    use kstar::automata::json::{from_json, to_json, Machine};
+    let mut rng = Rng::new(seed());
+    let pieces = ["{", "}", "[", "]", ",", ":", "\"", "null", "-1", "1e999", "\"\\u0000\"","\"q0\"", "\"kind\"", "9999999999999999999"];
+    for _ in 0..CASES * 5 {
+        let machine = match rng.below(3) {
+            0 => Machine::Dfa(random_dfa(&mut rng)),
+            1 => Machine::Nfa(random_nfa(&mut rng)),
+            _ => Machine::Tm(random_tm(&mut rng)),
+        };
+        let mut text: Vec<char> = to_json(&machine, None).chars().collect();
+        for _ in 0..1 + rng.below(4) {
+            let at = rng.below(text.len() + 1);
+            match rng.below(3) {
+                0 if at < text.len() => {
+                    text.remove(at);
+                }
+                1 => text.splice(at..at, rng.pick(&pieces).chars()).for_each(drop),
+                _ => {
+                    let end = (at + rng.below(20)).min(text.len());
+                    text.drain(at..end);
+                }
+            }
+        }
+        let text: String = text.into_iter().collect();
+        let _ = from_json(&text);
+    }
+}

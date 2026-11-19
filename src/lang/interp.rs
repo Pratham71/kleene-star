@@ -25,7 +25,7 @@ use super::machine::GrammarSpec;
 use crate::automata::grammar::{DeriveError, Grammar};
 use crate::automata::pda::{self, Pda};
 use crate::automata::tm::{self, Halt, Tm};
-use crate::automata::{codegen, convert, dot, fmt_alphabet, minimize, ops, trace};
+use crate::automata::{codegen, convert, dot, fmt_alphabet, json, minimize, ops, trace};
 use std::collections::{BTreeSet, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
@@ -638,6 +638,12 @@ impl Interp {
                 Value::Int(n.checked_neg().ok_or_else(|| self.overflow(expr.span))?)
             }
             ExprKind::Binary(op, left, right) => self.binary(*op, left, right, expr.span)?,
+            ExprKind::Call { name, args } if name.text == "from_json" && !name.is_qualified() => {
+                // The first argument is the kind's type name, never evaluated.
+                let ExprKind::Name(kind) = &args[0].kind else { unreachable!("the checker wants a type name") };
+                let Value::Str(text) = self.eval(&args[1])? else { unreachable!("the checker wants a Str") };
+                self.read_json(kind, &text, args[1].span)?
+            }
             ExprKind::Call { name, args } => {
                 let mut values = Vec::new();
                 for arg in args {
@@ -759,6 +765,30 @@ impl Interp {
             ),
         )
         .hint("eps moves that push without reading can let a PDA run forever; the answer is unknown, not \"no\"")
+    }
+
+    /// `from_json(Kind, text)`: the machine in `text`, which must be of the
+    /// kind the program asked for.
+    fn read_json(&self, kind: &str, text: &str, span: Span) -> Run<Value> {
+        let bad = |message: String| self.error(ErrorKind::Value, span, message).code(codes::BAD_JSON);
+        let (machine, _) = json::from_json(text).map_err(|e| {
+            bad(format!("this is not a machine in Kleene Star's JSON format: {e}"))
+                .hint("`to_json` writes the format; docs/reference.md describes every field")
+        })?;
+        let found = machine.kind();
+        Ok(match (kind, machine) {
+            ("Dfa", json::Machine::Dfa(d)) => Value::dfa(d),
+            ("Nfa", json::Machine::Nfa(n)) => Value::nfa(n),
+            ("Regex", json::Machine::Regex(r)) => Value::Regex(Rc::new(r)),
+            ("Grammar", json::Machine::Grammar(g)) => Value::Grammar(Rc::new(g)),
+            ("Pda", json::Machine::Pda(p)) => Value::Pda(Rc::new(p)),
+            ("Tm", json::Machine::Tm(m)) => Value::Tm(Rc::new(m)),
+            _ => {
+                let capital = |k: &str| super::builtins::JSON_KINDS.iter().find(|n| n.eq_ignore_ascii_case(k)).copied().unwrap_or("Dfa");
+                return Err(bad(format!("this JSON holds a {}, not a {kind}", capital(found)))
+                    .hint(format!("read it as what it is, `from_json({}, text)`, and convert it if needed", capital(found))));
+            }
+        })
     }
 
     /// The function that `name` calls: one of the current file's, one taken
@@ -888,6 +918,27 @@ impl Interp {
                 let title = format!("`{}`", written.lines().next().unwrap_or(written));
                 return Ok(Value::str(&codegen::dfa_to_rust(&to_dfa(lang, &alphabet), fn_name, &title)));
             }
+            ("to_json", machine) => {
+                let name = match args.get(1) {
+                    Some(Value::Str(name)) => Some(&**name),
+                    _ => None,
+                };
+                if let Some(problem) = name.and_then(|name| json::check_name(name).err()) {
+                    return Err(self
+                        .error(ErrorKind::Value, spans[1], format!("this cannot be the name in a JSON file: {problem}"))
+                        .code(codes::BAD_JSON));
+                }
+                let machine = match machine {
+                    Value::Dfa(d) => json::Machine::Dfa((**d).clone()),
+                    Value::Nfa(n) => json::Machine::Nfa((**n).clone()),
+                    Value::Regex(r) => json::Machine::Regex((**r).clone()),
+                    Value::Grammar(g) => json::Machine::Grammar((**g).clone()),
+                    Value::Pda(p) => json::Machine::Pda((**p).clone()),
+                    Value::Tm(m) => json::Machine::Tm((**m).clone()),
+                    other => unreachable!("the checker allowed {other:?} for to_json"),
+                };
+                return Ok(Value::str(&json::to_json(&machine, name)));
+            }
             ("derive", Value::Grammar(g)) => {
                 let Value::Str(word) = &args[1] else { unreachable!("checker ensures a Str") };
                 return self.derive(g, word, spans[1]);
@@ -976,4 +1027,3 @@ impl Interp {
         })
     }
 }
-
