@@ -192,12 +192,12 @@ which is installed next to `kstar`; see
 
 | | Version | What it has |
 |---|---|---|
-| Stable | **0.2.3** | Everything above except imports, `std.math` and `kstar export`. The install scripts and `kstar update` use it. |
-| Beta | **0.2.5-beta** | Adds imports between files, the `std.math` library and `kstar export`. A pre-release: install it with `KSTAR_VERSION=v0.2.5-beta` ([how](docs/install.md#choosing-stable-or-beta)). |
+| Stable | **0.3.0** | Everything above: imports between files, `kstar export`, and the standard library (`std.math`, `std.string`, `std.collections`). The install scripts and `kstar update` use it. |
 
 What changed in each version, and how to upgrade, is in the
-[changelog](CHANGELOG.md). Next on the way to 0.3.0 are more standard-library
-modules (`std.string` and `std.collections`).
+[changelog](CHANGELOG.md). Next are JSON import and export, then version 0.4 with more
+libraries (`std.automata`, `std.regex`, `std.binary`, `std.testing`) and a
+list type, and later packages; see [the design](docs/design.md).
 
 Until version 0.2 the project was called TOC-Lang, with `.toc` files and a
 `toc` command.

@@ -12,6 +12,37 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-19
+
+The first stable release since 0.2.3. It brings together everything from
+the two 0.2.x pre-releases and finishes the standard library's first three
+modules. Nothing that worked in 0.2.3 stops working, with one small
+exception: a program can no longer import a name that is also a built-in
+function (see Changed below).
+
+### Upgrading from 0.2.3
+
+What 0.3 adds since 0.2.3:
+
+- **Imports.** `import "utils.kstar"`, `import "utils.kstar" as u` and
+  `from "utils.kstar" import name`, with qualified names such as `utils.B`.
+- **`kstar export`** and `to_rust`, which write a regular language as a
+  standalone Rust function with its tests.
+- **A standard library**, reached as `std.<module>.<name>` with no import,
+  or imported like a file: `std.math` (arithmetic), `std.string` (words)
+  and `std.collections` (sets, and every word of a length over an
+  alphabet). Hovering, completion and signature help know all of it.
+- New error codes E0114, E0115, E0206 to E0211, E0308 and E0609 to E0613,
+  and the warning W0202; each is explained by `kstar explain`.
+- The Windows programs run without the Visual C++ Redistributable.
+
+To upgrade, run the install command in
+[the installation guide](docs/install.md) again, or `kstar update`. Check
+your programs for a function you defined called `reverse`, `union` and so
+on: that was always an error, and `from ... import` of such a name now is
+too. Version 0.2.4-beta and 0.2.5-beta were pre-releases of this one; their
+entries are below.
+
 ### Added
 
 - `std.collections`, the third standard-library module: set helpers
@@ -251,7 +282,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.2.5-beta...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Pratham71/kleene-star/compare/v0.2.5-beta...v0.3.0
 [0.2.5-beta]: https://github.com/Pratham71/kleene-star/compare/v0.2.4-beta...v0.2.5-beta
 [0.2.4-beta]: https://github.com/Pratham71/kleene-star/compare/v0.2.3...v0.2.4-beta
 [0.2.3]: https://github.com/Pratham71/kleene-star/compare/v0.2.2...v0.2.3
