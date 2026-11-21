@@ -1,0 +1,112 @@
+TM with 3 states over {0, 1}, blank _
+start right, accept done, reject nothing
+From  | Read | Write | Move | To
+right | 0    | 0     | R    | right
+right | 1    | 1     | R    | right
+right | _    | _     | L    | carry
+carry | 1    | 0     | L    | carry
+carry | 0    | 1     | S    | done
+carry | _    | 1     | S    | done
+TM with 5 states over {0, 1}, blank _
+start first, accept done, reject no
+From   | Read | Write | Move | To
+first  | 1    | 1     | R    | first
+first  | 0    | 1     | R    | second
+second | 1    | 1     | R    | second
+second | _    | _     | L    | erase
+erase  | 1    | _     | S    | done
+first  | _    | _     | S    | no
+second | 0    | 0     | S    | no
+erase  | 0    | 0     | S    | no
+erase  | _    | _     | S    | no
+TM with 6 states over {1}, blank _
+start mark_end, accept done, reject nothing
+From     | Read | Write | Move | To
+mark_end | 1    | 1     | R    | mark_end
+mark_end | _    | 0     | L    | back
+back     | 1    | 1     | L    | back
+back     | 0    | 0     | L    | back
+back     | x    | x     | R    | pick
+back     | _    | _     | R    | pick
+pick     | 1    | x     | R    | carry
+pick     | 0    | 0     | L    | restore
+carry    | 1    | 1     | R    | carry
+carry    | 0    | 0     | R    | carry
+carry    | _    | 1     | L    | back
+restore  | x    | 1     | L    | restore
+restore  | _    | _     | R    | done
+TM with 8 states over {0, 1}, blank _
+start first, accept yes, reject no
+From    | Read | Write | Move | To
+first   | _    | _     | S    | yes
+back    | _    | _     | R    | first
+first   | 0    | _     | R    | carry_0
+carry_0 | _    | _     | L    | check_0
+check_0 | 0    | _     | L    | back
+check_0 | _    | _     | S    | yes
+carry_0 | 0    | 0     | R    | carry_0
+carry_0 | 1    | 1     | R    | carry_0
+back    | 0    | 0     | L    | back
+first   | 1    | _     | R    | carry_1
+carry_1 | _    | _     | L    | check_1
+check_1 | 1    | _     | L    | back
+check_1 | _    | _     | S    | yes
+carry_1 | 0    | 0     | R    | carry_1
+carry_1 | 1    | 1     | R    | carry_1
+back    | 1    | 1     | L    | back
+check_0 | 1    | 1     | S    | no
+check_1 | 0    | 0     | S    | no
+TM with 8 states over {a, b, c}, blank _
+start mark_a, accept yes, reject no
+From    | Read | Write | Move | To
+mark_a  | a    | x     | R    | find_b
+mark_a  | y    | y     | R    | check_y
+mark_a  | _    | _     | S    | yes
+find_b  | a    | a     | R    | find_b
+find_b  | y    | y     | R    | find_b
+find_b  | b    | y     | R    | find_c
+find_c  | b    | b     | R    | find_c
+find_c  | z    | z     | R    | find_c
+find_c  | c    | z     | L    | back
+back    | a    | a     | L    | back
+back    | b    | b     | L    | back
+back    | y    | y     | L    | back
+back    | z    | z     | L    | back
+back    | x    | x     | R    | mark_a
+check_y | y    | y     | R    | check_y
+check_y | z    | z     | R    | check_z
+check_z | z    | z     | R    | check_z
+check_z | _    | _     | S    | yes
+mark_a  | b    | b     | S    | no
+mark_a  | c    | c     | S    | no
+mark_a  | x    | x     | S    | no
+mark_a  | z    | z     | S    | no
+find_b  | c    | c     | S    | no
+find_b  | x    | x     | S    | no
+find_b  | z    | z     | S    | no
+find_b  | _    | _     | S    | no
+find_c  | a    | a     | S    | no
+find_c  | x    | x     | S    | no
+find_c  | y    | y     | S    | no
+find_c  | _    | _     | S    | no
+back    | c    | c     | S    | no
+back    | _    | _     | S    | no
+check_y | a    | a     | S    | no
+check_y | b    | b     | S    | no
+check_y | c    | c     | S    | no
+check_y | x    | x     | S    | no
+check_y | _    | _     | S    | no
+check_z | a    | a     | S    | no
+check_z | b    | b     | S    | no
+check_z | c    | c     | S    | no
+check_z | x    | x     | S    | no
+check_z | y    | y     | S    | no
+1 1 1000 8 5
+ 111 no
+0 101
+yes yes no yes
+15 5
+true true true false false
+{"_", "p", "q", "r", "x", "y", "z"} {"0", "1", "_"}
+false false true
+true

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_tm_mark_symbol.kstar, line 1, in <main>
+    print std.tm.anbncn("a", "y", "c")
+                             ^^^
+AlphabetError[E0503]: `y` is one of the marks the machine writes
+  hint: the machine marks the symbols it has matched with x, y and z, so use other letters

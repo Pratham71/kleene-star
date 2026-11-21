@@ -1,0 +1,5 @@
+# Mistakes the checker finds before anything runs.
+print std.tm.increment(1)
+print std.tm.steps(std.pda.anbn("a", "b"), "ab")
+print std.tm.halts_within(std.tm.increment(), "1", "9")
+print std.tm.final_state(std.tm.increment(), "1") + 1

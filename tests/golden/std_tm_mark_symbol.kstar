@@ -1,0 +1,1 @@
+print std.tm.anbncn("a", "y", "c")

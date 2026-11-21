@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_tm_still_running.kstar, line 9, in <main>
+    print std.tm.steps(Forever, "ab")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0604]: the Turing machine is still running after 100000 steps
+  hint: it may never halt; `std.tm.halts_within` asks whether it halts within a number of steps

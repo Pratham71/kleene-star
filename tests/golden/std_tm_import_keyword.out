@@ -1,0 +1,5 @@
+Error in std_tm_import_keyword.kstar, line 1:
+    import std.tm
+           ^^^^^^
+SyntaxError[E0115]: this module needs a name: `tm` cannot be used as one
+  hint: name it with `as`: `import std.tm as tms`

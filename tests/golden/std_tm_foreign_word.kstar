@@ -1,0 +1,1 @@
+print std.tm.steps(std.tm.increment(), "12")

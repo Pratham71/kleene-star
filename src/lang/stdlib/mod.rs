@@ -27,6 +27,7 @@ pub mod random;
 pub mod regex;
 pub mod string;
 pub mod testing;
+pub mod tm;
 
 use super::ast::Type;
 use super::index::{Def, DefKind};
@@ -181,7 +182,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[automata::MODULE, binary::MODULE, collections::MODULE, grammar::MODULE, math::MODULE, pda::MODULE, random::MODULE, regex::MODULE, string::MODULE, testing::MODULE];
+pub const MODULES: &[Module] = &[automata::MODULE, binary::MODULE, collections::MODULE, grammar::MODULE, math::MODULE, pda::MODULE, random::MODULE, regex::MODULE, string::MODULE, testing::MODULE, tm::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

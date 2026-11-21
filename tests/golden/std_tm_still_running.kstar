@@ -1,0 +1,9 @@
+alphabet AB = {a, b}
+tm Forever over AB {
+    start  q
+    accept done
+    q --a/a,R--> q
+    q --b/b,R--> q
+    q --_/_,R--> q
+}
+print std.tm.steps(Forever, "ab")

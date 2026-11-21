@@ -1,0 +1,47 @@
+# Chapter 15: the standard library's std.tm. Turing machines that compute
+# (leaving an answer on the tape) and that decide (ending in yes or no),
+# checked against arithmetic and against the languages they decide, and
+# measured: how many steps and how much tape a run takes.
+
+alphabet AB = {a, b}
+
+# Binary increment, checked against arithmetic on every number below 64.
+let Inc = std.tm.increment()
+print Inc
+for n in 0..64 {
+    test std.binary.from_binary(run(Inc, std.binary.to_binary(n))) == n + 1
+}
+
+# Unary arithmetic: 3 + 2 and a copy of 3.
+print run(std.tm.unary_add(), "111011"), run(std.tm.unary_copy(), "111")
+
+# The palindrome decider agrees with the palindrome grammar on every word
+# up to length 8, and ends in `no` on the words it rejects.
+let Pal = std.tm.palindromes(AB)
+test std.testing.agree_up_to(Pal, std.grammar.palindromes(AB), 8)
+print std.tm.final_state(Pal, "abab"), std.tm.final_state(Pal, "abba")
+
+# It erases a symbol at each end and walks back, so its running time grows
+# with the square of the length: doubling the length about quadruples the
+# steps.
+for n in 1..6 {
+    let w = std.string.repeat("ab", n) + std.string.reverse(std.string.repeat("ab", n))
+    print std.string.length(w), std.tm.steps(Pal, w), std.tm.space(Pal, w)
+}
+
+# a^n b^n c^n is not context-free, so no PDA decides it, but a Turing
+# machine does, by marking one a, one b and one c at a time.
+let Abc = std.tm.anbncn("a", "b", "c")
+print Abc accepts "aabbcc", Abc accepts "aabcbc", std.tm.final_state(Abc, "abcc")
+test Abc accepts "aaaabbbbcccc"
+
+# A machine that never halts: `halts_within` answers "not yet" where `run`
+# would stop with a LimitError.
+tm Forever over AB {
+    start  q
+    accept done
+    q --a/a,R--> q
+    q --b/b,R--> q
+    q --_/_,R--> q
+}
+print std.tm.halts_within(Forever, "ab", 1000), std.tm.halts_within(Inc, "111", 1000)

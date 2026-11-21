@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_tm_foreign_word.kstar, line 1, in <main>
+    print std.tm.steps(std.tm.increment(), "12")
+                                           ^^^^
+AlphabetError[E0501]: the input contains `2`, which is not in the machine's alphabet
+  hint: the alphabet is {0, 1}

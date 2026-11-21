@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_tm_too_many_steps.kstar, line 1, in <main>
+    print std.tm.halts_within(std.tm.increment(), "1", 100001)
+                                                       ^^^^^^
+LimitError[E0612]: a number of steps can be at most 100000, but this is 100001
+  hint: use 100000 or less, the step limit of every Turing machine run
