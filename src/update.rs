@@ -211,8 +211,7 @@ fn match_extension_with(
         return Ok(());
     }
     println!("the VS Code extension is {have}; installing kleene-star-{current}.vsix");
-    let work = std::env::temp_dir().join(format!("kstar-update-{}", std::process::id()));
-    std::fs::create_dir_all(&work).map_err(|e| format!("could not make {}: {e}", work.display()))?;
+    let work = private_dir()?;
     let result = download(current, &work).and_then(|vsix| {
         let status = Command::new(code)
             .arg("--install-extension")
@@ -228,6 +227,31 @@ fn match_extension_with(
     });
     let _ = std::fs::remove_dir_all(&work);
     result
+}
+
+/// A new folder for the download that only this user can use, with a name
+/// no one can guess in advance. Creating it fails if the path exists, so a
+/// folder someone else made in the shared temporary folder is never used:
+/// otherwise they could swap the `.vsix` between the checksum and the
+/// install.
+fn private_dir() -> Result<std::path::PathBuf, String> {
+    use std::hash::{BuildHasher, Hasher};
+    for _ in 0..8 {
+        // RandomState is seeded from the operating system's randomness.
+        let mut hasher = std::collections::hash_map::RandomState::new().build_hasher();
+        hasher.write_u32(std::process::id());
+        let path = std::env::temp_dir().join(format!("kstar-update-{:016x}", hasher.finish()));
+        #[cfg_attr(not(unix), allow(unused_mut))]
+        let mut builder = std::fs::DirBuilder::new();
+        #[cfg(unix)]
+        std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
+        match builder.create(&path) {
+            Ok(()) => return Ok(path),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(format!("could not make {}: {e}", path.display())),
+        }
+    }
+    Err("could not make a private folder for the download".into())
 }
 
 /// Downloads kleene-star-<version>.vsix and its checksum from release
@@ -368,6 +392,20 @@ if [ \"$1\" = --list-extensions ]; then echo '{listing}'; else echo \"$@\" > '{}
         assert_eq!(match_extension_with(&code, "0.5.1", false, failing), Err("no network".into()));
         assert!(!log.exists());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn download_folders_are_new_and_different() {
+        let a = private_dir().unwrap();
+        let b = private_dir().unwrap();
+        assert_ne!(a, b);
+        assert!(a.is_dir() && std::fs::read_dir(&a).unwrap().next().is_none());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(std::fs::metadata(&a).unwrap().permissions().mode() & 0o777, 0o700);
+        }
+        let _ = (std::fs::remove_dir(&a), std::fs::remove_dir(&b));
     }
 
     #[test]
