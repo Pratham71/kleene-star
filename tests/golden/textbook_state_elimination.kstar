@@ -6,10 +6,10 @@ alphabet AB = {a, b}
 dfa M over AB {
     start  s
     accept t, u
-    s --a--> t
-    s --b--> s
-    t --a--> u
-    t --b--> s
+    s --a  --> t
+    s --b  --> s
+    t --a  --> u
+    t --b  --> s
     u --a,b--> u
 }
 let r = to_regex(M)

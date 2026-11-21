@@ -7,9 +7,9 @@ nfa E over B {
     accept s
     p --eps--> q
     q --eps--> s
-    p --0--> p
-    q --0--> r
-    r --1--> q
+    p --0  --> p
+    q --0  --> r
+    r --1  --> q
     s --0,1--> s
 }
 let N = remove_eps(E)

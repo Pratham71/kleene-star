@@ -5,14 +5,14 @@ alphabet AB = {a, b}
 pda P over AB {
     start  q0
     accept q5
-    q0 --a, Z/Z--> q1
-    q0 --a, a/a--> q1
+    q0 --a, Z/Z  --> q1
+    q0 --a, a/a  --> q1
     q0 --eps, Z/Z--> q2
     q0 --eps, a/a--> q2
-    q1 --a, Z/aZ--> q0
-    q1 --a, a/aa--> q0
-    q2 --b, a/a--> q3
-    q3 --b, a/a--> q4
+    q1 --a, Z/aZ --> q0
+    q1 --a, a/aa --> q0
+    q2 --b, a/a  --> q3
+    q3 --b, a/a  --> q4
     q4 --b, a/eps--> q2
     q2 --eps, Z/Z--> q5
 }

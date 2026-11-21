@@ -12,14 +12,6 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
-### Added
-
-- Golden tests that check the conversions against the usual textbook
-  worked examples, step for step: removing eps moves, the subset
-  construction with its dead state, minimisation by k-equivalence, state
-  elimination, grammar to PDA, the run of a PDA on a word, and the Turing
-  machine for 0^n 1^n. All of them already agreed.
-
 ### Fixed
 
 - Highlighting in VS Code: names, brackets, commas and the quotes of
@@ -37,6 +29,11 @@ its GitHub release, so write it for people who use Kleene Star.
   files are never touched, only text files can be written, and reads and
   writes have size limits. New errors E0618 and E0619. Example:
   `examples/22_io.kstar`.
+- Golden tests that check the conversions against the usual textbook
+  worked examples, step for step: removing eps moves, the subset
+  construction with its dead state, minimisation by k-equivalence, state
+  elimination, grammar to PDA, the run of a PDA on a word, and the Turing
+  machine for 0^n 1^n. All of them already agreed.
 
 ## [0.5.1] - 2026-11-21
 
