@@ -72,6 +72,10 @@ pub struct Files {
     /// Resolved folders; the first is the program's own, which relative
     /// paths start from.
     roots: Vec<PathBuf>,
+    /// The same folders as they were given (made absolute, but not
+    /// resolved on the disk), so an absolute path written the same way
+    /// passes the check `within_by_text` makes before touching the disk.
+    given: Vec<PathBuf>,
     written: Cell<u64>,
     writes: Cell<usize>,
 }
@@ -82,7 +86,7 @@ impl Files {
     pub fn new(folder: &Path) -> Option<Files> {
         let folder = if folder.as_os_str().is_empty() { Path::new(".") } else { folder };
         let root = folder.canonicalize().ok().filter(|p| p.is_dir())?;
-        Some(Files { roots: vec![root], written: Cell::new(0), writes: Cell::new(0) })
+        Some(Files { roots: vec![root], given: vec![absolute(folder)], written: Cell::new(0), writes: Cell::new(0) })
     }
 
     /// Also allows the folder `dir` (`kstar run --allow-path`), relative to
@@ -93,6 +97,7 @@ impl Files {
             return Err(format!("cannot allow {}: it is not a folder", dir.display()));
         }
         self.roots.push(root);
+        self.given.push(absolute(dir));
         Ok(())
     }
 }
@@ -128,6 +133,11 @@ fn io_failure(path: &str, what: &str, error: std::io::Error) -> Failure {
     Failure { code: codes::IO, arg: Some(0), message: format!("cannot {what} `{path}`: {error}"), hint: String::new() }
 }
 
+/// `path` made absolute against the current folder, by its text alone.
+fn absolute(path: &Path) -> PathBuf {
+    lexical(&std::env::current_dir().unwrap_or_default().join(path))
+}
+
 /// `path` with `.` and `..` worked out from its text alone.
 fn lexical(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
@@ -157,7 +167,8 @@ fn is_device_name(name: &str) -> bool {
 /// credentials. The folders are resolved paths, which on Windows begin
 /// `\\?\C:\`; a path typed as `C:\...` is compared without that.
 fn within_by_text(files: &Files, path: &Path) -> bool {
-    files.roots.iter().any(|root| {
+    files.given.iter().any(|given| path.starts_with(given))
+        || files.roots.iter().any(|root| {
         if path.starts_with(root) {
             return true;
         }
@@ -388,7 +399,7 @@ mod tests {
     }
 
     fn call(files: &Files, name: &str, args: &[Value]) -> Result<Value, Failure> {
-        let files = Rc::new(Files { roots: files.roots.clone(), written: Cell::new(0), writes: Cell::new(0) });
+        let files = Rc::new(Files { roots: files.roots.clone(), given: files.given.clone(), written: Cell::new(0), writes: Cell::new(0) });
         with_files(Some(files), || (super::super::function("io", name).unwrap().run)(args))
     }
 
@@ -476,7 +487,8 @@ mod tests {
         assert!(within_by_text(&files, &dir.join("a.txt")));
         assert!(within_by_text(&files, &files.roots[0].join("sub").join("a.txt")));
         assert!(!within_by_text(&files, &lexical(&dir.join("..").join("x.txt"))));
-        let unc = r"\\attacker.invalid\share\x.txt";
+        // Outside Windows a backslash is part of a file name, not a network path.
+        let unc = if cfg!(windows) { r"\\attacker.invalid\share\x.txt" } else { "//attacker.invalid/share/x.txt" };
         assert!(!within_by_text(&files, Path::new(unc)));
         for path in [unc, "//attacker.invalid/share/x.txt"] {
             for name in ["read_text", "exists", "files"] {
