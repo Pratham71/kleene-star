@@ -12,6 +12,24 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-21
+
+Four more standard-library modules, one for each kind of machine the subject
+goes on to: `std.grammar` does the steps of the Chomsky normal form one at a
+time and answers the questions of parsing (FIRST, FOLLOW, LL(1)); `std.pda`
+turns any PDA into a grammar and decides membership where the search for an
+accepting run would give up; `std.tm` has Turing machines that compute and
+decide, and measures their runs; `std.random` makes random words, machines
+and grammars from a seed, so tests over many of them stay repeatable.
+
+### Upgrading from 0.4.0
+
+Programs that ran under 0.4.0 run the same. The new modules are reached by
+their full names (`std.grammar.first(G, "S")`) or imported. Because `grammar`,
+`pda` and `tm` are keywords, they are imported with `as`
+(`import std.grammar as grammars`) or with `from ... import`; plain
+`import std.grammar` says so.
+
 ### Added
 
 - `std.grammar`: the steps of the Chomsky normal form construction one at a
@@ -379,7 +397,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Pratham71/kleene-star/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pratham71/kleene-star/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pratham71/kleene-star/compare/v0.2.5-beta...v0.3.0
 [0.2.5-beta]: https://github.com/Pratham71/kleene-star/compare/v0.2.4-beta...v0.2.5-beta
