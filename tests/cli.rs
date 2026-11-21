@@ -341,3 +341,30 @@ fn windows_programs_need_no_vc_runtime() {
         }
     }
 }
+
+#[test]
+fn std_io_uses_the_program_folder_and_allowed_ones() {
+    let dir = scratch("std-io");
+    std::fs::create_dir_all(dir.join("prog")).unwrap();
+    std::fs::create_dir_all(dir.join("shared")).unwrap();
+    std::fs::write(dir.join("shared/words.txt"), "01 10\n").unwrap();
+    let program = "let n = std.io.write_text(\"out/copy.txt\", std.io.read_text(\"../shared/words.txt\"))\nprint n\n";
+    std::fs::write(dir.join("prog/p.kstar"), program).unwrap();
+
+    // Refused without --allow-path, and nothing is written.
+    let refused = kstar(&dir, &["run", "prog/p.kstar"]);
+    assert!(!refused.status.success());
+    assert!(stderr(&refused).contains("E0618") && stderr(&refused).contains("--allow-path"), "{}", stderr(&refused));
+    assert!(!dir.join("prog/out").exists());
+
+    // Allowed: paths stay relative to the program's folder, not the current one.
+    let allowed = kstar(&dir, &["run", "--allow-path", "shared", "prog/p.kstar"]);
+    assert!(allowed.status.success(), "{}", stderr(&allowed));
+    assert_eq!(stdout(&allowed), "6\n");
+    assert_eq!(std::fs::read_to_string(dir.join("prog/out/copy.txt")).unwrap(), "01 10\n");
+
+    // A folder that does not exist is a usage mistake.
+    let missing = kstar(&dir, &["run", "--allow-path", "nowhere", "prog/p.kstar"]);
+    assert!(!missing.status.success());
+    assert!(stderr(&missing).contains("cannot allow nowhere"), "{}", stderr(&missing));
+}

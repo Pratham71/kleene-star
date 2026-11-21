@@ -50,15 +50,28 @@ impl Session {
     /// are relative to the current folder.
     pub fn new(file: &str, out: Box<dyn Write>, out_dir: PathBuf, repl: bool) -> Session {
         let path = (!repl).then(|| PathBuf::from(file));
+        let mut interp = Interp::new(out, out_dir);
+        // `std.io` may use the files in the program's folder; in the REPL,
+        // the current folder.
+        interp.files = match &path {
+            Some(path) => program_files(path),
+            None => lang::stdlib::io::Files::new(Path::new(".")).map(std::rc::Rc::new),
+        };
         Session {
             sources: SourceMap::new(file, ""),
             loader: Loader::from_disk(path),
             checker: Checker::new(repl),
-            interp: Interp::new(out, out_dir),
+            interp,
             repl,
             color: false,
             warnings: Vec::new(),
         }
+    }
+
+    /// Lets `std.io` also use the files in `dir` (`kstar run --allow-path`).
+    pub fn allow_path(&mut self, dir: &Path) -> Result<(), String> {
+        let files = self.interp.files.as_mut().ok_or("this program cannot use files: it is not running from a file")?;
+        std::rc::Rc::get_mut(files).expect("not while the program runs").allow(dir)
     }
 
     /// Shows errors and warnings in colour (for a terminal).
@@ -70,6 +83,7 @@ impl Session {
     /// with. Imports are relative to its folder.
     pub fn set_path(&mut self, path: &Path) {
         self.loader.set_main_path(Some(path.to_path_buf()));
+        self.interp.files = program_files(path);
     }
 
     /// Reads imported files with `read` instead of from the disk.
@@ -196,6 +210,16 @@ impl Session {
     pub fn tests(&self) -> (usize, usize) {
         (self.interp.passed, self.interp.failed)
     }
+}
+
+/// The folder of the program at `path` for `std.io`, if `path` is a file
+/// on the disk. (A code block in the docs is shown with a name that is not
+/// a file, and gets no files.)
+fn program_files(path: &Path) -> Option<std::rc::Rc<lang::stdlib::io::Files>> {
+    if !path.is_file() {
+        return None;
+    }
+    lang::stdlib::io::Files::new(path.parent().unwrap_or(Path::new("."))).map(std::rc::Rc::new)
 }
 
 /// Rewrites a program in the canonical style, as `kstar fmt` does. Windows

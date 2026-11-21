@@ -1,0 +1,6 @@
+# Words to try on a machine, one or more per line.
+# A `#` starts a comment.
+0 1 00 01 10
+0110 1011
+10101010
+11 0011

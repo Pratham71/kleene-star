@@ -1,0 +1,7 @@
+{"0", "01", "0110", "1", "10"}
+{"first line", "second line"}
+35
+true false
+{"data/io/lines.txt", "data/io/words.txt"}
+{"./data/io/lines.txt", "./data/io/words.txt"}
+tests: 1 passed, 0 failed

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_io_outside.kstar, line 1, in <main>
+    print std.io.read_text("../../Cargo.toml")
+                           ^^^^^^^^^^^^^^^^^^
+IOError[E0618]: `../../Cargo.toml` is outside the program's folder
+  hint: a program may only use files in its own folder; to allow another, run it with `kstar run --allow-path FOLDER`

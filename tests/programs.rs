@@ -150,11 +150,12 @@ fn run_block(text: &str, files: &[(String, String)]) -> common::Outcome {
 /// Each section of docs/errors.md explains one code, and its example must
 /// really produce that code. A few codes have no example: the formatter's
 /// safety net, the nesting limit (an example would be hundreds of brackets),
-/// a file that cannot be written, and the catch-all machine error.
+/// the file errors (a code block is not a file, so it cannot use files),
+/// and the catch-all machine error.
 #[test]
 fn every_error_example_shows_its_code() {
     let page = std::fs::read_to_string(project_dir().join("docs/errors.md")).unwrap().replace("\r\n", "\n");
-    let without_example = ["E0112", "E0113", "E0400", "E0607"];
+    let without_example = ["E0112", "E0113", "E0400", "E0607", "E0618", "E0619"];
     let mut checked = 0;
     for section in page.split("\n## ").skip(1) {
         let code = &section[..5];

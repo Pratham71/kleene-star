@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_io_hidden.kstar, line 1, in <main>
+    let n = std.io.write_text(".git/hooks/post-checkout.txt", "x")
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+IOError[E0618]: `.git/hooks/post-checkout.txt` goes through `.git`, which is hidden
+  hint: hidden files and folders, such as `.git`, are never read or written

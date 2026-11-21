@@ -1268,11 +1268,23 @@ ValueError[E0606]: the grammar cannot derive "aab"
   hint: check first with `g accepts "..."`; only words in the language have a derivation
 ```
 
-## E0607: A file that cannot be written
+## E0607: A file that cannot be read or written
 
 `draw` writes a `.dot` file (and, with Graphviz installed, an `.svg`) into
-the current folder or the one given with `kstar run --out`. The folder must
-exist and be writable.
+the current folder or the one given with `kstar run --out`; the folder must
+exist and be writable. The functions of `std.io` fail with this code when
+the file they are asked to read is not there, is not UTF-8 text, or cannot
+be read or written for another reason, such as a file that is open in
+another program.
+
+```text
+print std.io.read_text("data/none.txt")
+```
+
+```text
+IOError[E0607]: there is no file `data/none.txt`
+  hint: paths are relative to the program's folder; `std.io.exists` says whether a file is there
+```
 
 ## E0608: A result too large to build
 
@@ -1508,6 +1520,34 @@ Traceback (most recent call last):
 ValueError[E0617]: the grammar has no variable "T"
   hint: its variables are `S`
 ```
+
+## E0618: A file the program may not use
+
+A program may only use files in its own folder and the folders under it,
+plus those allowed with `kstar run --allow-path FOLDER`. A path that leads
+anywhere else, through `..`, an absolute path or a symbolic link, is
+refused, and so is any hidden file or folder (such as `.git`), a name that
+is not an ordinary file name, and writing any file that is not text (see
+`std.io` in the reference for the extensions). A program that is not a
+file, such as a code block in the docs, cannot use files at all.
+
+```text
+print std.io.read_text("../../Cargo.toml")
+```
+
+```text
+IOError[E0618]: `../../Cargo.toml` is outside the program's folder
+  hint: a program may only use files in its own folder; to allow another, run it with `kstar run --allow-path FOLDER`
+```
+
+If the program really should read that file, run it with
+`--allow-path` and the folder the file is in.
+
+## E0619: A file too large to read or write
+
+`std.io` reads files of at most 1 MiB, writes at most 1 MiB at a time, and
+lets one run write at most 16 MiB in at most 1000 calls, so a mistake in a
+loop cannot fill the disk. Split large data into several files.
 
 ## W0100: A state that can never be reached
 

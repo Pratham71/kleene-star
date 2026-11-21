@@ -1,0 +1,40 @@
+# Chapter 16: the standard library's std.io. Reading test words from a file,
+# and saving a machine as JSON to load it again later.
+#
+# A program may only use files in its own folder and the folders under it,
+# here examples/ and examples/data/. `kstar run --allow-path FOLDER` allows
+# another one. Hidden files (such as .git) are never touched, and a program
+# may only write text files: .txt, .json, .csv, .md and a few more.
+
+alphabet B = {0, 1}
+
+dfa No11 over B {
+    start  a
+    accept a, b
+    a --0  --> a
+    a --1  --> b
+    b --0  --> a
+    b --1  --> c
+    c --0,1--> c
+}
+
+# The word list sits next to the program. Paths are relative to the
+# program's folder, wherever you run it from.
+let words = std.io.read_words("data/words.txt")
+print len(words), "words to try"
+for w in words {
+    print w, No11 accepts w
+}
+
+# Save the machine, then read it back: the copy is the same machine.
+let bytes = std.io.write_text("out/no_11.json", to_json(No11, "No11"))
+let Copy = from_json(Dfa, std.io.read_text("out/no_11.json"))
+test equivalent(No11, Copy)
+test bytes > 0
+
+# The words of the list that the machine accepts, one per line, for
+# another program.
+let accepted = std.collections.intersect(words, std.automata.words_up_to(No11, 8))
+print std.io.write_lines("out/accepted.txt", accepted), "bytes written"
+print std.io.read_lines("out/accepted.txt")
+print std.io.files("out")

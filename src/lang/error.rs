@@ -31,7 +31,8 @@ pub enum ErrorKind {
     /// A value is the right type but unsuitable, like a word a grammar
     /// cannot derive.
     Value,
-    /// A file could not be written.
+    /// A file could not be read or written, or is not one the program
+    /// may use.
     Io,
     /// Not an error: something that is allowed but probably a mistake.
     Warning,

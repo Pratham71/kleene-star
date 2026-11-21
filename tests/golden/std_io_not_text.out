@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_io_not_text.kstar, line 1, in <main>
+    let n = std.io.write_text("data/io/run.sh", "echo hi")
+                              ^^^^^^^^^^^^^^^^
+IOError[E0618]: `data/io/run.sh` is not a text file a program may write
+  hint: a program may write files ending in .csv, .dot, .html, .json, .log, .md, .svg, .tsv, .txt

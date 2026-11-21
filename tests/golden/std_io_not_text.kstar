@@ -1,0 +1,2 @@
+let n = std.io.write_text("data/io/run.sh", "echo hi")
+print n
