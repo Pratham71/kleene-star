@@ -197,15 +197,15 @@ fn push(symbols: &[&str]) -> Vec<String> {
 
 /// a^n b^n, deterministically: one `X` per `a`, popped by each `b`.
 ///
-/// `start` accepts the empty word; `as` reads a's, `bs` reads b's, and
+/// `ready` accepts the empty word; `as` reads a's, `bs` reads b's, and
 /// `done` is reached once the stack is back to `Z`.
 pub fn anbn(a: char, b: char) -> Pda {
     build(
         &[a, b],
-        &["start", "as", "bs", "done"],
-        &["start", "done"],
+        &["ready", "as", "bs", "done"],
+        &["ready", "done"],
         &[
-            ("start", Some(a), "Z", push(&["X", "Z"]), "as"),
+            ("ready", Some(a), "Z", push(&["X", "Z"]), "as"),
             ("as", Some(a), "X", push(&["X", "X"]), "as"),
             ("as", Some(b), "X", push(&[]), "bs"),
             ("bs", Some(b), "X", push(&[]), "bs"),

@@ -671,7 +671,7 @@ member`, or `import std.pda as pdas` (see `std.grammar`).
 **Ready-made PDAs.** They have the languages of the grammars with the same
 names in `std.grammar`, and states named after what they do:
 
-- `anbn("a", "b")`: `start` (accepting, for the empty word), `as` pushes an
+- `anbn("a", "b")`: `ready` (accepting, for the empty word), `as` pushes an
   `X` for each a, `bs` pops one for each b, and `done` (accepting) is
   reached when only `Z` is left.
 - `balanced("l", "r")`: `even` (accepting) when every bracket so far is
@@ -734,9 +734,9 @@ print std.pda.member(Forever, "a"), std.pda.member(Forever, "b")
 
 ```text
 PDA with 4 states over {a, b}, stack starts as Z
-start start, accept start, done
+start ready, accept ready, done
 From  | Read | Pop | Push | To
-start | a    | Z   | XZ   | as
+ready | a    | Z   | XZ   | as
 as    | a    | X   | XX   | as
 as    | b    | X   | eps  | bs
 bs    | b    | X   | eps  | bs
@@ -744,8 +744,8 @@ bs    | eps  | Z   | Z    | done
 true {"X", "Z"}
 Grammar with 9 variables over {a, b}, start S
 S             -> [begin $ end]
-[begin $ end] -> [start Z end] [end $ end]
-[start Z end] -> a [as X bs] [bs Z end] | [end Z end]
+[begin $ end] -> [ready Z end] [end $ end]
+[ready Z end] -> a [as X bs] [bs Z end] | [end Z end]
 [end $ end]   -> eps
 [as X bs]     -> a [as X bs] [bs X bs] | b
 [bs Z end]    -> [done Z end]

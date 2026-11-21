@@ -1,7 +1,7 @@
 PDA with 4 states over {a, b}, stack starts as Z
-start start, accept start, done
+start ready, accept ready, done
 From  | Read | Pop | Push | To
-start | a    | Z   | XZ   | as
+ready | a    | Z   | XZ   | as
 as    | a    | X   | XX   | as
 as    | b    | X   | eps  | bs
 bs    | b    | X   | eps  | bs
