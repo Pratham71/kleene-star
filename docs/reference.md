@@ -1598,8 +1598,8 @@ cannot be defined either (E0209).
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
 | `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |
 | `kstar version` | The version, the commit it was built from, the build date and the target platform. |
-| `kstar update --check` | Asks GitHub whether a newer release exists (through the `gh` command, or `curl` with `GITHUB_TOKEN`). |
-| `kstar update` | The same, and if there is one, prints the command that installs it. It does not replace itself. |
+| `kstar update --check` | Asks GitHub whether a newer release exists (through the `gh` command, or `curl` with `GITHUB_TOKEN`), and whether the VS Code extension matches this `kstar`. |
+| `kstar update` | The same, and if there is a newer release, prints the command that installs it (it does not replace itself). If VS Code is installed and its Kleene Star extension is missing or from another release, installs the matching `.vsix`. `--no-vscode` or `KSTAR_NO_VSCODE=1` leaves VS Code alone. |
 
 `--color auto|always|never` works with `run`, `check` and `repl`. By default
 errors, warnings and test results are coloured only when the output is a

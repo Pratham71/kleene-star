@@ -12,6 +12,22 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Fixed
+
+- The VS Code extension could be left at an old release while `kstar` and
+  `kstar-lsp` were updated, which left newer keywords and modules without
+  highlighting. The install scripts and `kstar update` now install the
+  extension of the same release when VS Code is installed (opt out with
+  `KSTAR_NO_VSCODE=1` or `kstar update --no-vscode`), and the extension
+  warns when the language server is from another release.
+- Completion opens by itself after `.`, so `std.`, `std.math.` and an
+  imported module's name show their members as you type.
+- Signature help and highlighting understand `std.grammar`, `std.pda` and
+  `std.tm`, whose names are keywords.
+- `to_json` and `from_json` are highlighted as built-ins.
+- *Trace a Machine...* also offers machines made by an expression, such as
+  `let D = minimize(N)`, not only those written out.
+
 ## [0.5.0] - 2026-11-21
 
 Four more standard-library modules, one for each kind of machine the subject

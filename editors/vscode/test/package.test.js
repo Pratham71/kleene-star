@@ -27,7 +27,13 @@ function referencedFiles(value, found = new Set()) {
   return found;
 }
 
-const files = [...referencedFiles(manifest)];
+/// The files extension.js loads with `require("./...")`, which must be
+/// packaged too.
+const required = [...fs.readFileSync(path.join(root, "extension.js"), "utf8").matchAll(/require\("\.\/([\w./-]+)"\)/g)].map((m) =>
+  path.normalize(m[1])
+);
+
+const files = [...new Set([...referencedFiles(manifest), ...required])];
 
 /// A .vscodeignore pattern as a regular expression: `**/` is any folders,
 /// `**` anything, `*` anything within one folder.
@@ -105,4 +111,13 @@ test("every setting extension.js reads is declared", () => {
   for (const setting of read) {
     assert.ok(declared.includes(setting), `${setting} is read but not declared`);
   }
+});
+
+test("every command package.json declares is registered by extension.js", () => {
+  const source = fs.readFileSync(path.join(root, "extension.js"), "utf8");
+  const registered = new Set([...source.matchAll(/registerCommand\("([\w.]+)"/g)].map((m) => m[1]));
+  for (const { command } of manifest.contributes.commands) {
+    assert.ok(registered.has(command), `${command} is declared but extension.js never registers it`);
+  }
+  assert.ok(required.includes("lib.js") && required.includes("package.json"), required.join(", "));
 });

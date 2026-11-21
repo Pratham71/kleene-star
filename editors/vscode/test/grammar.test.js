@@ -167,3 +167,41 @@ test("every example tokenizes, and no machine or grammar is left open", async ()
     assert.deepStrictEqual(last, ["source.kstar", "keyword.control.kstar"], `${name} leaves ${last.join(" ")} open`);
   }
 });
+
+test("standard-library modules, also those named by a keyword", async () => {
+  const all = await tokens(`import std.grammar as grammars
+from std.pda import member
+print std.tm.steps(std.tm.increment(), "1"), std.math.gcd(4, 6)
+let G = grammar over B {
+    S -> a S b | eps
+}`);
+  for (const [name, nth] of [["grammar", 0], ["pda", 0], ["tm", 0], ["tm", 1], ["math", 0]]) {
+    assert.strictEqual(scopeOf(all, name, nth), "entity.name.namespace.kstar", `${name} (${nth})`);
+  }
+  assert.strictEqual(scopeOf(all, "std"), "entity.name.namespace.kstar");
+  assert.strictEqual(scopeOf(all, "steps"), "entity.name.function.call.kstar");
+  assert.strictEqual(scopeOf(all, "import"), "keyword.control.import.kstar");
+  // Outside a qualified name, `grammar` still begins a grammar.
+  assert.strictEqual(scopeOf(all, "grammar", 1), "storage.type.grammar.kstar");
+});
+
+/// The words of a `&[&str]` constant in a Rust file of the interpreter.
+function rustList(file, constant) {
+  const text = fs.readFileSync(path.join(root, "..", "..", "src", ...file.split("/")), "utf8");
+  const start = text.indexOf(`${constant}: &`);
+  assert.ok(start >= 0, `no ${constant} in ${file}`);
+  const body = text.slice(text.indexOf("[", text.indexOf("=", start)) + 1, text.indexOf("];", start));
+  return [...body.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+}
+
+test("every keyword and built-in of the language is highlighted", async () => {
+  for (const word of rustList("lang/token.rs", "KEYWORDS")) {
+    const all = await tokens(`${word}`);
+    const scope = scopeOf(all, word);
+    assert.ok(/^(keyword|storage|constant)\./.test(scope), `keyword ${word} is ${scope}`);
+  }
+  for (const name of rustList("lang/builtins.rs", "NAMES")) {
+    const all = await tokens(`print ${name}(x)`);
+    assert.strictEqual(scopeOf(all, name), "support.function.builtin.kstar", name);
+  }
+});

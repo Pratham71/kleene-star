@@ -453,10 +453,15 @@ impl Analysis {
         // The qualified name just read, like `utils.double`.
         let mut name_so_far = String::new();
         for token in tokens.iter().take_while(|t| t.span.end <= offset && t.tok != Tok::Eof) {
+            let word = &self.src[token.span.start..token.span.end];
             match &token.tok {
                 Tok::Ident(part) if previous == Some(&Tok::Dot) => name_so_far = format!("{name_so_far}.{part}"),
                 Tok::Ident(part) => name_so_far = part.clone(),
-                Tok::Dot => {}
+                // `std.grammar`, `std.pda`, `std.tm`: a keyword is a module
+                // name right after `std.`, as in the parser.
+                _ if previous == Some(&Tok::Dot) && name_so_far == "std" && Tok::keyword(word).is_some() => {
+                    name_so_far = format!("std.{word}");
+                }
                 _ => {}
             }
             match &token.tok {
@@ -948,5 +953,23 @@ print Even accepts \"00\", count
         // An unused import is a warning in the file itself.
         let a = with_lib("import \"lib.kstar\"\n", LIB);
         assert_eq!(a.problems[0].code, "W0202");
+    }
+
+    #[test]
+    fn keyword_modules_in_the_editor() {
+        let main = "let G = std.grammar.anbn(\"a\", \"b\")
+print std.math.gcd(12, 18)
+print std.grammar.first(G, \"S\")
+";
+        let a = Analysis::new(main);
+        assert_eq!(a.errors().count(), 0, "{:?}", a.problems);
+        let help = a.signature_help(at(main, "(12", 0, 1)).expect("help for gcd");
+        assert_eq!(help.label, "gcd(a: Int, b: Int) -> Int");
+        let help = a.signature_help(at(main, "(G, ", 0, 4)).expect("help for std.grammar.first");
+        assert_eq!((help.label.as_str(), help.active), ("first(g: Grammar, variable: Str) -> Set[Str]", 1));
+        let hover = a.hover(at(main, "first", 0, 1)).expect("hover on first").1;
+        assert!(hover.contains("fn first(g: Grammar, variable: Str)"), "{hover}");
+        let functions: Vec<String> = a.completions(at(main, "first", 0, 0)).into_iter().map(|c| c.label).collect();
+        assert!(functions.contains(&"follow".to_string()), "{functions:?}");
     }
 }

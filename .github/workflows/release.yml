@@ -167,6 +167,18 @@ jobs:
           $failed = $false
           try { Get-Content install.ps1 -Raw | Invoke-Expression } catch { $failed = $true; Write-Host "Refused as expected: $_" }
           if (-not $failed) { throw "install.ps1 accepted a wrong checksum" }
+          # With VS Code present (a stand-in that logs its arguments), the
+          # extension of the same release is installed too.
+          $version = ((& "$bin\kstar.exe" version | Select-Object -First 1) -split " ")[1]
+          Set-Content "files\kleene-star-$version.vsix" "a stand-in"
+          $sum = (Get-FileHash "files\kleene-star-$version.vsix" -Algorithm SHA256).Hash.ToLower()
+          Set-Content "files\kleene-star-$version.vsix.sha256" "$sum  kleene-star-$version.vsix"
+          Set-Content code.cmd "@echo %* >> `"$PWD\code-log.txt`""
+          $env:KSTAR_CODE = "$PWD\code.cmd"
+          $env:KSTAR_INSTALL_FROM = "$PWD\files"
+          Get-Content install.ps1 -Raw | Invoke-Expression
+          $log = Get-Content code-log.txt -Raw
+          if ($log -notmatch "--install-extension .*kleene-star-$version\.vsix --force") { throw "the extension was not installed: $log" }
       - name: install.sh
         if: runner.os != 'Windows'
         shell: bash
@@ -182,6 +194,14 @@ jobs:
           cp -R files bad
           printf '%064d  x\n' 0 > bad/kstar-${{ matrix.target }}.tar.gz.sha256
           if KSTAR_INSTALL_FROM="$PWD/bad" sh install.sh; then echo "install.sh accepted a wrong checksum"; exit 1; fi
+          # With VS Code present (a stand-in that logs its arguments), the
+          # extension of the same release is installed too.
+          version=$("$HOME/.kstar/bin/kstar" version | head -n 1 | cut -d ' ' -f 2)
+          echo "a stand-in" > "files/kleene-star-$version.vsix"
+          (cd files && { sha256sum "kleene-star-$version.vsix" 2>/dev/null || shasum -a 256 "kleene-star-$version.vsix"; } > "kleene-star-$version.vsix.sha256")
+          printf '#!/bin/sh\necho "$@" >> "%s/code-log.txt"\n' "$PWD" > fake-code && chmod +x fake-code
+          KSTAR_CODE="$PWD/fake-code" KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
+          grep -E -- "--install-extension .*kleene-star-$version\.vsix --force" code-log.txt
 
   vscode:
     name: VS Code extension

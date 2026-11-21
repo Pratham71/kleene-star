@@ -169,6 +169,7 @@
         { "include": "#regex" },
         { "include": "#machine" },
         { "include": "#grammar" },
+        { "include": "#std-module" },
         { "include": "#keyword" },
         { "include": "#return-type" },
         { "include": "#type" },
@@ -196,6 +197,16 @@
         { "match": "\\.", "name": "constant.character.any.regexp.kstar" },
         { "match": "[()\\[\\]]", "name": "punctuation.definition.group.regexp.kstar" }
       ]
+    },
+    "std-module": {
+      "comment": "`std.grammar`, `std.pda`, `std.tm`: after `std.` a module name, even one that is a keyword.",
+      "match": "\\b(std)(\\.)([A-Za-z_]\\w*)(\\.)?",
+      "captures": {
+        "1": { "name": "entity.name.namespace.kstar" },
+        "2": { "name": "punctuation.accessor.kstar" },
+        "3": { "name": "entity.name.namespace.kstar" },
+        "4": { "name": "punctuation.accessor.kstar" }
+      }
     },
     "namespace": {
       "comment": "The module part of a qualified name: `utils` in `utils.EvenZeros`, `std` and `math` in `std.math.gcd`.",
@@ -229,7 +240,7 @@
     "call": {
       "patterns": [
         {
-          "match": "\\b(to_dfa|to_nfa|to_regex|minimize|reduce|remove_eps|rename|union|intersect|difference|complement|concat|star|reverse|equivalent|is_empty|states|len|to_cnf|to_pda|to_grammar|derive|run|to_rust)(?=\\s*\\()",
+          "match": "\\b(to_dfa|to_nfa|to_regex|minimize|reduce|remove_eps|rename|union|intersect|difference|complement|concat|star|reverse|equivalent|is_empty|states|len|to_cnf|to_pda|to_grammar|derive|run|to_rust|to_json|from_json)(?=\\s*\\()",
           "name": "support.function.builtin.kstar"
         },
         { "match": "\\b([A-Za-z_]\\w*)(?=\\s*\\()", "name": "entity.name.function.call.kstar" }
