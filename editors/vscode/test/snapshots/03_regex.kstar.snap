@@ -1,0 +1,163 @@
+> # Chapter 3: regular expressions and the round trip regex -> NFA -> DFA -> regex.
+    0 "# Chapter 3: regular expressions and the round trip regex -> NFA -> DFA -> regex." comment.line.number-sign.kstar
+> 
+> let r = /(a|b)*abb/
+    0 "let" keyword.control.kstar
+    4 "r" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+    9 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   10 "a" string.regexp.kstar
+   11 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   12 "b" string.regexp.kstar
+   13 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   14 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   15 "abb" string.regexp.kstar
+   18 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+> 
+> # Thompson's construction gives an eps-NFA with many states...
+    0 "# Thompson's construction gives an eps-NFA with many states..." comment.line.number-sign.kstar
+> let n = to_nfa(r)
+    0 "let" keyword.control.kstar
+    4 "n" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "to_nfa" support.function.builtin.kstar
+   14 "(" punctuation.section.parens.begin.kstar
+   15 "r" variable.other.kstar
+   16 ")" punctuation.section.parens.end.kstar
+> # ...the subset construction makes it deterministic...
+    0 "# ...the subset construction makes it deterministic..." comment.line.number-sign.kstar
+> let d = to_dfa(n)
+    0 "let" keyword.control.kstar
+    4 "d" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "to_dfa" support.function.builtin.kstar
+   14 "(" punctuation.section.parens.begin.kstar
+   15 "n" variable.other.kstar
+   16 ")" punctuation.section.parens.end.kstar
+> # ...and minimisation finds the smallest DFA.
+    0 "# ...and minimisation finds the smallest DFA." comment.line.number-sign.kstar
+> let smallest = rename(minimize(d))
+    0 "let" keyword.control.kstar
+    4 "smallest" variable.other.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "rename" support.function.builtin.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "minimize" support.function.builtin.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "d" variable.other.kstar
+   32 ")" punctuation.section.parens.end.kstar
+   33 ")" punctuation.section.parens.end.kstar
+> 
+> print "eps-NFA:", states(n), "states"
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "eps-NFA:" string.quoted.double.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   16 "," punctuation.separator.comma.kstar
+   18 "states" support.function.builtin.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "n" variable.other.kstar
+   26 ")" punctuation.section.parens.end.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "states" string.quoted.double.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> print "DFA:    ", states(d), "states"
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "DFA:    " string.quoted.double.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   16 "," punctuation.separator.comma.kstar
+   18 "states" support.function.builtin.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "d" variable.other.kstar
+   26 ")" punctuation.section.parens.end.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "states" string.quoted.double.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> print "min-DFA:", states(smallest), "states"
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "min-DFA:" string.quoted.double.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   16 "," punctuation.separator.comma.kstar
+   18 "states" support.function.builtin.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "smallest" variable.other.kstar
+   33 ")" punctuation.section.parens.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "states" string.quoted.double.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> print smallest
+    0 "print" keyword.control.kstar
+    6 "smallest" variable.other.kstar
+> 
+> # State elimination turns a DFA back into a regex.
+    0 "# State elimination turns a DFA back into a regex." comment.line.number-sign.kstar
+> let back = to_regex(smallest)
+    0 "let" keyword.control.kstar
+    4 "back" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "to_regex" support.function.builtin.kstar
+   19 "(" punctuation.section.parens.begin.kstar
+   20 "smallest" variable.other.kstar
+   28 ")" punctuation.section.parens.end.kstar
+> print back
+    0 "print" keyword.control.kstar
+    6 "back" variable.other.kstar
+> test equivalent(back, r)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "back" variable.other.kstar
+   20 "," punctuation.separator.comma.kstar
+   22 "r" variable.other.kstar
+   23 ")" punctuation.section.parens.end.kstar
+> 
+> # reduce() shrinks an NFA without making it deterministic.
+    0 "# reduce() shrinks an NFA without making it deterministic." comment.line.number-sign.kstar
+> print "reduced NFA:", states(reduce(n)), "states"
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "reduced NFA:" string.quoted.double.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   20 "," punctuation.separator.comma.kstar
+   22 "states" support.function.builtin.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "reduce" support.function.builtin.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "n" variable.other.kstar
+   37 ")" punctuation.section.parens.end.kstar
+   38 ")" punctuation.section.parens.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   42 "states" string.quoted.double.kstar
+   48 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> test r accepts "babb"
+    0 "test" keyword.control.kstar
+    5 "r" variable.other.kstar
+    7 "accepts" keyword.operator.word.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   16 "babb" string.quoted.double.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test not (r accepts "abba")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "r" variable.other.kstar
+   12 "accepts" keyword.operator.word.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "abba" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 ")" punctuation.section.parens.end.kstar
+> 
+> # Writes smallest.dot.
+    0 "# Writes smallest.dot." comment.line.number-sign.kstar
+> draw smallest
+    0 "draw" keyword.control.kstar
+    5 "smallest" variable.other.kstar
+> 

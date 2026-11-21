@@ -1,0 +1,393 @@
+> # Chapter 14: the standard library's std.pda. Ready-made pushdown automata,
+    0 "# Chapter 14: the standard library's std.pda. Ready-made pushdown automata," comment.line.number-sign.kstar
+> # checked against their grammars, and the triple construction, which turns
+    0 "# checked against their grammars, and the triple construction, which turns" comment.line.number-sign.kstar
+> # any PDA into a grammar and so answers questions the PDA's own search can
+    0 "# any PDA into a grammar and so answers questions the PDA's own search can" comment.line.number-sign.kstar
+> # give up on.
+    0 "# give up on." comment.line.number-sign.kstar
+> 
+> alphabet AB = {a, b}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "AB" entity.name.type.alphabet.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+   15 "a" constant.character.symbol.kstar
+   16 "," punctuation.separator.kstar
+   18 "b" constant.character.symbol.kstar
+   19 "}" punctuation.section.braces.end.kstar
+> alphabet LR = {l, r}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "LR" entity.name.type.alphabet.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+   15 "l" constant.character.symbol.kstar
+   16 "," punctuation.separator.kstar
+   18 "r" constant.character.symbol.kstar
+   19 "}" punctuation.section.braces.end.kstar
+> 
+> # a^n b^n with a stack of X's: push one per a, pop one per b. Only one move
+    0 "# a^n b^n with a stack of X's: push one per a, pop one per b. Only one move" comment.line.number-sign.kstar
+> # fits each step, so the machine is deterministic.
+    0 "# fits each step, so the machine is deterministic." comment.line.number-sign.kstar
+> let AnBn = std.pda.anbn("a", "b")
+    0 "let" keyword.control.kstar
+    4 "AnBn" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "std" entity.name.namespace.kstar
+   14 "." punctuation.accessor.kstar
+   15 "pda" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "anbn" entity.name.function.call.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   25 "a" string.quoted.double.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "b" string.quoted.double.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> print AnBn
+    0 "print" keyword.control.kstar
+    6 "AnBn" variable.other.kstar
+> test std.pda.is_deterministic(AnBn)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "pda" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "is_deterministic" entity.name.function.call.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "AnBn" variable.other.kstar
+   34 ")" punctuation.section.parens.end.kstar
+> trace AnBn on "aabb"
+    0 "trace" keyword.control.kstar
+    6 "AnBn" variable.other.kstar
+   11 "on" keyword.control.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "aabb" string.quoted.double.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # Each ready-made PDA has the language of the std.grammar grammar of the
+    0 "# Each ready-made PDA has the language of the std.grammar grammar of the" comment.line.number-sign.kstar
+> # same name, checked on every word up to length 8.
+    0 "# same name, checked on every word up to length 8." comment.line.number-sign.kstar
+> test std.testing.agree_up_to(AnBn, std.grammar.anbn("a", "b"), 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "AnBn" variable.other.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "std" entity.name.namespace.kstar
+   38 "." punctuation.accessor.kstar
+   39 "grammar" entity.name.namespace.kstar
+   46 "." punctuation.accessor.kstar
+   47 "anbn" entity.name.function.call.kstar
+   51 "(" punctuation.section.parens.begin.kstar
+   52 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   53 "a" string.quoted.double.kstar
+   54 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   55 "," punctuation.separator.comma.kstar
+   57 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   58 "b" string.quoted.double.kstar
+   59 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   60 ")" punctuation.section.parens.end.kstar
+   61 "," punctuation.separator.comma.kstar
+   63 "8" constant.numeric.integer.kstar
+   64 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_up_to(std.pda.balanced("l", "r"), std.grammar.balanced("l", "r"), 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "std" entity.name.namespace.kstar
+   32 "." punctuation.accessor.kstar
+   33 "pda" entity.name.namespace.kstar
+   36 "." punctuation.accessor.kstar
+   37 "balanced" entity.name.function.call.kstar
+   45 "(" punctuation.section.parens.begin.kstar
+   46 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   47 "l" string.quoted.double.kstar
+   48 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   49 "," punctuation.separator.comma.kstar
+   51 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   52 "r" string.quoted.double.kstar
+   53 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   54 ")" punctuation.section.parens.end.kstar
+   55 "," punctuation.separator.comma.kstar
+   57 "std" entity.name.namespace.kstar
+   60 "." punctuation.accessor.kstar
+   61 "grammar" entity.name.namespace.kstar
+   68 "." punctuation.accessor.kstar
+   69 "balanced" entity.name.function.call.kstar
+   77 "(" punctuation.section.parens.begin.kstar
+   78 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   79 "l" string.quoted.double.kstar
+   80 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   81 "," punctuation.separator.comma.kstar
+   83 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   84 "r" string.quoted.double.kstar
+   85 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   86 ")" punctuation.section.parens.end.kstar
+   87 "," punctuation.separator.comma.kstar
+   89 "8" constant.numeric.integer.kstar
+   90 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_up_to(std.pda.palindromes(AB), std.grammar.palindromes(AB), 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "std" entity.name.namespace.kstar
+   32 "." punctuation.accessor.kstar
+   33 "pda" entity.name.namespace.kstar
+   36 "." punctuation.accessor.kstar
+   37 "palindromes" entity.name.function.call.kstar
+   48 "(" punctuation.section.parens.begin.kstar
+   49 "AB" variable.other.kstar
+   51 ")" punctuation.section.parens.end.kstar
+   52 "," punctuation.separator.comma.kstar
+   54 "std" entity.name.namespace.kstar
+   57 "." punctuation.accessor.kstar
+   58 "grammar" entity.name.namespace.kstar
+   65 "." punctuation.accessor.kstar
+   66 "palindromes" entity.name.function.call.kstar
+   77 "(" punctuation.section.parens.begin.kstar
+   78 "AB" variable.other.kstar
+   80 ")" punctuation.section.parens.end.kstar
+   81 "," punctuation.separator.comma.kstar
+   83 "8" constant.numeric.integer.kstar
+   84 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_up_to(std.pda.equal_count("a", "b"), std.grammar.equal_count("a", "b"), 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "std" entity.name.namespace.kstar
+   32 "." punctuation.accessor.kstar
+   33 "pda" entity.name.namespace.kstar
+   36 "." punctuation.accessor.kstar
+   37 "equal_count" entity.name.function.call.kstar
+   48 "(" punctuation.section.parens.begin.kstar
+   49 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   50 "a" string.quoted.double.kstar
+   51 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   52 "," punctuation.separator.comma.kstar
+   54 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   55 "b" string.quoted.double.kstar
+   56 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   57 ")" punctuation.section.parens.end.kstar
+   58 "," punctuation.separator.comma.kstar
+   60 "std" entity.name.namespace.kstar
+   63 "." punctuation.accessor.kstar
+   64 "grammar" entity.name.namespace.kstar
+   71 "." punctuation.accessor.kstar
+   72 "equal_count" entity.name.function.call.kstar
+   83 "(" punctuation.section.parens.begin.kstar
+   84 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   85 "a" string.quoted.double.kstar
+   86 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   87 "," punctuation.separator.comma.kstar
+   89 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   90 "b" string.quoted.double.kstar
+   91 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   92 ")" punctuation.section.parens.end.kstar
+   93 "," punctuation.separator.comma.kstar
+   95 "8" constant.numeric.integer.kstar
+   96 ")" punctuation.section.parens.end.kstar
+> 
+> # Palindromes need a guess: where is the middle?
+    0 "# Palindromes need a guess: where is the middle?" comment.line.number-sign.kstar
+> test not std.pda.is_deterministic(std.pda.palindromes(AB))
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "std" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "pda" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "is_deterministic" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "std" entity.name.namespace.kstar
+   37 "." punctuation.accessor.kstar
+   38 "pda" entity.name.namespace.kstar
+   41 "." punctuation.accessor.kstar
+   42 "palindromes" entity.name.function.call.kstar
+   53 "(" punctuation.section.parens.begin.kstar
+   54 "AB" variable.other.kstar
+   56 ")" punctuation.section.parens.end.kstar
+   57 ")" punctuation.section.parens.end.kstar
+> 
+> # The triple construction: a variable [p X q] derives the words that take
+    0 "# The triple construction: a variable [p X q] derives the words that take" comment.line.number-sign.kstar
+> # the PDA from p to q while popping X.
+    0 "# the PDA from p to q while popping X." comment.line.number-sign.kstar
+> let G = std.pda.to_grammar(AnBn)
+    0 "let" keyword.control.kstar
+    4 "G" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "std" entity.name.namespace.kstar
+   11 "." punctuation.accessor.kstar
+   12 "pda" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "to_grammar" support.function.builtin.kstar
+   26 "(" punctuation.section.parens.begin.kstar
+   27 "AnBn" variable.other.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> print G
+    0 "print" keyword.control.kstar
+    6 "G" variable.other.kstar
+> test std.testing.agree_up_to(G, AnBn, 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "G" variable.other.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "AnBn" variable.other.kstar
+   36 "," punctuation.separator.comma.kstar
+   38 "8" constant.numeric.integer.kstar
+   39 ")" punctuation.section.parens.end.kstar
+> 
+> # Grammar to PDA and back: the built-in to_pda, then to_grammar, keeps the
+    0 "# Grammar to PDA and back: the built-in to_pda, then to_grammar, keeps the" comment.line.number-sign.kstar
+> # language.
+    0 "# language." comment.line.number-sign.kstar
+> let Balanced = std.grammar.balanced("l", "r")
+    0 "let" keyword.control.kstar
+    4 "Balanced" variable.other.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "std" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "grammar" entity.name.namespace.kstar
+   26 "." punctuation.accessor.kstar
+   27 "balanced" entity.name.function.call.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "l" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   42 "r" string.quoted.double.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   44 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_up_to(Balanced, std.pda.to_grammar(to_pda(Balanced)), 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Balanced" variable.other.kstar
+   37 "," punctuation.separator.comma.kstar
+   39 "std" entity.name.namespace.kstar
+   42 "." punctuation.accessor.kstar
+   43 "pda" entity.name.namespace.kstar
+   46 "." punctuation.accessor.kstar
+   47 "to_grammar" support.function.builtin.kstar
+   57 "(" punctuation.section.parens.begin.kstar
+   58 "to_pda" support.function.builtin.kstar
+   64 "(" punctuation.section.parens.begin.kstar
+   65 "Balanced" variable.other.kstar
+   73 ")" punctuation.section.parens.end.kstar
+   74 ")" punctuation.section.parens.end.kstar
+   75 "," punctuation.separator.comma.kstar
+   77 "8" constant.numeric.integer.kstar
+   78 ")" punctuation.section.parens.end.kstar
+> 
+> # A PDA whose eps move pushes forever. Searching its runs never ends, so
+    0 "# A PDA whose eps move pushes forever. Searching its runs never ends, so" comment.line.number-sign.kstar
+> # `accepts` would give up on "b"; going through the grammar, `member`
+    0 "# `accepts` would give up on \"b\"; going through the grammar, `member`" comment.line.number-sign.kstar
+> # answers.
+    0 "# answers." comment.line.number-sign.kstar
+> pda Forever over AB {
+    0 "pda" meta.machine.kstar storage.type.machine.kstar
+    4 "Forever" meta.machine.kstar entity.name.type.machine.kstar
+   12 "over" meta.machine.kstar keyword.other.over.kstar
+   17 "AB" meta.machine.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  q
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "q" meta.machine.kstar variable.other.state.kstar
+>     accept f
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "f" meta.machine.kstar variable.other.state.kstar
+>     q --eps, eps/A--> q
+    4 "q" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   11 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   16 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   17 "A" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "q" meta.machine.kstar variable.other.state.kstar
+>     q --a, eps/eps--> f
+    4 "q" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   11 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "f" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> print std.pda.member(Forever, "a"), std.pda.member(Forever, "b")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "pda" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "member" entity.name.function.call.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "Forever" variable.other.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "a" string.quoted.double.kstar
+   32 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   33 ")" punctuation.section.parens.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "std" entity.name.namespace.kstar
+   39 "." punctuation.accessor.kstar
+   40 "pda" entity.name.namespace.kstar
+   43 "." punctuation.accessor.kstar
+   44 "member" entity.name.function.call.kstar
+   50 "(" punctuation.section.parens.begin.kstar
+   51 "Forever" variable.other.kstar
+   58 "," punctuation.separator.comma.kstar
+   60 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   61 "b" string.quoted.double.kstar
+   62 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   63 ")" punctuation.section.parens.end.kstar
+> print std.pda.words_up_to(Forever, 3)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "pda" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "words_up_to" entity.name.function.call.kstar
+   25 "(" punctuation.section.parens.begin.kstar
+   26 "Forever" variable.other.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "3" constant.numeric.integer.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> 

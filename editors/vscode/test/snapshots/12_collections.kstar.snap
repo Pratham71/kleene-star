@@ -1,0 +1,224 @@
+> # Chapter 9: the standard library's std.collections. A language over a small
+    0 "# Chapter 9: the standard library's std.collections. A language over a small" comment.line.number-sign.kstar
+> # alphabet can be explored by listing every word of a length, and sets can be
+    0 "# alphabet can be explored by listing every word of a length, and sets can be" comment.line.number-sign.kstar
+> # compared with set operations.
+    0 "# compared with set operations." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> dfa EvenOnes over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "EvenOnes" meta.machine.kstar entity.name.type.machine.kstar
+   13 "over" meta.machine.kstar keyword.other.over.kstar
+   18 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  e
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "e" meta.machine.kstar variable.other.state.kstar
+>     accept e
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "e" meta.machine.kstar variable.other.state.kstar
+>     e --0--> e
+    4 "e" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   13 "e" meta.machine.kstar variable.other.state.kstar
+>     e --1--> o
+    4 "e" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   13 "o" meta.machine.kstar variable.other.state.kstar
+>     o --0--> o
+    4 "o" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   13 "o" meta.machine.kstar variable.other.state.kstar
+>     o --1--> e
+    4 "o" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   13 "e" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> # All 8 words of length 3, and which of them the machine accepts.
+    0 "# All 8 words of length 3, and which of them the machine accepts." comment.line.number-sign.kstar
+> let all = std.collections.words(B, 3)
+    0 "let" keyword.control.kstar
+    4 "all" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "collections" entity.name.namespace.kstar
+   25 "." punctuation.accessor.kstar
+   26 "words" entity.name.function.call.kstar
+   31 "(" punctuation.section.parens.begin.kstar
+   32 "B" variable.other.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "3" constant.numeric.integer.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> print std.collections.size(all), all
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "size" entity.name.function.call.kstar
+   26 "(" punctuation.section.parens.begin.kstar
+   27 "all" variable.other.kstar
+   30 ")" punctuation.section.parens.end.kstar
+   31 "," punctuation.separator.comma.kstar
+   33 "all" variable.other.kstar
+> for w in all {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "all" variable.other.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+>     print w, EvenOnes accepts w
+    4 "print" keyword.control.kstar
+   10 "w" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "EvenOnes" variable.other.kstar
+   22 "accepts" keyword.operator.word.kstar
+   30 "w" variable.other.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # Sets of words can be compared: the words with exactly two 1s are a subset.
+    0 "# Sets of words can be compared: the words with exactly two 1s are a subset." comment.line.number-sign.kstar
+> let two_ones = {"011", "101", "110"}
+    0 "let" keyword.control.kstar
+    4 "two_ones" variable.other.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "{" punctuation.section.braces.begin.kstar
+   16 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   17 "011" string.quoted.double.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   21 "," punctuation.separator.comma.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   24 "101" string.quoted.double.kstar
+   27 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "110" string.quoted.double.kstar
+   34 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   35 "}" punctuation.section.braces.end.kstar
+> print std.collections.is_subset(two_ones, all), std.collections.contains(all, "111")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "is_subset" entity.name.function.call.kstar
+   31 "(" punctuation.section.parens.begin.kstar
+   32 "two_ones" variable.other.kstar
+   40 "," punctuation.separator.comma.kstar
+   42 "all" variable.other.kstar
+   45 ")" punctuation.section.parens.end.kstar
+   46 "," punctuation.separator.comma.kstar
+   48 "std" entity.name.namespace.kstar
+   51 "." punctuation.accessor.kstar
+   52 "collections" entity.name.namespace.kstar
+   63 "." punctuation.accessor.kstar
+   64 "contains" entity.name.function.call.kstar
+   72 "(" punctuation.section.parens.begin.kstar
+   73 "all" variable.other.kstar
+   76 "," punctuation.separator.comma.kstar
+   78 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   79 "111" string.quoted.double.kstar
+   82 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   83 ")" punctuation.section.parens.end.kstar
+> print std.collections.difference(all, two_ones)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "difference" support.function.builtin.kstar
+   32 "(" punctuation.section.parens.begin.kstar
+   33 "all" variable.other.kstar
+   36 "," punctuation.separator.comma.kstar
+   38 "two_ones" variable.other.kstar
+   46 ")" punctuation.section.parens.end.kstar
+> 
+> # `std.collections.union` joins the members of two sets and gives a set; the
+    0 "# `std.collections.union` joins the members of two sets and gives a set; the" comment.line.number-sign.kstar
+> # built-in `union` makes a machine from two languages.
+    0 "# built-in `union` makes a machine from two languages." comment.line.number-sign.kstar
+> print std.collections.union({1, 2}, {2, 3}), std.collections.sum(1..5)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "union" support.function.builtin.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "{" punctuation.section.braces.begin.kstar
+   29 "1" constant.numeric.integer.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "2" constant.numeric.integer.kstar
+   33 "}" punctuation.section.braces.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "{" punctuation.section.braces.begin.kstar
+   37 "2" constant.numeric.integer.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "3" constant.numeric.integer.kstar
+   41 "}" punctuation.section.braces.end.kstar
+   42 ")" punctuation.section.parens.end.kstar
+   43 "," punctuation.separator.comma.kstar
+   45 "std" entity.name.namespace.kstar
+   48 "." punctuation.accessor.kstar
+   49 "collections" entity.name.namespace.kstar
+   60 "." punctuation.accessor.kstar
+   61 "sum" entity.name.function.call.kstar
+   64 "(" punctuation.section.parens.begin.kstar
+   65 "1" constant.numeric.integer.kstar
+   66 ".." keyword.operator.range.kstar
+   68 "5" constant.numeric.integer.kstar
+   69 ")" punctuation.section.parens.end.kstar
+> print std.collections.min({4, 2, 9}), std.collections.max({4, 2, 9})
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "min" entity.name.function.call.kstar
+   25 "(" punctuation.section.parens.begin.kstar
+   26 "{" punctuation.section.braces.begin.kstar
+   27 "4" constant.numeric.integer.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "2" constant.numeric.integer.kstar
+   31 "," punctuation.separator.comma.kstar
+   33 "9" constant.numeric.integer.kstar
+   34 "}" punctuation.section.braces.end.kstar
+   35 ")" punctuation.section.parens.end.kstar
+   36 "," punctuation.separator.comma.kstar
+   38 "std" entity.name.namespace.kstar
+   41 "." punctuation.accessor.kstar
+   42 "collections" entity.name.namespace.kstar
+   53 "." punctuation.accessor.kstar
+   54 "max" entity.name.function.call.kstar
+   57 "(" punctuation.section.parens.begin.kstar
+   58 "{" punctuation.section.braces.begin.kstar
+   59 "4" constant.numeric.integer.kstar
+   60 "," punctuation.separator.comma.kstar
+   62 "2" constant.numeric.integer.kstar
+   63 "," punctuation.separator.comma.kstar
+   65 "9" constant.numeric.integer.kstar
+   66 "}" punctuation.section.braces.end.kstar
+   67 ")" punctuation.section.parens.end.kstar
+> 

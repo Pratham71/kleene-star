@@ -1,0 +1,286 @@
+> # Chapter 4: closure properties. Regular languages stay regular under
+    0 "# Chapter 4: closure properties. Regular languages stay regular under" comment.line.number-sign.kstar
+> # union, intersection, complement, concatenation, star and reversal.
+    0 "# union, intersection, complement, concatenation, star and reversal." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> let even_zeros = /1*(01*01*)*/
+    0 "let" keyword.control.kstar
+    4 "even_zeros" variable.other.kstar
+   15 "=" keyword.operator.assignment.kstar
+   17 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   18 "1" string.regexp.kstar
+   19 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   20 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   21 "01" string.regexp.kstar
+   23 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   24 "01" string.regexp.kstar
+   26 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   27 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   28 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   29 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+> let ends_in_1 = /(0|1)*1/
+    0 "let" keyword.control.kstar
+    4 "ends_in_1" variable.other.kstar
+   14 "=" keyword.operator.assignment.kstar
+   16 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   17 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   18 "0" string.regexp.kstar
+   19 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   20 "1" string.regexp.kstar
+   21 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   22 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   23 "1" string.regexp.kstar
+   24 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+> 
+> let both = intersect(even_zeros, ends_in_1)
+    0 "let" keyword.control.kstar
+    4 "both" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "intersect" support.function.builtin.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "even_zeros" variable.other.kstar
+   31 "," punctuation.separator.comma.kstar
+   33 "ends_in_1" variable.other.kstar
+   42 ")" punctuation.section.parens.end.kstar
+> let either = union(even_zeros, ends_in_1)
+    0 "let" keyword.control.kstar
+    4 "either" variable.other.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "union" support.function.builtin.kstar
+   18 "(" punctuation.section.parens.begin.kstar
+   19 "even_zeros" variable.other.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "ends_in_1" variable.other.kstar
+   40 ")" punctuation.section.parens.end.kstar
+> 
+> test both accepts "001"
+    0 "test" keyword.control.kstar
+    5 "both" variable.other.kstar
+   10 "accepts" keyword.operator.word.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   19 "001" string.quoted.double.kstar
+   22 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test not (both accepts "01")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "both" variable.other.kstar
+   15 "accepts" keyword.operator.word.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   24 "01" string.quoted.double.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   27 ")" punctuation.section.parens.end.kstar
+> test either accepts "01"
+    0 "test" keyword.control.kstar
+    5 "either" variable.other.kstar
+   12 "accepts" keyword.operator.word.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "01" string.quoted.double.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # De Morgan: the complement of a union is the intersection of the complements.
+    0 "# De Morgan: the complement of a union is the intersection of the complements." comment.line.number-sign.kstar
+> let lhs = complement(either)
+    0 "let" keyword.control.kstar
+    4 "lhs" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "complement" support.function.builtin.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "either" variable.other.kstar
+   27 ")" punctuation.section.parens.end.kstar
+> let rhs = intersect(complement(to_dfa(even_zeros, B)), complement(to_dfa(ends_in_1, B)))
+    0 "let" keyword.control.kstar
+    4 "rhs" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "intersect" support.function.builtin.kstar
+   19 "(" punctuation.section.parens.begin.kstar
+   20 "complement" support.function.builtin.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "to_dfa" support.function.builtin.kstar
+   37 "(" punctuation.section.parens.begin.kstar
+   38 "even_zeros" variable.other.kstar
+   48 "," punctuation.separator.comma.kstar
+   50 "B" variable.other.kstar
+   51 ")" punctuation.section.parens.end.kstar
+   52 ")" punctuation.section.parens.end.kstar
+   53 "," punctuation.separator.comma.kstar
+   55 "complement" support.function.builtin.kstar
+   65 "(" punctuation.section.parens.begin.kstar
+   66 "to_dfa" support.function.builtin.kstar
+   72 "(" punctuation.section.parens.begin.kstar
+   73 "ends_in_1" variable.other.kstar
+   82 "," punctuation.separator.comma.kstar
+   84 "B" variable.other.kstar
+   85 ")" punctuation.section.parens.end.kstar
+   86 ")" punctuation.section.parens.end.kstar
+   87 ")" punctuation.section.parens.end.kstar
+> test equivalent(lhs, rhs)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "lhs" variable.other.kstar
+   19 "," punctuation.separator.comma.kstar
+   21 "rhs" variable.other.kstar
+   24 ")" punctuation.section.parens.end.kstar
+> 
+> # A language and its complement share nothing, and together cover everything.
+    0 "# A language and its complement share nothing, and together cover everything." comment.line.number-sign.kstar
+> test is_empty(intersect(both, complement(both)))
+    0 "test" keyword.control.kstar
+    5 "is_empty" support.function.builtin.kstar
+   13 "(" punctuation.section.parens.begin.kstar
+   14 "intersect" support.function.builtin.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "both" variable.other.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "complement" support.function.builtin.kstar
+   40 "(" punctuation.section.parens.begin.kstar
+   41 "both" variable.other.kstar
+   45 ")" punctuation.section.parens.end.kstar
+   46 ")" punctuation.section.parens.end.kstar
+   47 ")" punctuation.section.parens.end.kstar
+> test equivalent(union(both, complement(both)), /(0|1)*/)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "union" support.function.builtin.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "both" variable.other.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "complement" support.function.builtin.kstar
+   38 "(" punctuation.section.parens.begin.kstar
+   39 "both" variable.other.kstar
+   43 ")" punctuation.section.parens.end.kstar
+   44 ")" punctuation.section.parens.end.kstar
+   45 "," punctuation.separator.comma.kstar
+   47 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   48 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   49 "0" string.regexp.kstar
+   50 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   51 "1" string.regexp.kstar
+   52 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   53 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   54 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   55 ")" punctuation.section.parens.end.kstar
+> 
+> # Concatenation, star and reversal.
+    0 "# Concatenation, star and reversal." comment.line.number-sign.kstar
+> test equivalent(concat(/0*/, /1*/), /0*1*/)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "concat" support.function.builtin.kstar
+   22 "(" punctuation.section.parens.begin.kstar
+   23 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   24 "0" string.regexp.kstar
+   25 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   26 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   30 "1" string.regexp.kstar
+   31 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   32 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   33 ")" punctuation.section.parens.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   37 "0" string.regexp.kstar
+   38 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   39 "1" string.regexp.kstar
+   40 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   41 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   42 ")" punctuation.section.parens.end.kstar
+> test equivalent(star(/01/), /(01)*/)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "star" support.function.builtin.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   22 "01" string.regexp.kstar
+   24 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   25 ")" punctuation.section.parens.end.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   29 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   30 "01" string.regexp.kstar
+   32 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   33 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   34 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   35 ")" punctuation.section.parens.end.kstar
+> test equivalent(reverse(/001*/), /1*00/)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "reverse" support.function.builtin.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   25 "001" string.regexp.kstar
+   28 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   29 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   30 ")" punctuation.section.parens.end.kstar
+   31 "," punctuation.separator.comma.kstar
+   33 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   34 "1" string.regexp.kstar
+   35 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   36 "00" string.regexp.kstar
+   38 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   39 ")" punctuation.section.parens.end.kstar
+> 
+> # Finite languages are sets of strings, and work everywhere a language does.
+    0 "# Finite languages are sets of strings, and work everywhere a language does." comment.line.number-sign.kstar
+> let words = {"0", "01", "011"}
+    0 "let" keyword.control.kstar
+    4 "words" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "{" punctuation.section.braces.begin.kstar
+   13 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   14 "0" string.quoted.double.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   16 "," punctuation.separator.comma.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   19 "01" string.quoted.double.kstar
+   21 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   22 "," punctuation.separator.comma.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   25 "011" string.quoted.double.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   29 "}" punctuation.section.braces.end.kstar
+> test equivalent(words, /01?1?/)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "words" variable.other.kstar
+   21 "," punctuation.separator.comma.kstar
+   23 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   24 "01" string.regexp.kstar
+   26 "?" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   27 "1" string.regexp.kstar
+   28 "?" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   29 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   30 ")" punctuation.section.parens.end.kstar
+> print rename(minimize(words))
+    0 "print" keyword.control.kstar
+    6 "rename" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "minimize" support.function.builtin.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "words" variable.other.kstar
+   27 ")" punctuation.section.parens.end.kstar
+   28 ")" punctuation.section.parens.end.kstar
+> 
+> # Writes both.dot: even number of 0s and ending in 1.
+    0 "# Writes both.dot: even number of 0s and ending in 1." comment.line.number-sign.kstar
+> draw both
+    0 "draw" keyword.control.kstar
+    5 "both" variable.other.kstar
+> 

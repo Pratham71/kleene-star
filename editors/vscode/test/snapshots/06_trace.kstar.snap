@@ -1,0 +1,174 @@
+> # Chapter 6: watching machines run, one symbol at a time.
+    0 "# Chapter 6: watching machines run, one symbol at a time." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # Binary numbers divisible by 3. The state is the remainder so far.
+    0 "# Binary numbers divisible by 3. The state is the remainder so far." comment.line.number-sign.kstar
+> dfa Div3 over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "Div3" meta.machine.kstar entity.name.type.machine.kstar
+    9 "over" meta.machine.kstar keyword.other.over.kstar
+   14 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   16 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  r0
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "r0" meta.machine.kstar variable.other.state.kstar
+>     accept r0
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "r0" meta.machine.kstar variable.other.state.kstar
+>     r0 --0--> r0
+    4 "r0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r0" meta.machine.kstar variable.other.state.kstar
+>     r0 --1--> r1
+    4 "r0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r1" meta.machine.kstar variable.other.state.kstar
+>     r1 --0--> r2
+    4 "r1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r2" meta.machine.kstar variable.other.state.kstar
+>     r1 --1--> r0
+    4 "r1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r0" meta.machine.kstar variable.other.state.kstar
+>     r2 --0--> r1
+    4 "r2" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r1" meta.machine.kstar variable.other.state.kstar
+>     r2 --1--> r2
+    4 "r2" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r2" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> # 22 leaves remainder 1: rejected, ending in r1.
+    0 "# 22 leaves remainder 1: rejected, ending in r1." comment.line.number-sign.kstar
+> trace Div3 on "10110"
+    0 "trace" keyword.control.kstar
+    6 "Div3" variable.other.kstar
+   11 "on" keyword.control.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "10110" string.quoted.double.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> # 6 is divisible by 3: accepted.
+    0 "# 6 is divisible by 3: accepted." comment.line.number-sign.kstar
+> trace Div3 on "110"
+    0 "trace" keyword.control.kstar
+    6 "Div3" variable.other.kstar
+   11 "on" keyword.control.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "110" string.quoted.double.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # An NFA is in a set of states at once; eps moves are already followed.
+    0 "# An NFA is in a set of states at once; eps moves are already followed." comment.line.number-sign.kstar
+> nfa EndsIn01 over B {
+    0 "nfa" meta.machine.kstar storage.type.machine.kstar
+    4 "EndsIn01" meta.machine.kstar entity.name.type.machine.kstar
+   13 "over" meta.machine.kstar keyword.other.over.kstar
+   18 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  a
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "a" meta.machine.kstar variable.other.state.kstar
+>     accept c
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "c" meta.machine.kstar variable.other.state.kstar
+>     a --0,1--> a
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   10 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "a" meta.machine.kstar variable.other.state.kstar
+>     a --0  --> b
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "b" meta.machine.kstar variable.other.state.kstar
+>     b --1  --> c
+    4 "b" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "c" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> trace EndsIn01 on "1101"
+    0 "trace" keyword.control.kstar
+    6 "EndsIn01" variable.other.kstar
+   15 "on" keyword.control.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   19 "1101" string.quoted.double.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # The same language as a DFA: the subset construction builds exactly the sets
+    0 "# The same language as a DFA: the subset construction builds exactly the sets" comment.line.number-sign.kstar
+> # that the NFA trace above went through.
+    0 "# that the NFA trace above went through." comment.line.number-sign.kstar
+> trace to_dfa(EndsIn01) on "1101"
+    0 "trace" keyword.control.kstar
+    6 "to_dfa" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "EndsIn01" variable.other.kstar
+   21 ")" punctuation.section.parens.end.kstar
+   23 "on" keyword.control.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   27 "1101" string.quoted.double.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # A symbol outside the alphabet stops the trace, not the program.
+    0 "# A symbol outside the alphabet stops the trace, not the program." comment.line.number-sign.kstar
+> trace Div3 on "1021"
+    0 "trace" keyword.control.kstar
+    6 "Div3" variable.other.kstar
+   11 "on" keyword.control.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "1021" string.quoted.double.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> test Div3 accepts "110"
+    0 "test" keyword.control.kstar
+    5 "Div3" variable.other.kstar
+   10 "accepts" keyword.operator.word.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   19 "110" string.quoted.double.kstar
+   22 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test EndsIn01 accepts "1101"
+    0 "test" keyword.control.kstar
+    5 "EndsIn01" variable.other.kstar
+   14 "accepts" keyword.operator.word.kstar
+   22 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   23 "1101" string.quoted.double.kstar
+   27 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> draw Div3
+    0 "draw" keyword.control.kstar
+    5 "Div3" variable.other.kstar
+> 

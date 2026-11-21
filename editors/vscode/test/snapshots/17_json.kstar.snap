@@ -1,0 +1,257 @@
+> # Machines as JSON. `to_json` writes any machine, regex or grammar in a
+    0 "# Machines as JSON. `to_json` writes any machine, regex or grammar in a" comment.line.number-sign.kstar
+> # documented format that other programs can read; `from_json` reads it
+    0 "# documented format that other programs can read; `from_json` reads it" comment.line.number-sign.kstar
+> # back. `kstar export --format json examples/17_json.kstar Div3` writes the
+    0 "# back. `kstar export --format json examples/17_json.kstar Div3` writes the" comment.line.number-sign.kstar
+> # same JSON to a file.
+    0 "# same JSON to a file." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> dfa Div3 over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "Div3" meta.machine.kstar entity.name.type.machine.kstar
+    9 "over" meta.machine.kstar keyword.other.over.kstar
+   14 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   16 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  r0
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "r0" meta.machine.kstar variable.other.state.kstar
+>     accept r0
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "r0" meta.machine.kstar variable.other.state.kstar
+>     r0 --0--> r0
+    4 "r0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r0" meta.machine.kstar variable.other.state.kstar
+>     r0 --1--> r1
+    4 "r0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r1" meta.machine.kstar variable.other.state.kstar
+>     r1 --0--> r2
+    4 "r1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r2" meta.machine.kstar variable.other.state.kstar
+>     r1 --1--> r0
+    4 "r1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r0" meta.machine.kstar variable.other.state.kstar
+>     r2 --0--> r1
+    4 "r2" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r1" meta.machine.kstar variable.other.state.kstar
+>     r2 --1--> r2
+    4 "r2" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r2" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> let text = to_json(Div3, "Div3")
+    0 "let" keyword.control.kstar
+    4 "text" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "to_json" support.function.builtin.kstar
+   18 "(" punctuation.section.parens.begin.kstar
+   19 "Div3" variable.other.kstar
+   23 "," punctuation.separator.comma.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   26 "Div3" string.quoted.double.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> print text
+    0 "print" keyword.control.kstar
+    6 "text" variable.other.kstar
+> 
+> # Reading it back gives the same machine: same states, same names.
+    0 "# Reading it back gives the same machine: same states, same names." comment.line.number-sign.kstar
+> let Again = from_json(Dfa, text)
+    0 "let" keyword.control.kstar
+    4 "Again" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "from_json" support.function.builtin.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "Dfa" support.type.kstar
+   25 "," punctuation.separator.comma.kstar
+   27 "text" variable.other.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> test equivalent(Again, Div3) and states(Again) == 3
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "Again" variable.other.kstar
+   21 "," punctuation.separator.comma.kstar
+   23 "Div3" variable.other.kstar
+   27 ")" punctuation.section.parens.end.kstar
+   29 "and" keyword.operator.word.kstar
+   33 "states" support.function.builtin.kstar
+   39 "(" punctuation.section.parens.begin.kstar
+   40 "Again" variable.other.kstar
+   45 ")" punctuation.section.parens.end.kstar
+   47 "==" keyword.operator.comparison.kstar
+   50 "3" constant.numeric.integer.kstar
+> trace Again on "110"
+    0 "trace" keyword.control.kstar
+    6 "Again" variable.other.kstar
+   12 "on" keyword.control.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   16 "110" string.quoted.double.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # JSON written by hand, or by another tool, on one line: a regex for the
+    0 "# JSON written by hand, or by another tool, on one line: a regex for the" comment.line.number-sign.kstar
+> # binary numbers that end in 0.
+    0 "# binary numbers that end in 0." comment.line.number-sign.kstar
+> let Even = from_json(Regex, "{\"format\": \"kleene-star\", \"version\": 1, \"kind\": \"regex\", \"name\": \"Even\", \"regex\": \"(0|1)*0\"}")
+    0 "let" keyword.control.kstar
+    4 "Even" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "from_json" support.function.builtin.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "Regex" support.type.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   29 "{" string.quoted.double.kstar
+   30 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   32 "format" string.quoted.double.kstar
+   38 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   40 ": " string.quoted.double.kstar
+   42 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   44 "kleene-star" string.quoted.double.kstar
+   55 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   57 ", " string.quoted.double.kstar
+   59 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   61 "version" string.quoted.double.kstar
+   68 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   70 ": 1, " string.quoted.double.kstar
+   75 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   77 "kind" string.quoted.double.kstar
+   81 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   83 ": " string.quoted.double.kstar
+   85 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   87 "regex" string.quoted.double.kstar
+   92 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   94 ", " string.quoted.double.kstar
+   96 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+   98 "name" string.quoted.double.kstar
+  102 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+  104 ": " string.quoted.double.kstar
+  106 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+  108 "Even" string.quoted.double.kstar
+  112 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+  114 ", " string.quoted.double.kstar
+  116 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+  118 "regex" string.quoted.double.kstar
+  123 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+  125 ": " string.quoted.double.kstar
+  127 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+  129 "(0|1)*0" string.quoted.double.kstar
+  136 "\\\"" string.quoted.double.kstar constant.character.escape.kstar
+  138 "}" string.quoted.double.kstar
+  139 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+  140 ")" punctuation.section.parens.end.kstar
+> # Even and divisible by 3 is divisible by 6, except that `(0|1)*0` has no
+    0 "# Even and divisible by 3 is divisible by 6, except that `(0|1)*0` has no" comment.line.number-sign.kstar
+> # empty word, which the binary machines read as 0.
+    0 "# empty word, which the binary machines read as 0." comment.line.number-sign.kstar
+> test std.testing.same_language(intersect(Even, Div3), difference(std.binary.divisible_by(6), {""}))
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "same_language" entity.name.function.call.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "intersect" support.function.builtin.kstar
+   40 "(" punctuation.section.parens.begin.kstar
+   41 "Even" variable.other.kstar
+   45 "," punctuation.separator.comma.kstar
+   47 "Div3" variable.other.kstar
+   51 ")" punctuation.section.parens.end.kstar
+   52 "," punctuation.separator.comma.kstar
+   54 "difference" support.function.builtin.kstar
+   64 "(" punctuation.section.parens.begin.kstar
+   65 "std" entity.name.namespace.kstar
+   68 "." punctuation.accessor.kstar
+   69 "binary" entity.name.namespace.kstar
+   75 "." punctuation.accessor.kstar
+   76 "divisible_by" entity.name.function.call.kstar
+   88 "(" punctuation.section.parens.begin.kstar
+   89 "6" constant.numeric.integer.kstar
+   90 ")" punctuation.section.parens.end.kstar
+   91 "," punctuation.separator.comma.kstar
+   93 "{" punctuation.section.braces.begin.kstar
+   94 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   95 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   96 "}" punctuation.section.braces.end.kstar
+   97 ")" punctuation.section.parens.end.kstar
+   98 ")" punctuation.section.parens.end.kstar
+> 
+> # Grammars round-trip too; their rules say which symbols are variables.
+    0 "# Grammars round-trip too; their rules say which symbols are variables." comment.line.number-sign.kstar
+> grammar Balanced over B {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "Balanced" meta.grammar.kstar entity.name.type.grammar.kstar
+   17 "over" meta.grammar.kstar keyword.other.over.kstar
+   22 "B" meta.grammar.kstar entity.name.type.alphabet.kstar
+   24 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> 0 S 1 | eps
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "0" meta.grammar.kstar constant.character.terminal.kstar
+   11 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   13 "1" meta.grammar.kstar constant.character.terminal.kstar
+   15 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   17 "eps" meta.grammar.kstar constant.language.eps.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> print to_json(Balanced)
+    0 "print" keyword.control.kstar
+    6 "to_json" support.function.builtin.kstar
+   13 "(" punctuation.section.parens.begin.kstar
+   14 "Balanced" variable.other.kstar
+   22 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_up_to(from_json(Grammar, to_json(Balanced)), Balanced, 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "from_json" support.function.builtin.kstar
+   38 "(" punctuation.section.parens.begin.kstar
+   39 "Grammar" support.type.kstar
+   46 "," punctuation.separator.comma.kstar
+   48 "to_json" support.function.builtin.kstar
+   55 "(" punctuation.section.parens.begin.kstar
+   56 "Balanced" variable.other.kstar
+   64 ")" punctuation.section.parens.end.kstar
+   65 ")" punctuation.section.parens.end.kstar
+   66 "," punctuation.separator.comma.kstar
+   68 "Balanced" variable.other.kstar
+   76 "," punctuation.separator.comma.kstar
+   78 "8" constant.numeric.integer.kstar
+   79 ")" punctuation.section.parens.end.kstar
+> 

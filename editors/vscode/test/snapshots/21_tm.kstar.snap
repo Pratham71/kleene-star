@@ -1,0 +1,396 @@
+> # Chapter 15: the standard library's std.tm. Turing machines that compute
+    0 "# Chapter 15: the standard library's std.tm. Turing machines that compute" comment.line.number-sign.kstar
+> # (leaving an answer on the tape) and that decide (ending in yes or no),
+    0 "# (leaving an answer on the tape) and that decide (ending in yes or no)," comment.line.number-sign.kstar
+> # checked against arithmetic and against the languages they decide, and
+    0 "# checked against arithmetic and against the languages they decide, and" comment.line.number-sign.kstar
+> # measured: how many steps and how much tape a run takes.
+    0 "# measured: how many steps and how much tape a run takes." comment.line.number-sign.kstar
+> 
+> alphabet AB = {a, b}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "AB" entity.name.type.alphabet.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+   15 "a" constant.character.symbol.kstar
+   16 "," punctuation.separator.kstar
+   18 "b" constant.character.symbol.kstar
+   19 "}" punctuation.section.braces.end.kstar
+> 
+> # Binary increment, checked against arithmetic on every number below 64.
+    0 "# Binary increment, checked against arithmetic on every number below 64." comment.line.number-sign.kstar
+> let Inc = std.tm.increment()
+    0 "let" keyword.control.kstar
+    4 "Inc" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "tm" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "increment" entity.name.function.call.kstar
+   26 "(" punctuation.section.parens.begin.kstar
+   27 ")" punctuation.section.parens.end.kstar
+> print Inc
+    0 "print" keyword.control.kstar
+    6 "Inc" variable.other.kstar
+> for n in 0..64 {
+    0 "for" keyword.control.kstar
+    4 "n" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "0" constant.numeric.integer.kstar
+   10 ".." keyword.operator.range.kstar
+   12 "64" constant.numeric.integer.kstar
+   15 "{" punctuation.section.braces.begin.kstar
+>     test std.binary.from_binary(run(Inc, std.binary.to_binary(n))) == n + 1
+    4 "test" keyword.control.kstar
+    9 "std" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "binary" entity.name.namespace.kstar
+   19 "." punctuation.accessor.kstar
+   20 "from_binary" entity.name.function.call.kstar
+   31 "(" punctuation.section.parens.begin.kstar
+   32 "run" support.function.builtin.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "Inc" variable.other.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "std" entity.name.namespace.kstar
+   44 "." punctuation.accessor.kstar
+   45 "binary" entity.name.namespace.kstar
+   51 "." punctuation.accessor.kstar
+   52 "to_binary" entity.name.function.call.kstar
+   61 "(" punctuation.section.parens.begin.kstar
+   62 "n" variable.other.kstar
+   63 ")" punctuation.section.parens.end.kstar
+   64 ")" punctuation.section.parens.end.kstar
+   65 ")" punctuation.section.parens.end.kstar
+   67 "==" keyword.operator.comparison.kstar
+   70 "n" variable.other.kstar
+   72 "+" keyword.operator.arithmetic.kstar
+   74 "1" constant.numeric.integer.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # Unary arithmetic: 3 + 2 and a copy of 3.
+    0 "# Unary arithmetic: 3 + 2 and a copy of 3." comment.line.number-sign.kstar
+> print run(std.tm.unary_add(), "111011"), run(std.tm.unary_copy(), "111")
+    0 "print" keyword.control.kstar
+    6 "run" support.function.builtin.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "tm" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "unary_add" entity.name.function.call.kstar
+   26 "(" punctuation.section.parens.begin.kstar
+   27 ")" punctuation.section.parens.end.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "111011" string.quoted.double.kstar
+   37 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   38 ")" punctuation.section.parens.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "run" support.function.builtin.kstar
+   44 "(" punctuation.section.parens.begin.kstar
+   45 "std" entity.name.namespace.kstar
+   48 "." punctuation.accessor.kstar
+   49 "tm" entity.name.namespace.kstar
+   51 "." punctuation.accessor.kstar
+   52 "unary_copy" entity.name.function.call.kstar
+   62 "(" punctuation.section.parens.begin.kstar
+   63 ")" punctuation.section.parens.end.kstar
+   64 "," punctuation.separator.comma.kstar
+   66 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   67 "111" string.quoted.double.kstar
+   70 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   71 ")" punctuation.section.parens.end.kstar
+> 
+> # The palindrome decider agrees with the palindrome grammar on every word
+    0 "# The palindrome decider agrees with the palindrome grammar on every word" comment.line.number-sign.kstar
+> # up to length 8, and ends in `no` on the words it rejects.
+    0 "# up to length 8, and ends in `no` on the words it rejects." comment.line.number-sign.kstar
+> let Pal = std.tm.palindromes(AB)
+    0 "let" keyword.control.kstar
+    4 "Pal" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "tm" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "palindromes" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "AB" variable.other.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_up_to(Pal, std.grammar.palindromes(AB), 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Pal" variable.other.kstar
+   32 "," punctuation.separator.comma.kstar
+   34 "std" entity.name.namespace.kstar
+   37 "." punctuation.accessor.kstar
+   38 "grammar" entity.name.namespace.kstar
+   45 "." punctuation.accessor.kstar
+   46 "palindromes" entity.name.function.call.kstar
+   57 "(" punctuation.section.parens.begin.kstar
+   58 "AB" variable.other.kstar
+   60 ")" punctuation.section.parens.end.kstar
+   61 "," punctuation.separator.comma.kstar
+   63 "8" constant.numeric.integer.kstar
+   64 ")" punctuation.section.parens.end.kstar
+> print std.tm.final_state(Pal, "abab"), std.tm.final_state(Pal, "abba")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "tm" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "final_state" entity.name.function.call.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "Pal" variable.other.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "abab" string.quoted.double.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   36 ")" punctuation.section.parens.end.kstar
+   37 "," punctuation.separator.comma.kstar
+   39 "std" entity.name.namespace.kstar
+   42 "." punctuation.accessor.kstar
+   43 "tm" entity.name.namespace.kstar
+   45 "." punctuation.accessor.kstar
+   46 "final_state" entity.name.function.call.kstar
+   57 "(" punctuation.section.parens.begin.kstar
+   58 "Pal" variable.other.kstar
+   61 "," punctuation.separator.comma.kstar
+   63 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   64 "abba" string.quoted.double.kstar
+   68 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   69 ")" punctuation.section.parens.end.kstar
+> 
+> # It erases a symbol at each end and walks back, so its running time grows
+    0 "# It erases a symbol at each end and walks back, so its running time grows" comment.line.number-sign.kstar
+> # with the square of the length: doubling the length about quadruples the
+    0 "# with the square of the length: doubling the length about quadruples the" comment.line.number-sign.kstar
+> # steps.
+    0 "# steps." comment.line.number-sign.kstar
+> for n in 1..6 {
+    0 "for" keyword.control.kstar
+    4 "n" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "1" constant.numeric.integer.kstar
+   10 ".." keyword.operator.range.kstar
+   12 "6" constant.numeric.integer.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+>     let w = std.string.repeat("ab", n) + std.string.reverse(std.string.repeat("ab", n))
+    4 "let" keyword.control.kstar
+    8 "w" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "string" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "repeat" entity.name.function.call.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "ab" string.quoted.double.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "n" variable.other.kstar
+   37 ")" punctuation.section.parens.end.kstar
+   39 "+" keyword.operator.arithmetic.kstar
+   41 "std" entity.name.namespace.kstar
+   44 "." punctuation.accessor.kstar
+   45 "string" entity.name.namespace.kstar
+   51 "." punctuation.accessor.kstar
+   52 "reverse" support.function.builtin.kstar
+   59 "(" punctuation.section.parens.begin.kstar
+   60 "std" entity.name.namespace.kstar
+   63 "." punctuation.accessor.kstar
+   64 "string" entity.name.namespace.kstar
+   70 "." punctuation.accessor.kstar
+   71 "repeat" entity.name.function.call.kstar
+   77 "(" punctuation.section.parens.begin.kstar
+   78 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   79 "ab" string.quoted.double.kstar
+   81 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   82 "," punctuation.separator.comma.kstar
+   84 "n" variable.other.kstar
+   85 ")" punctuation.section.parens.end.kstar
+   86 ")" punctuation.section.parens.end.kstar
+>     print std.string.length(w), std.tm.steps(Pal, w), std.tm.space(Pal, w)
+    4 "print" keyword.control.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "string" entity.name.namespace.kstar
+   20 "." punctuation.accessor.kstar
+   21 "length" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "w" variable.other.kstar
+   29 ")" punctuation.section.parens.end.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "std" entity.name.namespace.kstar
+   35 "." punctuation.accessor.kstar
+   36 "tm" entity.name.namespace.kstar
+   38 "." punctuation.accessor.kstar
+   39 "steps" entity.name.function.call.kstar
+   44 "(" punctuation.section.parens.begin.kstar
+   45 "Pal" variable.other.kstar
+   48 "," punctuation.separator.comma.kstar
+   50 "w" variable.other.kstar
+   51 ")" punctuation.section.parens.end.kstar
+   52 "," punctuation.separator.comma.kstar
+   54 "std" entity.name.namespace.kstar
+   57 "." punctuation.accessor.kstar
+   58 "tm" entity.name.namespace.kstar
+   60 "." punctuation.accessor.kstar
+   61 "space" entity.name.function.call.kstar
+   66 "(" punctuation.section.parens.begin.kstar
+   67 "Pal" variable.other.kstar
+   70 "," punctuation.separator.comma.kstar
+   72 "w" variable.other.kstar
+   73 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # a^n b^n c^n is not context-free, so no PDA decides it, but a Turing
+    0 "# a^n b^n c^n is not context-free, so no PDA decides it, but a Turing" comment.line.number-sign.kstar
+> # machine does, by marking one a, one b and one c at a time.
+    0 "# machine does, by marking one a, one b and one c at a time." comment.line.number-sign.kstar
+> let Abc = std.tm.anbncn("a", "b", "c")
+    0 "let" keyword.control.kstar
+    4 "Abc" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "tm" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "anbncn" entity.name.function.call.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   25 "a" string.quoted.double.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "b" string.quoted.double.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   32 "," punctuation.separator.comma.kstar
+   34 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   35 "c" string.quoted.double.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> print Abc accepts "aabbcc", Abc accepts "aabcbc", std.tm.final_state(Abc, "abcc")
+    0 "print" keyword.control.kstar
+    6 "Abc" variable.other.kstar
+   10 "accepts" keyword.operator.word.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   19 "aabbcc" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "Abc" variable.other.kstar
+   32 "accepts" keyword.operator.word.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   41 "aabcbc" string.quoted.double.kstar
+   47 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   48 "," punctuation.separator.comma.kstar
+   50 "std" entity.name.namespace.kstar
+   53 "." punctuation.accessor.kstar
+   54 "tm" entity.name.namespace.kstar
+   56 "." punctuation.accessor.kstar
+   57 "final_state" entity.name.function.call.kstar
+   68 "(" punctuation.section.parens.begin.kstar
+   69 "Abc" variable.other.kstar
+   72 "," punctuation.separator.comma.kstar
+   74 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   75 "abcc" string.quoted.double.kstar
+   79 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   80 ")" punctuation.section.parens.end.kstar
+> test Abc accepts "aaaabbbbcccc"
+    0 "test" keyword.control.kstar
+    5 "Abc" variable.other.kstar
+    9 "accepts" keyword.operator.word.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   18 "aaaabbbbcccc" string.quoted.double.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # A machine that never halts: `halts_within` answers "not yet" where `run`
+    0 "# A machine that never halts: `halts_within` answers \"not yet\" where `run`" comment.line.number-sign.kstar
+> # would stop with a LimitError.
+    0 "# would stop with a LimitError." comment.line.number-sign.kstar
+> tm Forever over AB {
+    0 "tm" meta.machine.kstar storage.type.machine.kstar
+    3 "Forever" meta.machine.kstar entity.name.type.machine.kstar
+   11 "over" meta.machine.kstar keyword.other.over.kstar
+   16 "AB" meta.machine.kstar entity.name.type.alphabet.kstar
+   19 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  q
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "q" meta.machine.kstar variable.other.state.kstar
+>     accept done
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "done" meta.machine.kstar variable.other.state.kstar
+>     q --a/a,R--> q
+    4 "q" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   10 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   12 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   13 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   17 "q" meta.machine.kstar variable.other.state.kstar
+>     q --b/b,R--> q
+    4 "q" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   10 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   12 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   13 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   17 "q" meta.machine.kstar variable.other.state.kstar
+>     q --_/_,R--> q
+    4 "q" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+    9 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   10 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   11 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   12 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   13 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   17 "q" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> print std.tm.halts_within(Forever, "ab", 1000), std.tm.halts_within(Inc, "111", 1000)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "tm" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "halts_within" entity.name.function.call.kstar
+   25 "(" punctuation.section.parens.begin.kstar
+   26 "Forever" variable.other.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   36 "ab" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "1000" constant.numeric.integer.kstar
+   45 ")" punctuation.section.parens.end.kstar
+   46 "," punctuation.separator.comma.kstar
+   48 "std" entity.name.namespace.kstar
+   51 "." punctuation.accessor.kstar
+   52 "tm" entity.name.namespace.kstar
+   54 "." punctuation.accessor.kstar
+   55 "halts_within" entity.name.function.call.kstar
+   67 "(" punctuation.section.parens.begin.kstar
+   68 "Inc" variable.other.kstar
+   71 "," punctuation.separator.comma.kstar
+   73 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   74 "111" string.quoted.double.kstar
+   77 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   78 "," punctuation.separator.comma.kstar
+   80 "1000" constant.numeric.integer.kstar
+   84 ")" punctuation.section.parens.end.kstar
+> 
