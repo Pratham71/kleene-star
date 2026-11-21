@@ -1,0 +1,21 @@
+Error in std_grammar_checks.kstar, line 3:
+    print std.grammar.nullable(/ab/)
+                               ^^^^
+TypeError[E0300]: argument 1 of `std.grammar.nullable` must be a Grammar, but this is a Regex
+
+Error in std_grammar_checks.kstar, line 4:
+    print std.grammar.first(std.grammar.anbn("a", "b"), 1)
+                                                        ^
+TypeError[E0300]: argument 2 of `std.grammar.first` must be a Str, but this is an Int
+
+Error in std_grammar_checks.kstar, line 5:
+    print std.grammar.is_cnf(std.grammar.anbn("a", "b")) + 1
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is a Bool and the right side is an Int
+
+Error in std_grammar_checks.kstar, line 6:
+    print std.grammar.palindromes("ab")
+                                  ^^^^
+TypeError[E0300]: argument 1 of `std.grammar.palindromes` must be an Alphabet, but this is a Str
+
+4 errors found

@@ -485,6 +485,127 @@ true false
 {"00", "01", "10", "11"} 1024
 ```
 
+### `std.grammar`
+
+Helpers for context-free grammars: the steps of the CNF construction one at a time, FIRST and FOLLOW sets, LL(1) and CNF checks, listing short words, and ready-made grammars.
+
+| Function | What it does |
+|---|---|
+| `nullable(g: Grammar) -> Set[Str]` | The variables that can derive the empty word. |
+| `generating(g: Grammar) -> Set[Str]` | The variables that can derive some word of terminals. |
+| `reachable(g: Grammar) -> Set[Str]` | The variables that can appear in a derivation from the start variable. |
+| `remove_useless(g: Grammar) -> Grammar` | The same grammar without the variables that generate nothing or cannot be reached. |
+| `remove_eps(g: Grammar) -> Grammar` | An equivalent grammar whose only eps rule, if any, is for a start variable that is on no right-hand side. |
+| `remove_units(g: Grammar) -> Grammar` | An equivalent grammar without unit rules such as `A -> B`. |
+| `is_cnf(g: Grammar) -> Bool` | Whether the grammar is in Chomsky normal form, as `to_cnf` makes it. |
+| `first(g: Grammar, variable: Str) -> Set[Str]` | The terminals that can begin a word `variable` derives, and `""` if it can derive the empty word. |
+| `follow(g: Grammar, variable: Str) -> Set[Str]` | The terminals that can come right after `variable`, and `""` if it can come last. |
+| `is_ll1(g: Grammar) -> Bool` | Whether a parser can always choose the rule to use by looking at the next symbol only. |
+| `words_up_to(g: Grammar, n: Int) -> Set[Str]` | The words of the grammar's language of length at most `n`, as a set. |
+| `balanced(open: Str, close: Str) -> Grammar` | Balanced brackets: `S -> open S close S` or eps. |
+| `anbn(a: Str, b: Str) -> Grammar` | `n` copies of `a` then `n` copies of `b`: `S -> a S b` or eps. |
+| `palindromes(alphabet: Alphabet) -> Grammar` | The words over `alphabet` that read the same backwards. |
+| `equal_count(a: Str, b: Str) -> Grammar` | The words over `a` and `b` with as many of one as of the other. |
+
+`grammar` is a keyword (it begins a grammar), so the module has no name of
+its own: write `std.grammar.first(G, "S")`, `from std.grammar import first`,
+or `import std.grammar as grammars`. Plain `import std.grammar` is an error
+(E0115) that suggests the `as`. The same goes for `std.pda` and `std.tm`.
+
+**Cleaning up.** The built-in `to_cnf` does all the steps of the Chomsky
+normal form construction at once. These functions do one step each, so a
+grammar can be shown after every step:
+
+- `remove_useless` drops the variables that are not `generating` (derive no
+  word of terminals) and then those not `reachable` from the start, with
+  every rule that uses them. The language stays the same.
+- `remove_eps` copies each rule once for every way of leaving out its
+  `nullable` variables, then drops the eps rules. If the language has the
+  empty word, the start variable keeps `S -> eps`; when the start variable
+  also appears on a right-hand side, a new start `S0 -> S | eps` comes
+  first, so the language stays the same. A rule with k nullable variables
+  gives up to 2^k copies; more than 100000 rules in all is a `LimitError`
+  (E0612).
+- `remove_units` gives each variable the rules of every variable it reaches
+  through unit rules, and drops the unit rules.
+
+The last two also drop variables that can no longer be reached. `is_cnf`
+says whether every rule is `A -> B C` or `A -> a`, apart from `S -> eps` for
+a start variable that is on no right-hand side. The result of `to_cnf` always
+passes.
+
+**Parsing questions.** `first` and `follow` are the sets a predictive parser
+is built from. A terminal is a one-symbol string; `""` in `first(g, "A")`
+means A can derive the empty word, and in `follow(g, "A")` that A can come
+at the end of the input (many books write `$`). A name that is not a variable
+of the grammar is a `ValueError` (E0617). `is_ll1` checks the rules of every
+reachable variable two by two: their FIRST sets must not share a terminal,
+at most one may derive the empty word, and if one does, the other's FIRST
+must not meet the variable's FOLLOW. Ambiguous and left-recursive grammars
+are never LL(1).
+
+`words_up_to(g, n)` lists the words of length up to `n` (at most 10000),
+building them from the CNF copy, shortest first. There may be at most 100000
+of them, and building them may take at most a million characters in all; a
+larger listing is a `LimitError` (E0612). Combined with `std.testing`, it
+checks a grammar against a description: `std.testing.accepts_all(G,
+words_up_to(G, 6))` holds by definition, but the same set checked against a
+machine you wrote by hand does not.
+
+**Ready-made grammars.** Each has the one variable `S`:
+
+- `balanced("l", "r")`: `S -> l S r S | eps`, the words in which each `l`
+  (a left bracket) has a matching `r` (a right bracket) after it. This form,
+  rather than `S -> S S | l S r | eps`, is unambiguous and LL(1).
+- `anbn("a", "b")`: `S -> a S b | eps`.
+- `palindromes(B)`: `S -> eps`, and `S -> c` and `S -> c S c` for each
+  symbol c of `B`.
+- `equal_count("a", "b")`: `S -> a S b S | b S a S | eps`.
+
+A symbol is a string of one letter or digit, as in an alphabet (E0614), and the two symbols must differ
+(an `AlphabetError`, E0503).
+
+```kstar
+alphabet AB = {a, b}
+grammar G over AB {
+    S -> A B | a C | a
+    A -> B | eps
+    B -> b | eps
+    C -> a C
+}
+print std.grammar.nullable(G), std.grammar.generating(G), std.grammar.reachable(G)
+print std.grammar.remove_useless(G)
+print std.grammar.remove_eps(G)
+print std.grammar.remove_units(std.grammar.remove_eps(G))
+print std.grammar.is_cnf(G), std.grammar.is_cnf(to_cnf(G))
+let Brackets = std.grammar.balanced("l", "r")
+print std.grammar.first(Brackets, "S"), std.grammar.follow(Brackets, "S"), std.grammar.is_ll1(Brackets)
+print std.grammar.words_up_to(Brackets, 4)
+print std.grammar.words_up_to(std.grammar.equal_count("a", "b"), 2)
+```
+
+```text
+{"A", "B", "S"} {"A", "B", "S"} {"A", "B", "C", "S"}
+Grammar with 3 variables over {a, b}, start S
+S -> A B | a
+A -> B | eps
+B -> b | eps
+Grammar with 4 variables over {a, b}, start S
+S -> A B | B | A | eps | a C | a
+A -> B
+B -> b
+C -> a C
+Grammar with 4 variables over {a, b}, start S
+S -> A B | eps | a C | a | b
+A -> b
+B -> b
+C -> a C
+false true
+{"", "l"} {"", "r"} true
+{"", "llrr", "lr", "lrlr"}
+{"", "ab", "ba"}
+```
+
 ### `std.math`
 
 Whole-number arithmetic: division, powers, roots, divisors and primes.

@@ -1,0 +1,6 @@
+# Mistakes the checker finds before anything runs.
+alphabet AB = {a, b}
+print std.grammar.nullable(/ab/)
+print std.grammar.first(std.grammar.anbn("a", "b"), 1)
+print std.grammar.is_cnf(std.grammar.anbn("a", "b")) + 1
+print std.grammar.palindromes("ab")

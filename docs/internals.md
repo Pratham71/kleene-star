@@ -540,6 +540,10 @@ Say the new module is `std.string`.
    `codes.rs` and `docs/errors.md`, with an example.
 3. **Register it.** Add `pub mod string;` to `stdlib/mod.rs` and
    `string::MODULE` to `MODULES`, keeping the list in alphabetical order.
+   A module may be named by a keyword, as `std.grammar`, `std.pda` and
+   `std.tm` are: `qualified_name` in the parser takes a keyword right after
+   `std.` as a module name, and plain `import std.grammar` asks for an `as`
+   because `grammar` cannot be a name.
 4. **Unit-test it** at the bottom of `string.rs`: ordinary answers, the
    edge cases (empty input, the largest and smallest values), and every
    `Failure`, checking its code.

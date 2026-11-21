@@ -1,0 +1,4 @@
+# Listing the palindromes of length up to 30 would build more than a
+# million characters of words.
+alphabet AB = {a, b}
+print std.grammar.words_up_to(std.grammar.palindromes(AB), 30)

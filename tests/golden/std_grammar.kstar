@@ -1,0 +1,45 @@
+# Every function of std.grammar, by its full name and imported.
+alphabet AB = {a, b}
+grammar G over AB {
+    S -> A B | a C | a
+    A -> B | eps
+    B -> b | eps
+    C -> a C
+}
+print std.grammar.nullable(G)
+print std.grammar.generating(G)
+print std.grammar.reachable(G)
+print std.grammar.remove_useless(G)
+print std.grammar.remove_eps(G)
+print std.grammar.remove_units(G)
+print std.grammar.is_cnf(G), std.grammar.is_cnf(to_cnf(G))
+
+# The start variable on a right-hand side gets a new start before its eps
+# rule can be removed.
+grammar Loop over AB {
+    S -> a S b S | eps
+}
+print std.grammar.remove_eps(Loop)
+test std.testing.agree_up_to(Loop, std.grammar.remove_eps(Loop), 6)
+
+from std.grammar import first, follow, is_ll1, words_up_to
+import std.grammar as grammars
+alphabet Ops = {i, p, m, l, r}
+grammar E over Ops {
+    E -> T F
+    F -> p T F | eps
+    T -> X U
+    U -> m X U | eps
+    X -> l E r | i
+}
+print first(E, "E"), first(E, "F"), first(E, "U")
+print follow(E, "E"), follow(E, "T"), follow(E, "X")
+print is_ll1(E), is_ll1(grammars.palindromes(AB))
+print words_up_to(E, 3)
+print words_up_to(G, 0), words_up_to(grammars.anbn("x", "y"), 1)
+print grammars.balanced("l", "r")
+print grammars.anbn("0", "1")
+alphabet Bits = {0, 1}
+print grammars.palindromes(Bits)
+print grammars.equal_count("a", "b")
+print std.collections.size(words_up_to(grammars.equal_count("a", "b"), 10))

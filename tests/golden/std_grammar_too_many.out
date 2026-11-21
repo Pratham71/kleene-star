@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_grammar_too_many.kstar, line 4, in <main>
+    print std.grammar.words_up_to(std.grammar.palindromes(AB), 30)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0612]: the words of length up to 30 are too many to list
+  hint: ask for shorter words (at most 100000 are listed)

@@ -1,0 +1,57 @@
+# Chapter 12: the standard library's std.grammar. The steps of the Chomsky
+# normal form construction one at a time, the FIRST and FOLLOW sets a
+# predictive parser is built from, and ready-made grammars checked against
+# machines and against each other.
+
+alphabet AB = {a, b}
+alphabet P = {l, r}
+
+# A grammar with an eps rule, a unit rule and a variable that is useless.
+grammar G over AB {
+    S -> A B | a C | a
+    A -> B | eps
+    B -> b | eps
+    C -> a C
+}
+
+# C never finishes a word, so it is useless; A and B can vanish.
+print std.grammar.generating(G), std.grammar.nullable(G)
+
+# The CNF construction, one step at a time. Each step keeps the language,
+# which `std.testing.agree_up_to` checks on every word up to length 6.
+let Clean = std.grammar.remove_useless(G)
+let NoEps = std.grammar.remove_eps(Clean)
+let NoUnits = std.grammar.remove_units(NoEps)
+print NoUnits
+test std.testing.agree_up_to(G, NoUnits, 6)
+test std.grammar.is_cnf(to_cnf(NoUnits))
+
+# Brackets that pair up, with l for a left bracket and r for a right one.
+# Written as `S -> l S r S | eps`, the grammar is LL(1): seeing an l the
+# parser expands S, seeing an r or the end it picks eps, which is what
+# FIRST and FOLLOW say.
+let Brackets = std.grammar.balanced("l", "r")
+print Brackets
+print std.grammar.first(Brackets, "S"), std.grammar.follow(Brackets, "S")
+test std.grammar.is_ll1(Brackets)
+
+# The other way of writing it, `S -> S S | l S r | eps`, has the same
+# language but is ambiguous, so it is not LL(1).
+grammar Ambiguous over P {
+    S -> S S | l S r | eps
+}
+test not std.grammar.is_ll1(Ambiguous)
+test std.testing.agree_up_to(Brackets, Ambiguous, 8)
+
+# a^n b^n has as many a's as b's, but not the other way round: "ba" is in
+# one language only.
+let AnBn = std.grammar.anbn("a", "b")
+let Equal = std.grammar.equal_count("a", "b")
+print std.grammar.words_up_to(AnBn, 6)
+test std.testing.accepts_all(Equal, std.grammar.words_up_to(AnBn, 8))
+print Equal accepts "ba", AnBn accepts "ba"
+
+# Palindromes are not a regular language, but their words of each length
+# can still be counted.
+let Pal = std.grammar.palindromes(AB)
+print std.collections.size(std.grammar.words_up_to(Pal, 5))

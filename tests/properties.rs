@@ -10,7 +10,7 @@ use common::{seed, Rng};
 use kstar::automata::grammar::{Grammar, Rule, Sym};
 use kstar::automata::pda::{Outcome, Pda};
 use kstar::automata::tm::{self, Dir, Halt, Tm};
-use kstar::automata::{convert, minimize, ops, regex, Dfa, Nfa, Regex};
+use kstar::automata::{cfg, convert, minimize, ops, regex, Dfa, Nfa, Regex};
 use std::collections::BTreeSet;
 
 const ALPHABET: [char; 2] = ['a', 'b'];
@@ -670,5 +670,43 @@ fn damaged_json_never_crashes() {
         }
         let text: String = text.into_iter().collect();
         let _ = from_json(&text);
+    }
+}
+
+/// The cleanup steps of `std.grammar` each keep the language and do what
+/// their name says, and `to_cnf` always passes `is_cnf`.
+#[test]
+fn grammar_cleanups_keep_the_language() {
+    let mut rng = Rng::new(seed());
+    for case in 0..CASES {
+        let g = random_grammar(&mut rng);
+        let what = format!("case {case}: {g}");
+        let no_eps = g.remove_eps(100_000).expect("small grammars have few copies");
+        let no_units = g.remove_units();
+        let useless_gone = g.trimmed();
+        for word in words(5) {
+            let expected = g.accepts(&word).unwrap();
+            for (step, h) in [("remove_eps", &no_eps), ("remove_units", &no_units), ("remove_useless", &useless_gone)] {
+                assert_eq!(h.accepts(&word).unwrap(), expected, "{what}\n{step} changed {word:?}:\n{h}");
+            }
+        }
+        let start_on_right = no_eps.rules.iter().any(|r| r.body.contains(&Sym::V(no_eps.start)));
+        for rule in &no_eps.rules {
+            assert!(!rule.body.is_empty() || (rule.head == no_eps.start && !start_on_right), "{what}\nremove_eps left an eps rule:\n{no_eps}");
+        }
+        assert!(no_units.rules.iter().all(|r| !matches!(r.body[..], [Sym::V(_)])), "{what}\nremove_units left a unit rule:\n{no_units}");
+        assert!(cfg::is_cnf(&g.to_cnf()), "{what}\nto_cnf is not in CNF");
+    }
+}
+
+/// `words_up_to` on a grammar lists exactly the words CYK accepts.
+#[test]
+fn grammar_word_lists_agree_with_cyk() {
+    let mut rng = Rng::new(seed());
+    for case in 0..CASES {
+        let g = random_grammar(&mut rng);
+        let listed = cfg::words_up_to(&g, 5, 10_000_000).expect("the budget is large");
+        let expected: BTreeSet<String> = words(5).into_iter().filter(|w| g.accepts(w).unwrap()).collect();
+        assert_eq!(listed, expected, "case {case}: {g}");
     }
 }

@@ -196,13 +196,104 @@ impl Grammar {
         }
         g.rules = rules;
 
-        // 4. DEL
-        let nullable = g.nullable();
+        // 4. DEL and 5. UNIT
+        g.drop_eps_rules();
+        g.drop_unit_rules();
+
+        // 6. Remove useless variables.
+        g.trimmed()
+    }
+
+    /// An equivalent grammar without eps rules, except `S -> eps` for the
+    /// start variable when the language contains the empty word. If the
+    /// start variable then also appears on a right-hand side, a new start
+    /// `S0 -> S | eps` is added first, so that `S -> eps` cannot be used
+    /// inside a derivation. Variables left unreachable are dropped.
+    ///
+    /// Each rule is copied once for every way of leaving out its nullable
+    /// variables, so a body with k of them gives up to 2^k rules. `None`
+    /// if that would make more than `max_rules` rules.
+    pub fn remove_eps(&self, max_rules: usize) -> Option<Grammar> {
+        let nullable = self.nullable();
+        let copies = self.rules.iter().try_fold(0usize, |total, rule| {
+            let k = rule.body.iter().filter(|s| matches!(s, Sym::V(v) if nullable[*v])).count() as u32;
+            total.checked_add(1usize.checked_shl(k)?)
+        });
+        if copies.is_none_or(|n| n > max_rules) {
+            return None;
+        }
+        let mut g = self.clone();
+        if nullable[g.start] && g.rules.iter().any(|r| r.body.contains(&Sym::V(g.start))) {
+            let name = fresh_name(&g.variables, &format!("{}0", g.variables[g.start]));
+            g.variables.push(name);
+            let old = g.start;
+            g.start = g.variables.len() - 1;
+            g.rules.insert(0, Rule { head: g.start, body: vec![Sym::V(old)] });
+        }
+        g.drop_eps_rules();
+        Some(g.reachable_only())
+    }
+
+    /// An equivalent grammar without unit rules `A -> B`: each variable
+    /// gets the other rules of every variable it reaches by unit rules.
+    /// Variables left unreachable are dropped.
+    pub fn remove_units(&self) -> Grammar {
+        let mut g = self.clone();
+        g.drop_unit_rules();
+        g.reachable_only()
+    }
+
+    /// The variables the start variable can reach, by the rules.
+    pub fn reachable(&self) -> Vec<bool> {
+        let mut reached = vec![false; self.variables.len()];
+        reached[self.start] = true;
+        let mut queue = VecDeque::from([self.start]);
+        while let Some(v) = queue.pop_front() {
+            for rule in self.rules_for(v) {
+                for s in &rule.body {
+                    if let Sym::V(w) = *s {
+                        if !reached[w] {
+                            reached[w] = true;
+                            queue.push_back(w);
+                        }
+                    }
+                }
+            }
+        }
+        reached
+    }
+
+    /// A copy with only the reachable variables, keeping their order.
+    fn reachable_only(&self) -> Grammar {
+        let keep = self.reachable();
+        let mut index = vec![usize::MAX; keep.len()];
+        let mut variables = Vec::new();
+        for (v, name) in self.variables.iter().enumerate().filter(|(v, _)| keep[*v]) {
+            index[v] = variables.len();
+            variables.push(name.clone());
+        }
+        let rules = self
+            .rules
+            .iter()
+            .filter(|r| keep[r.head])
+            .map(|r| Rule {
+                head: index[r.head],
+                body: r.body.iter().map(|s| if let Sym::V(v) = s { Sym::V(index[*v]) } else { *s }).collect(),
+            })
+            .collect();
+        Grammar { alphabet: self.alphabet.clone(), variables, start: index[self.start], rules }
+    }
+
+    /// The DEL step: replaces every rule by its copies with nullable
+    /// variables left out, and drops eps rules except the start
+    /// variable's. The caller makes sure the start variable is not on a
+    /// right-hand side, or this would change the language.
+    fn drop_eps_rules(&mut self) {
+        let nullable = self.nullable();
         let mut rules: BTreeSet<Rule> = BTreeSet::new();
         let mut ordered = Vec::new();
-        for rule in &g.rules {
-            // Every way of leaving out nullable variables (bodies have at
-            // most two symbols now, so at most four combinations).
+        for rule in &self.rules {
+            // Every way of leaving out nullable variables.
             let optional: Vec<usize> = (0..rule.body.len())
                 .filter(|&i| matches!(rule.body[i], Sym::V(v) if nullable[v]))
                 .collect();
@@ -217,7 +308,7 @@ impl Grammar {
                     })
                     .map(|(_, s)| *s)
                     .collect();
-                if body.is_empty() && rule.head != g.start {
+                if body.is_empty() && rule.head != self.start {
                     continue;
                 }
                 let new = Rule { head: rule.head, body };
@@ -226,14 +317,17 @@ impl Grammar {
                 }
             }
         }
-        g.rules = ordered;
+        self.rules = ordered;
+    }
 
-        // 5. UNIT: for each variable, the variables it reaches by unit rules.
-        let n = g.variables.len();
+    /// The UNIT step: for each variable, the variables it reaches by unit
+    /// rules; it gets all their rules that are not unit rules.
+    fn drop_unit_rules(&mut self) {
+        let n = self.variables.len();
         let mut unit_reach: Vec<BTreeSet<usize>> = (0..n).map(|v| BTreeSet::from([v])).collect();
         loop {
             let mut changed = false;
-            for rule in &g.rules {
+            for rule in &self.rules {
                 if let [Sym::V(b)] = rule.body[..] {
                     let from_b = unit_reach[b].clone();
                     for reach in unit_reach.iter_mut().filter(|reach| reach.contains(&rule.head)) {
@@ -251,7 +345,7 @@ impl Grammar {
         let mut rules = Vec::new();
         for (a, reach) in unit_reach.iter().enumerate() {
             for &b in reach {
-                for rule in g.rules.iter().filter(|r| r.head == b) {
+                for rule in self.rules.iter().filter(|r| r.head == b) {
                     if matches!(rule.body[..], [Sym::V(_)]) {
                         continue;
                     }
@@ -264,11 +358,8 @@ impl Grammar {
         }
         // Keep the start variable's rules first, then the rest in the order
         // of the original rules, so the result reads naturally.
-        rules.sort_by_key(|r| (r.head != g.start, r.head));
-        g.rules = rules;
-
-        // 6. Remove useless variables.
-        g.trimmed()
+        rules.sort_by_key(|r| (r.head != self.start, r.head));
+        self.rules = rules;
     }
 
     /// A copy without variables that generate nothing or cannot be reached

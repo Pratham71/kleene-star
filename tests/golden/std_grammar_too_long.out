@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_grammar_too_long.kstar, line 1, in <main>
+    print std.grammar.words_up_to(std.grammar.anbn("a", "b"), 10001)
+                                                              ^^^^^
+LimitError[E0612]: words of length up to 10001 are too long to list
+  hint: the longest length `words_up_to` takes is 10000
