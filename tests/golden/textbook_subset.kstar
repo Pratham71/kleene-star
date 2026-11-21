@@ -1,0 +1,17 @@
+# The subset construction, with the empty set as a dead state of its own
+# (written {} here): every DFA state has a move on every symbol.
+alphabet AB = {a, b}
+nfa N over AB {
+    start  q0
+    accept q1
+    q0 --a--> q1
+    q0 --a--> q2
+    q2 --a--> q1
+    q2 --a--> q2
+    q2 --b--> q2
+}
+let D = to_dfa(N)
+print D
+test states(D) == 4
+test equivalent(N, D)
+trace D on "ab"

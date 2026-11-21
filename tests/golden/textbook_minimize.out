@@ -1,0 +1,20 @@
+Warning in textbook_minimize.kstar, line 34:
+    a3 --a--> a2
+    ^^
+Warning[W0100]: state `a3` can never be reached from the start state `a0`
+  hint: add a transition into it, or remove it; it does not change the language
+
+DFA with 4 states over {0, 1}
+        | 0 | 1
+->  A+C | B | A+C
+    B   | B | D
+    D   | B | E
+   *E   | B | A+C
+DFA with 5 states over {a, b}
+          | a     | b
+->  a0+a4 | a1+a7 | a5
+    a1+a7 | a6    | a2
+    a5    | a2    | a6
+    a6    | a6    | a0+a4
+   *a2    | a0+a4 | a2
+tests: 2 passed, 0 failed

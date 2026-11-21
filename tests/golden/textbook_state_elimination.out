@@ -1,0 +1,9 @@
+/b*a(bb*a)*(a(a|b)*)?/
+ false false
+a true true
+aa true true
+aab true true
+abab false false
+b false false
+ba true true
+tests: 1 passed, 0 failed
