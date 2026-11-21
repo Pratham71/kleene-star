@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.random.random_grammar(1, B, 27)

@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.random.word(1, B, 10001)

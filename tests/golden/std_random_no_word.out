@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_random_no_word.kstar, line 1, in <main>
+    print std.random.word_in(1, /(aa)*/, 3)
+                                         ^
+ValueError[E0615]: the language has no word of length 3
+  hint: `std.automata.count_words(lang, n)` says how many words of a length there are

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_random_no_states.kstar, line 2, in <main>
+    print std.random.random_dfa(1, B, 0)
+                                      ^
+ValueError[E0610]: a number of states must be at least 1, but this is 0
+  hint: use 1 or more

@@ -1,0 +1,28 @@
+Error in std_random_checks.kstar, line 3:
+    print std.random.int("1", 1, 6)
+                         ^^^
+TypeError[E0300]: argument 1 of `std.random.int` must be an Int, but this is a Str
+
+Error in std_random_checks.kstar, line 4:
+    print std.random.pick(1, "abc") + 1
+                             ^^^^^
+TypeError[E0300]: argument 2 of `std.random.pick` must be a Set[T], but this is a Str
+
+Error in std_random_checks.kstar, line 5:
+    print std.random.pick(1, {1, 2}) + "x"
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is an Int and the right side is a Str
+  hint: an Int is not turned into a Str by itself; `print` can show both: `print "n =", n`
+
+Error in std_random_checks.kstar, line 6:
+    print std.random.word_in(1, std.grammar.anbn("a", "b"), 2)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0300]: argument 2 of `std.random.word_in` must be a regular language (Dfa, Nfa, Regex or Set[Str]), but this is a Grammar
+  hint: `std.random.word_in` works on regular languages only; a Grammar can describe a language that is not regular
+
+Error in std_random_checks.kstar, line 7:
+    print std.random.random_dfa(1, {0, 1}, 3)
+                                   ^^^^^^
+TypeError[E0300]: argument 2 of `std.random.random_dfa` must be an Alphabet, but this is a Set[Int]
+
+5 errors found

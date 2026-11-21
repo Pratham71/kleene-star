@@ -1393,8 +1393,9 @@ LimitError[E0612]: `repeat` of a string of length 2 by 1000000000000 would be to
 
 ## E0613: The smallest or largest member of an empty set
 
-`std.collections.min` and `max` have no answer for a set with no members.
-Check `size(s) > 0` first.
+`std.collections.min` and `max` have no answer for a set with no members,
+and `std.random.pick` cannot pick from one (nor `std.random` draw symbols
+from an alphabet with none). Check `size(s) > 0` first.
 
 ```kstar-error
 print std.collections.max({})
@@ -1440,8 +1441,10 @@ ValueError[E0614]: "01" is not one symbol
 
 `std.automata.shortest_word` was given an empty language, which has no
 words at all, or `std.automata.distinguishing_word` was given two languages
-that are equivalent, so no word is in one but not the other. Check with
-`is_empty` or `equivalent` first.
+that are equivalent, so no word is in one but not the other; or
+`std.random.word_in` was asked for a word of a length the language has
+none of. Check with `is_empty`, `equivalent` or `std.automata.count_words`
+first.
 
 ```kstar-error
 print std.automata.distinguishing_word(/a*/, /(aa*)?/)

@@ -710,3 +710,63 @@ fn grammar_word_lists_agree_with_cyk() {
         assert_eq!(listed, expected, "case {case}: {g}");
     }
 }
+
+/// Every function of `std.random`, through its table, as a program calls
+/// it: the result, or the code of the error.
+fn random_call(name: &str, args: &[kstar::lang::value::Value]) -> Result<kstar::lang::value::Value, &'static str> {
+    use kstar::lang::stdlib::random::MODULE;
+    let f = MODULE.functions.iter().find(|f| f.name == name).unwrap();
+    (f.run)(args).map_err(|failure| failure.code)
+}
+
+/// The same seed always gives the same result, for every function of
+/// `std.random`; and the results are what they claim to be.
+#[test]
+fn random_results_repeat_for_the_same_seed() {
+    use kstar::lang::value::Value;
+    use std::rc::Rc;
+    let mut rng = Rng::new(seed());
+    let alphabet = Value::Alphabet(Rc::new(vec!['0', '1', 'a']));
+    for case in 0..CASES {
+        let seed = Value::Int(rng.next() as i64);
+        let small = Value::Int(1 + rng.below(6) as i64);
+        let low = rng.below(100) as i64 - 50;
+        let calls: Vec<(&str, Vec<Value>)> = vec![
+            ("int", vec![seed.clone(), Value::Int(low), Value::Int(low + rng.below(20) as i64)]),
+            ("pick", vec![seed.clone(), Value::Set(Rc::new((0..5).map(Value::Int).collect()))]),
+            ("word", vec![seed.clone(), alphabet.clone(), small.clone()]),
+            ("words", vec![seed.clone(), alphabet.clone(), small.clone(), small.clone()]),
+            ("word_in", vec![seed.clone(), Value::dfa(random_dfa(&mut rng)), Value::Int(rng.below(6) as i64)]),
+            ("random_dfa", vec![seed.clone(), alphabet.clone(), small.clone()]),
+            ("random_nfa", vec![seed.clone(), alphabet.clone(), small.clone()]),
+            ("random_grammar", vec![seed.clone(), alphabet.clone(), small.clone()]),
+        ];
+        for (name, args) in calls {
+            let first = random_call(name, &args);
+            assert_eq!(first, random_call(name, &args), "case {case}: {name} gave two different results");
+            let Ok(result) = first else {
+                // Only a language without a word of that length may refuse.
+                assert_eq!((name, first), ("word_in", Err("E0615")), "case {case}");
+                let (Value::Dfa(d), Value::Int(n)) = (&args[1], &args[2]) else { unreachable!() };
+                let some = words(*n as usize).into_iter().any(|w| w.len() == *n as usize && d.accepts(&w).unwrap());
+                assert!(!some, "case {case}: word_in found no word of length {n}, but there is one:
+{d}");
+                continue;
+            };
+            match (name, &result) {
+                ("int", Value::Int(n)) => {
+                    let (Value::Int(lo), Value::Int(hi)) = (&args[1], &args[2]) else { unreachable!() };
+                    assert!(lo <= n && n <= hi, "case {case}: {n} is not in {lo}..={hi}");
+                }
+                ("word_in", Value::Str(w)) => {
+                    let Value::Dfa(d) = &args[1] else { unreachable!() };
+                    assert!(d.accepts(w).unwrap(), "case {case}: {w:?} is not in the language");
+                    assert_eq!(Value::Int(w.chars().count() as i64), args[2]);
+                }
+                ("random_dfa", Value::Dfa(d)) => assert_eq!(Value::Int(d.states.len() as i64), small),
+                ("random_grammar", Value::Grammar(g)) => assert_eq!(Value::Int(g.variables.len() as i64), small),
+                _ => {}
+            }
+        }
+    }
+}

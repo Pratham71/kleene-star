@@ -1,0 +1,1 @@
+print std.random.word_in(1, /(aa)*/, 3)

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_random_too_many.kstar, line 2, in <main>
+    print std.random.words(1, B, 100000, 100)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0612]: 100000 words of up to 100 symbols could be too long
+  hint: `count` times `max` may be at most 1000000

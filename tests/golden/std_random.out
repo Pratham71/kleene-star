@@ -1,0 +1,25 @@
+6 6 -4
+7 -7130582611851636755
+z true 2
+bbaabbaccbca bbaabbaccbca 
+{"", "01", "1", "101", "11"}
+{} {""}
+aaabb ba
+DFA with 4 states over {0, 1}
+       | 0  | 1
+->  q0 | q2 | q1
+   *q1 | q2 | q2
+   *q2 | q1 | q1
+   *q3 | q3 | q0
+eps-NFA with 3 states over {a, b, c}
+       | a    | b    | c    | eps
+->  q0 | {q2} | {q1} | {q0} | -
+    q1 | -    | {q1} | -    | -
+    q2 | -    | -    | -    | {q1}
+Grammar with 4 variables over {0, 1}, start S
+S -> 0 0 | eps
+A -> S | 0
+B -> 0 | S A 1 | B
+C -> 0 0 0 | eps
+10000
+tests: 3 passed, 0 failed
