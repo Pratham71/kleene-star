@@ -1,0 +1,1 @@
+print std.tm.halts_within(std.tm.increment(), "1", 100001)

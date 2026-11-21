@@ -35,6 +35,11 @@ its GitHub release, so write it for people who use Kleene Star.
   the converse of `to_pda`), `is_deterministic`, `stack_symbols`, and
   `member` and `words_up_to`, which go through the grammar and so always
   answer where `accepts` would give up. Example: `examples/20_pda.kstar`.
+- `std.tm`: ready-made Turing machines with documented tape conventions
+  (`increment`, `unary_add`, `unary_copy`, and deciders for `palindromes`
+  and `anbncn`), and questions about a run under the usual step limit:
+  `steps`, `space`, `final_state`, `halts_within` and `tape_symbols`.
+  Example: `examples/21_tm.kstar`.
 
 ### Changed
 

@@ -1031,6 +1031,81 @@ symbols of both. That cannot prove two of them equal, but it finds a
 difference whenever one is that short. `agree_up_to` tries at most 10000
 words (E0612 otherwise; a negative length is E0610).
 
+### `std.tm`
+
+Ready-made Turing machines (binary increment, unary addition and copying, deciders for palindromes and a^n b^n c^n), and the steps, space and final state of a run.
+
+| Function | What it does |
+|---|---|
+| `increment() -> Tm` | A machine that adds one to a binary number, leaving the sum on the tape. |
+| `unary_add() -> Tm` | A machine that turns `m` ones, a 0 and `n` ones into `m + n` ones. |
+| `unary_copy() -> Tm` | A machine that turns `n` ones into `n` ones, a 0 and `n` ones again. |
+| `palindromes(alphabet: Alphabet) -> Tm` | A machine that decides the palindromes over `alphabet`, halting in `yes` or `no`. |
+| `anbncn(a: Str, b: Str, c: Str) -> Tm` | A machine that decides `n` copies of `a`, then of `b`, then of `c`, which no PDA can. |
+| `steps(m: Tm, w: Str) -> Int` | How many steps the machine takes on `w` before it halts. |
+| `space(m: Tm, w: Str) -> Int` | How many tape cells the head visits on `w` before the machine halts. |
+| `final_state(m: Tm, w: Str) -> Str` | The state the machine is in when it halts on `w`. |
+| `halts_within(m: Tm, w: Str, n: Int) -> Bool` | Whether the machine halts on `w` within `n` steps, at most 100000. |
+| `tape_symbols(m: Tm) -> Set[Str]` | The symbols that can be on the tape: the alphabet, the blank `_`, and every symbol the machine writes. |
+
+`tm` is a keyword, so write `std.tm.steps(M, w)`, `from std.tm import
+steps`, or `import std.tm as tms` (see `std.grammar`).
+
+**Ready-made machines and their tape conventions.** The machines that
+compute leave their answer on the tape, where the built-in `run` reads it.
+The machines that decide end in `yes` or `no`.
+
+- `increment()`, over `{0, 1}`: the input is a binary number, most
+  significant bit first (`""` counts as 0). It halts in `done` with the
+  number plus one: `run(M, "1011")` is `"1100"`.
+- `unary_add()`, over `{0, 1}`: the input is `m` ones, a `0` and `n` ones,
+  so `"11011"` is 2 + 2. It halts in `done` with `m + n` ones; an input
+  without exactly one `0` halts in `no`.
+- `unary_copy()`, over `{1}`: the input is `n` ones. It halts in `done` with
+  `n` ones, a `0` and `n` ones: `"111"` becomes `"1110111"`.
+- `palindromes(B)`: any word over `B`. It halts in `yes` for a palindrome,
+  otherwise in `no`.
+- `anbncn("a", "b", "c")`: any word over the three symbols. It halts in
+  `yes` for `n` a's, then `n` b's, then `n` c's, otherwise in `no`.
+
+The deciders never get stuck: every state has a move for every symbol it
+can meet, so a word they reject ends in `no` and `final_state` says so.
+`unary_copy` and `anbncn` mark cells as they go (`x`, and `x`, `y`, `z`),
+so the symbols of `anbncn` must be three different letters or digits other
+than `x`, `y` and `z` (an `AlphabetError`, E0503). `palindromes` erases the
+first and the last symbol and checks they match, so it takes about n^2/2
+steps; `steps` shows the growth.
+
+**Questions about a run.** `steps`, `space` and `final_state` run the
+machine until it halts, as `run` does. Past 100 000 steps they give the
+same `LimitError` (E0604), because by the halting problem no program can
+wait for every machine. `space` counts the cells from the leftmost to the
+rightmost the head reached, because the head moves one cell at a time.
+`halts_within(m, w, n)` is the question that answers either way: `true`
+if the machine halts within `n` steps, `false` if it is still running. `n`
+may be up to 100 000 (E0612 past that, E0610 if negative). An input with a
+symbol outside the alphabet is E0501.
+
+```kstar
+let Inc = std.tm.increment()
+print run(Inc, "1011"), std.tm.steps(Inc, "1011"), std.tm.space(Inc, "1011"), std.tm.final_state(Inc, "1011")
+print run(std.tm.unary_add(), "11011"), run(std.tm.unary_copy(), "111")
+alphabet AB = {a, b}
+let Pal = std.tm.palindromes(AB)
+print Pal accepts "abba", std.tm.final_state(Pal, "ab"), std.tm.steps(Pal, "abba")
+let ABC = std.tm.anbncn("a", "b", "c")
+print ABC accepts "aabbcc", ABC accepts "aabbc", std.tm.tape_symbols(ABC)
+print std.tm.halts_within(Inc, "111", 5), std.tm.halts_within(Inc, "111", 8)
+```
+
+```text
+1100 8 5 done
+1111 1110111
+true no 15
+true false {"_", "a", "b", "c", "x", "y", "z"}
+false true
+```
+
 ## Types
 
 | Type | Values | Written as |

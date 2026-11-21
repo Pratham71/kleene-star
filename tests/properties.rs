@@ -826,3 +826,53 @@ fn the_grammar_of_a_pda_has_its_language() {
     }
     assert!(decided > CASES * 20, "the PDA search gave up too often: only {decided} answers");
 }
+
+/// The questions of `std.tm` about a run agree with each other: a machine
+/// that halts after k steps halts within k steps but not within k - 1, and
+/// its head visits at most k + 1 cells.
+#[test]
+fn turing_machine_measures_agree() {
+    let mut rng = Rng::new(seed());
+    for case in 0..CASES {
+        let m = random_tm(&mut rng);
+        for word in words(3) {
+            let run = m.run(&word, 2_000, false);
+            if run.halt == Halt::GaveUp {
+                assert!(m.run(&word, 1_000, false).halt == Halt::GaveUp, "case {case}: {word:?}");
+                continue;
+            }
+            let k = run.steps;
+            assert_ne!(m.run(&word, k, false).halt, Halt::GaveUp, "case {case}: {word:?} halts after {k} steps");
+            if k > 0 {
+                assert_eq!(m.run(&word, k - 1, false).halt, Halt::GaveUp, "case {case}: {word:?} halts before {k} steps");
+            }
+            assert!(run.cells >= 1 && run.cells <= k + 1, "case {case}: {word:?}: {} cells in {k} steps", run.cells);
+        }
+    }
+}
+
+/// The ready-made deciders of `std.tm` decide what they say, on every word
+/// up to length 6, and the machines that compute agree with arithmetic.
+#[test]
+fn ready_made_turing_machines_are_right() {
+    use kstar::automata::tms;
+    let pal = tms::palindromes(&ALPHABET);
+    let abc = tms::anbncn('a', 'b', 'c');
+    for word in words(6) {
+        let reversed: String = word.chars().rev().collect();
+        assert_eq!(pal.run(&word, tm::STEP_LIMIT, false).halt == Halt::Accepted, word == reversed, "{word:?}");
+        let n = word.len() / 3;
+        let with_c = word.replace('b', "c");
+        let expected = with_c == format!("{}{}{}", "a".repeat(n), "b".repeat(n), "c".repeat(n));
+        assert_eq!(abc.run(&with_c, tm::STEP_LIMIT, false).halt == Halt::Accepted, expected, "{with_c:?}");
+    }
+    let mut rng = Rng::new(seed());
+    for _ in 0..CASES {
+        let n = rng.next() % 1_000_000;
+        let out = tms::increment().run(&format!("{n:b}"), tm::STEP_LIMIT, false);
+        assert_eq!(out.last().tape.contents(), format!("{:b}", n + 1));
+        let (a, b) = (rng.below(8), rng.below(8));
+        let sum = tms::unary_add().run(&format!("{}0{}", "1".repeat(a), "1".repeat(b)), tm::STEP_LIMIT, false);
+        assert_eq!(sum.last().tape.contents(), "1".repeat(a + b));
+    }
+}

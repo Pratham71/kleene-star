@@ -153,6 +153,9 @@ pub struct Run {
     pub halt: Halt,
     /// How many steps were taken.
     pub steps: usize,
+    /// How many cells the head visited. The head moves one cell at a time,
+    /// so they are the cells from the leftmost to the rightmost it reached.
+    pub cells: usize,
 }
 
 impl Run {
@@ -179,11 +182,12 @@ impl Tm {
         if let Some(position) = input.chars().position(|c| !self.alphabet.contains(&c)) {
             let symbol = input.chars().nth(position).unwrap_or(BLANK);
             let halt = Halt::Foreign { position: position + 1, symbol };
-            return Run { configs: vec![config], moves: Vec::new(), halt, steps: 0 };
+            return Run { configs: vec![config], moves: Vec::new(), halt, steps: 0, cells: 1 };
         }
         let mut configs = vec![config.clone()];
         let mut moves = Vec::new();
         let mut steps = 0;
+        let (mut leftmost, mut rightmost) = (0, 0);
         let halt = loop {
             if self.accept.contains(&config.state) {
                 break Halt::Accepted;
@@ -206,6 +210,8 @@ impl Tm {
                 Dir::Stay => 0,
             };
             config.state = mv.to;
+            leftmost = leftmost.min(config.head);
+            rightmost = rightmost.max(config.head);
             steps += 1;
             if record {
                 configs.push(config.clone());
@@ -215,7 +221,7 @@ impl Tm {
         if !record {
             configs = vec![config];
         }
-        Run { configs, moves, halt, steps }
+        Run { configs, moves, halt, steps, cells: (rightmost - leftmost + 1) as usize }
     }
 }
 

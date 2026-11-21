@@ -1,0 +1,22 @@
+Error in std_tm_checks.kstar, line 2:
+    print std.tm.increment(1)
+          ^^^^^^^^^^^^^^^^^^^
+TypeError[E0301]: `std.tm.increment` takes 0 arguments, but 1 was given
+
+Error in std_tm_checks.kstar, line 3:
+    print std.tm.steps(std.pda.anbn("a", "b"), "ab")
+                       ^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0300]: argument 1 of `std.tm.steps` must be a Tm, but this is a Pda
+
+Error in std_tm_checks.kstar, line 4:
+    print std.tm.halts_within(std.tm.increment(), "1", "9")
+                                                       ^^^
+TypeError[E0300]: argument 3 of `std.tm.halts_within` must be an Int, but this is a Str
+
+Error in std_tm_checks.kstar, line 5:
+    print std.tm.final_state(std.tm.increment(), "1") + 1
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is a Str and the right side is an Int
+  hint: an Int is not turned into a Str by itself; `print` can show both: `print "n =", n`
+
+4 errors found

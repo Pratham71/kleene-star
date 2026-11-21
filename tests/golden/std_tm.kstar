@@ -1,0 +1,22 @@
+# Every function of std.tm, by its full name and imported.
+alphabet AB = {a, b}
+alphabet Bits = {0, 1}
+print std.tm.increment()
+print std.tm.unary_add()
+print std.tm.unary_copy()
+print std.tm.palindromes(Bits)
+print std.tm.anbncn("a", "b", "c")
+from std.tm import steps, space, final_state, halts_within, tape_symbols
+import std.tm as tms
+let Inc = tms.increment()
+print run(Inc, ""), run(Inc, "0"), run(Inc, "111"), steps(Inc, "111"), space(Inc, "111")
+print run(tms.unary_add(), "0"), run(tms.unary_add(), "1110"), final_state(tms.unary_add(), "11")
+print run(tms.unary_copy(), ""), run(tms.unary_copy(), "1")
+let Pal = tms.palindromes(AB)
+print final_state(Pal, ""), final_state(Pal, "a"), final_state(Pal, "ab"), final_state(Pal, "aba")
+print steps(Pal, "abba"), space(Pal, "abba")
+let Abc = tms.anbncn("p", "q", "r")
+print Abc accepts "", Abc accepts "pqr", Abc accepts "ppqqrr", Abc accepts "pqqr", Abc accepts "rqp"
+print tape_symbols(Abc), tape_symbols(Inc)
+print halts_within(Inc, "111", 0), halts_within(Inc, "111", 7), halts_within(Inc, "111", 8)
+print halts_within(Pal, "ab", 100000)
