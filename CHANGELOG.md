@@ -12,6 +12,19 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-21
+
+A fix for the VS Code extension. Installing or updating Kleene Star now
+keeps the extension at the same release as the language server, and the
+extension warns when they differ; completion, signature help and
+highlighting catch up with what 0.4 and 0.5 added.
+
+### Upgrading from 0.5.0
+
+Nothing changes for programs. Run the install script or the installer
+again, or `kstar update` after installing 0.5.1, and the matching VS Code
+extension is installed too.
+
 ### Fixed
 
 - The VS Code extension could be left at an old release while `kstar` and
@@ -413,7 +426,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/Pratham71/kleene-star/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Pratham71/kleene-star/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pratham71/kleene-star/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Pratham71/kleene-star/compare/v0.2.5-beta...v0.3.0
