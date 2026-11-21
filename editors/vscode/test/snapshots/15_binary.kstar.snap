@@ -1,0 +1,234 @@
+> # Chapter 9: the standard library's std.binary. Machines for binary numbers,
+    0 "# Chapter 9: the standard library's std.binary. Machines for binary numbers," comment.line.number-sign.kstar
+> # checked against arithmetic on every number up to a bound, and two facts
+    0 "# checked against arithmetic on every number up to a bound, and two facts" comment.line.number-sign.kstar
+> # from number theory checked once and for all with `equivalent`.
+    0 "# from number theory checked once and for all with `equivalent`." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # The machine for multiples of 3 has one state per remainder.
+    0 "# The machine for multiples of 3 has one state per remainder." comment.line.number-sign.kstar
+> let Div3 = std.binary.divisible_by(3)
+    0 "let" keyword.control.kstar
+    4 "Div3" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "std" entity.name.namespace.kstar
+   14 "." punctuation.accessor.kstar
+   15 "binary" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "divisible_by" entity.name.function.call.kstar
+   34 "(" punctuation.section.parens.begin.kstar
+   35 "3" constant.numeric.integer.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> print Div3
+    0 "print" keyword.control.kstar
+    6 "Div3" variable.other.kstar
+> trace Div3 on "1001"
+    0 "trace" keyword.control.kstar
+    6 "Div3" variable.other.kstar
+   11 "on" keyword.control.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "1001" string.quoted.double.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # Checked against arithmetic on the numbers 0 to 255.
+    0 "# Checked against arithmetic on the numbers 0 to 255." comment.line.number-sign.kstar
+> for n in 0..256 {
+    0 "for" keyword.control.kstar
+    4 "n" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "0" constant.numeric.integer.kstar
+   10 ".." keyword.operator.range.kstar
+   12 "256" constant.numeric.integer.kstar
+   16 "{" punctuation.section.braces.begin.kstar
+>     test (Div3 accepts std.binary.to_binary(n)) == (n % 3 == 0)
+    4 "test" keyword.control.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "Div3" variable.other.kstar
+   15 "accepts" keyword.operator.word.kstar
+   23 "std" entity.name.namespace.kstar
+   26 "." punctuation.accessor.kstar
+   27 "binary" entity.name.namespace.kstar
+   33 "." punctuation.accessor.kstar
+   34 "to_binary" entity.name.function.call.kstar
+   43 "(" punctuation.section.parens.begin.kstar
+   44 "n" variable.other.kstar
+   45 ")" punctuation.section.parens.end.kstar
+   46 ")" punctuation.section.parens.end.kstar
+   48 "==" keyword.operator.comparison.kstar
+   51 "(" punctuation.section.parens.begin.kstar
+   52 "n" variable.other.kstar
+   54 "%" keyword.operator.arithmetic.kstar
+   56 "3" constant.numeric.integer.kstar
+   58 "==" keyword.operator.comparison.kstar
+   61 "0" constant.numeric.integer.kstar
+   62 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # Divisible by 6 means divisible by 2 and by 3, since 2 and 3 have no common
+    0 "# Divisible by 6 means divisible by 2 and by 3, since 2 and 3 have no common" comment.line.number-sign.kstar
+> # factor. `equivalent` checks it for every bit string at once, not only for
+    0 "# factor. `equivalent` checks it for every bit string at once, not only for" comment.line.number-sign.kstar
+> # the ones tried above.
+    0 "# the ones tried above." comment.line.number-sign.kstar
+> let Div6 = std.binary.divisible_by(6)
+    0 "let" keyword.control.kstar
+    4 "Div6" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "std" entity.name.namespace.kstar
+   14 "." punctuation.accessor.kstar
+   15 "binary" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "divisible_by" entity.name.function.call.kstar
+   34 "(" punctuation.section.parens.begin.kstar
+   35 "6" constant.numeric.integer.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> test equivalent(Div6, intersect(std.binary.divisible_by(2), Div3))
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "Div6" variable.other.kstar
+   20 "," punctuation.separator.comma.kstar
+   22 "intersect" support.function.builtin.kstar
+   31 "(" punctuation.section.parens.begin.kstar
+   32 "std" entity.name.namespace.kstar
+   35 "." punctuation.accessor.kstar
+   36 "binary" entity.name.namespace.kstar
+   42 "." punctuation.accessor.kstar
+   43 "divisible_by" entity.name.function.call.kstar
+   55 "(" punctuation.section.parens.begin.kstar
+   56 "2" constant.numeric.integer.kstar
+   57 ")" punctuation.section.parens.end.kstar
+   58 "," punctuation.separator.comma.kstar
+   60 "Div3" variable.other.kstar
+   64 ")" punctuation.section.parens.end.kstar
+   65 ")" punctuation.section.parens.end.kstar
+> 
+> # Divisible by 4 means ending in 00 (or being 0, "0" or ""), so the four
+    0 "# Divisible by 4 means ending in 00 (or being 0, \"0\" or \"\"), so the four" comment.line.number-sign.kstar
+> # remainder states shrink to three once minimized.
+    0 "# remainder states shrink to three once minimized." comment.line.number-sign.kstar
+> print states(std.binary.divisible_by(4)), states(minimize(std.binary.divisible_by(4)))
+    0 "print" keyword.control.kstar
+    6 "states" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "std" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "binary" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "divisible_by" entity.name.function.call.kstar
+   36 "(" punctuation.section.parens.begin.kstar
+   37 "4" constant.numeric.integer.kstar
+   38 ")" punctuation.section.parens.end.kstar
+   39 ")" punctuation.section.parens.end.kstar
+   40 "," punctuation.separator.comma.kstar
+   42 "states" support.function.builtin.kstar
+   48 "(" punctuation.section.parens.begin.kstar
+   49 "minimize" support.function.builtin.kstar
+   57 "(" punctuation.section.parens.begin.kstar
+   58 "std" entity.name.namespace.kstar
+   61 "." punctuation.accessor.kstar
+   62 "binary" entity.name.namespace.kstar
+   68 "." punctuation.accessor.kstar
+   69 "divisible_by" entity.name.function.call.kstar
+   81 "(" punctuation.section.parens.begin.kstar
+   82 "4" constant.numeric.integer.kstar
+   83 ")" punctuation.section.parens.end.kstar
+   84 ")" punctuation.section.parens.end.kstar
+   85 ")" punctuation.section.parens.end.kstar
+> 
+> # Leading zeros: the machines read "0110" as 6. Numerals written the usual
+    0 "# Leading zeros: the machines read \"0110\" as 6. Numerals written the usual" comment.line.number-sign.kstar
+> # way have no leading zeros.
+    0 "# way have no leading zeros." comment.line.number-sign.kstar
+> let Numerals = intersect(Div3, std.binary.no_leading_zeros())
+    0 "let" keyword.control.kstar
+    4 "Numerals" variable.other.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "intersect" support.function.builtin.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "Div3" variable.other.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "std" entity.name.namespace.kstar
+   34 "." punctuation.accessor.kstar
+   35 "binary" entity.name.namespace.kstar
+   41 "." punctuation.accessor.kstar
+   42 "no_leading_zeros" entity.name.function.call.kstar
+   58 "(" punctuation.section.parens.begin.kstar
+   59 ")" punctuation.section.parens.end.kstar
+   60 ")" punctuation.section.parens.end.kstar
+> print Div3 accepts "0110", Numerals accepts "0110", Numerals accepts "110"
+    0 "print" keyword.control.kstar
+    6 "Div3" variable.other.kstar
+   11 "accepts" keyword.operator.word.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   20 "0110" string.quoted.double.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   25 "," punctuation.separator.comma.kstar
+   27 "Numerals" variable.other.kstar
+   36 "accepts" keyword.operator.word.kstar
+   44 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   45 "0110" string.quoted.double.kstar
+   49 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   50 "," punctuation.separator.comma.kstar
+   52 "Numerals" variable.other.kstar
+   61 "accepts" keyword.operator.word.kstar
+   69 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   70 "110" string.quoted.double.kstar
+   73 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # Strings with no two 1s together: their number grows like the Fibonacci
+    0 "# Strings with no two 1s together: their number grows like the Fibonacci" comment.line.number-sign.kstar
+> # numbers (2, 3, 5, 8, 13, ...).
+    0 "# numbers (2, 3, 5, 8, 13, ...)." comment.line.number-sign.kstar
+> let Sparse = std.binary.run_at_most("1", 1)
+    0 "let" keyword.control.kstar
+    4 "Sparse" variable.other.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "std" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "binary" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "run_at_most" entity.name.function.call.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "1" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "1" constant.numeric.integer.kstar
+   42 ")" punctuation.section.parens.end.kstar
+> for n in 1..8 {
+    0 "for" keyword.control.kstar
+    4 "n" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "1" constant.numeric.integer.kstar
+   10 ".." keyword.operator.range.kstar
+   12 "8" constant.numeric.integer.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+>     print n, std.automata.count_words(Sparse, n)
+    4 "print" keyword.control.kstar
+   10 "n" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "std" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "automata" entity.name.namespace.kstar
+   25 "." punctuation.accessor.kstar
+   26 "count_words" entity.name.function.call.kstar
+   37 "(" punctuation.section.parens.begin.kstar
+   38 "Sparse" variable.other.kstar
+   44 "," punctuation.separator.comma.kstar
+   46 "n" variable.other.kstar
+   47 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 

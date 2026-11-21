@@ -1,0 +1,235 @@
+> # Chapter 2: nondeterminism, eps moves, and turning an NFA into a DFA.
+    0 "# Chapter 2: nondeterminism, eps moves, and turning an NFA into a DFA." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # "The third symbol from the end is 1": easy to guess, hard to track.
+    0 "# \"The third symbol from the end is 1\": easy to guess, hard to track." comment.line.number-sign.kstar
+> nfa ThirdFromEnd over B {
+    0 "nfa" meta.machine.kstar storage.type.machine.kstar
+    4 "ThirdFromEnd" meta.machine.kstar entity.name.type.machine.kstar
+   17 "over" meta.machine.kstar keyword.other.over.kstar
+   22 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   24 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  a
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "a" meta.machine.kstar variable.other.state.kstar
+>     accept d
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "d" meta.machine.kstar variable.other.state.kstar
+>     a --0,1--> a
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   10 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "a" meta.machine.kstar variable.other.state.kstar
+>     a --1  --> b
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "b" meta.machine.kstar variable.other.state.kstar
+>     b --0,1--> c
+    4 "b" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   10 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "c" meta.machine.kstar variable.other.state.kstar
+>     c --0,1--> d
+    4 "c" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   10 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "d" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> # An eps-NFA that guesses up front: is the length a multiple of 2, or of 3?
+    0 "# An eps-NFA that guesses up front: is the length a multiple of 2, or of 3?" comment.line.number-sign.kstar
+> alphabet Z = {0}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "Z" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "}" punctuation.section.braces.end.kstar
+> nfa TwosOrThrees over Z {
+    0 "nfa" meta.machine.kstar storage.type.machine.kstar
+    4 "TwosOrThrees" meta.machine.kstar entity.name.type.machine.kstar
+   17 "over" meta.machine.kstar keyword.other.over.kstar
+   22 "Z" meta.machine.kstar entity.name.type.alphabet.kstar
+   24 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  s
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "s" meta.machine.kstar variable.other.state.kstar
+>     accept two0, three0
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "two0" meta.machine.kstar variable.other.state.kstar
+   15 "," meta.machine.kstar punctuation.separator.comma.kstar
+   17 "three0" meta.machine.kstar variable.other.state.kstar
+>     s      --eps--> two0
+    4 "s" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   16 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   20 "two0" meta.machine.kstar variable.other.state.kstar
+>     s      --eps--> three0
+    4 "s" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   16 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   20 "three0" meta.machine.kstar variable.other.state.kstar
+>     two0   --0  --> two1
+    4 "two0" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   20 "two1" meta.machine.kstar variable.other.state.kstar
+>     two1   --0  --> two0
+    4 "two1" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   20 "two0" meta.machine.kstar variable.other.state.kstar
+>     three0 --0  --> three1
+    4 "three0" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   20 "three1" meta.machine.kstar variable.other.state.kstar
+>     three1 --0  --> three2
+    4 "three1" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   20 "three2" meta.machine.kstar variable.other.state.kstar
+>     three2 --0  --> three0
+    4 "three2" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   20 "three0" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> print ThirdFromEnd
+    0 "print" keyword.control.kstar
+    6 "ThirdFromEnd" variable.other.kstar
+> test ThirdFromEnd accepts "0100"
+    0 "test" keyword.control.kstar
+    5 "ThirdFromEnd" variable.other.kstar
+   18 "accepts" keyword.operator.word.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   27 "0100" string.quoted.double.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test not (ThirdFromEnd accepts "0010")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "ThirdFromEnd" variable.other.kstar
+   23 "accepts" keyword.operator.word.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   32 "0010" string.quoted.double.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> 
+> # The subset construction: each DFA state is a set of NFA states.
+    0 "# The subset construction: each DFA state is a set of NFA states." comment.line.number-sign.kstar
+> let d = to_dfa(ThirdFromEnd)
+    0 "let" keyword.control.kstar
+    4 "d" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "to_dfa" support.function.builtin.kstar
+   14 "(" punctuation.section.parens.begin.kstar
+   15 "ThirdFromEnd" variable.other.kstar
+   27 ")" punctuation.section.parens.end.kstar
+> print "NFA states:", states(ThirdFromEnd), " DFA states:", states(d)
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "NFA states:" string.quoted.double.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   19 "," punctuation.separator.comma.kstar
+   21 "states" support.function.builtin.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "ThirdFromEnd" variable.other.kstar
+   40 ")" punctuation.section.parens.end.kstar
+   41 "," punctuation.separator.comma.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   44 " DFA states:" string.quoted.double.kstar
+   56 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   57 "," punctuation.separator.comma.kstar
+   59 "states" support.function.builtin.kstar
+   65 "(" punctuation.section.parens.begin.kstar
+   66 "d" variable.other.kstar
+   67 ")" punctuation.section.parens.end.kstar
+> test equivalent(d, ThirdFromEnd)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "d" variable.other.kstar
+   17 "," punctuation.separator.comma.kstar
+   19 "ThirdFromEnd" variable.other.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> 
+> # Removing eps moves keeps the language.
+    0 "# Removing eps moves keeps the language." comment.line.number-sign.kstar
+> let plain = remove_eps(TwosOrThrees)
+    0 "let" keyword.control.kstar
+    4 "plain" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "remove_eps" support.function.builtin.kstar
+   22 "(" punctuation.section.parens.begin.kstar
+   23 "TwosOrThrees" variable.other.kstar
+   35 ")" punctuation.section.parens.end.kstar
+> print plain
+    0 "print" keyword.control.kstar
+    6 "plain" variable.other.kstar
+> test equivalent(plain, TwosOrThrees)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "plain" variable.other.kstar
+   21 "," punctuation.separator.comma.kstar
+   23 "TwosOrThrees" variable.other.kstar
+   35 ")" punctuation.section.parens.end.kstar
+> test TwosOrThrees accepts "000000"
+    0 "test" keyword.control.kstar
+    5 "TwosOrThrees" variable.other.kstar
+   18 "accepts" keyword.operator.word.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   27 "000000" string.quoted.double.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test not (TwosOrThrees accepts "0")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "TwosOrThrees" variable.other.kstar
+   23 "accepts" keyword.operator.word.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   32 "0" string.quoted.double.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   34 ")" punctuation.section.parens.end.kstar
+> 
+> # Writes ThirdFromEnd.dot and TwosOrThrees.dot.
+    0 "# Writes ThirdFromEnd.dot and TwosOrThrees.dot." comment.line.number-sign.kstar
+> draw ThirdFromEnd
+    0 "draw" keyword.control.kstar
+    5 "ThirdFromEnd" variable.other.kstar
+> draw TwosOrThrees
+    0 "draw" keyword.control.kstar
+    5 "TwosOrThrees" variable.other.kstar
+> 

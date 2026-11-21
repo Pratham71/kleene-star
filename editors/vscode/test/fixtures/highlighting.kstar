@@ -1,0 +1,68 @@
+# What the examples do not show, for the highlighting snapshots: escapes in
+# strings and regexes, every keyword, qualified names, sets, blanks.
+import "lib/utils.kstar" as utils
+from std.math import gcd
+import std.tm as tms
+
+alphabet B = {0, 1}
+alphabet AB = {a, b}
+
+let r = /(0|1)*\*1\/0?./
+let empty = /[]/
+let quoted = "say \"hi\" \\ bye"
+let s = {"0", "10", ""}
+let n = std.math.gcd(12, 18) + 3 * 4 - 5 % 2
+let ok = not (n == 7) and true or false
+
+dfa D over utils.B {
+    start  q0
+    accept q1
+    q0 --0--> q0
+    q0 --1--> q1
+    q1 --0,1--> q1
+}
+
+nfa N over B {
+    start  s
+    accept f
+    s --eps--> f
+    for i in 0..3 {
+        q[i] --0--> q[i + 1]
+    }
+}
+
+pda P over AB {
+    start  p
+    accept f
+    p --eps, eps/Z--> q
+    q --a, eps/A--> q
+    q --b, A/eps--> q
+    q --eps, Z/eps--> f
+}
+
+tm M over B {
+    start  go
+    accept yes
+    reject no
+    go --0/1,R--> go
+    go --_/_,L--> yes
+    go --1/1,S--> no
+}
+
+grammar G over AB {
+    S -> a S b | eps
+}
+
+fn twice(w: Str, k: Int) -> Set[Str] {
+    if k <= 0 {
+        return {w}
+    } else {
+        return {w, w}
+    }
+}
+
+print D accepts "01", equivalent(D, minimize(to_dfa(N)))
+test len(twice("a", 1)) >= 1
+draw D
+trace D on "0110"
+print tms.steps(tms.increment(), "11"), std.grammar.first(G, "S")

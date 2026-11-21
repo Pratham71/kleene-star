@@ -1,0 +1,354 @@
+> # Chapter 9: the standard library's std.testing. Checks that say why they
+    0 "# Chapter 9: the standard library's std.testing. Checks that say why they" comment.line.number-sign.kstar
+> # failed. Every test here passes; change a word or a machine to see what a
+    0 "# failed. Every test here passes; change a word or a machine to see what a" comment.line.number-sign.kstar
+> # failing one prints (or look at the reference, under std.testing).
+    0 "# failing one prints (or look at the reference, under std.testing)." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # A hand-written DFA for "contains 11" ...
+    0 "# A hand-written DFA for \"contains 11\" ..." comment.line.number-sign.kstar
+> dfa Has11 over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "Has11" meta.machine.kstar entity.name.type.machine.kstar
+   10 "over" meta.machine.kstar keyword.other.over.kstar
+   15 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   17 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  none
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "none" meta.machine.kstar variable.other.state.kstar
+>     accept both
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "both" meta.machine.kstar variable.other.state.kstar
+>     none --0  --> none
+    4 "none" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "none" meta.machine.kstar variable.other.state.kstar
+>     none --1  --> one
+    4 "none" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "one" meta.machine.kstar variable.other.state.kstar
+>     one  --0  --> none
+    4 "one" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "none" meta.machine.kstar variable.other.state.kstar
+>     one  --1  --> both
+    4 "one" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "both" meta.machine.kstar variable.other.state.kstar
+>     both --0,1--> both
+    4 "both" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "both" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> # ... checked on sample words, on the whole language, and against the
+    0 "# ... checked on sample words, on the whole language, and against the" comment.line.number-sign.kstar
+> # library's own machine.
+    0 "# library's own machine." comment.line.number-sign.kstar
+> test std.testing.accepts_all(Has11, {"11", "0110", "111"})
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "accepts_all" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Has11" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "{" punctuation.section.braces.begin.kstar
+   37 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   38 "11" string.quoted.double.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   41 "," punctuation.separator.comma.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   44 "0110" string.quoted.double.kstar
+   48 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   49 "," punctuation.separator.comma.kstar
+   51 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   52 "111" string.quoted.double.kstar
+   55 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   56 "}" punctuation.section.braces.end.kstar
+   57 ")" punctuation.section.parens.end.kstar
+> test std.testing.rejects_all(Has11, {"", "0", "10101"})
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "rejects_all" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Has11" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "{" punctuation.section.braces.begin.kstar
+   37 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   42 "0" string.quoted.double.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   44 "," punctuation.separator.comma.kstar
+   46 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   47 "10101" string.quoted.double.kstar
+   52 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   53 "}" punctuation.section.braces.end.kstar
+   54 ")" punctuation.section.parens.end.kstar
+> test std.testing.same_language(Has11, /(0|1)*11(0|1)*/)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "same_language" entity.name.function.call.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "Has11" variable.other.kstar
+   36 "," punctuation.separator.comma.kstar
+   38 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   39 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   40 "0" string.regexp.kstar
+   41 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   42 "1" string.regexp.kstar
+   43 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   44 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   45 "11" string.regexp.kstar
+   47 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   48 "0" string.regexp.kstar
+   49 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   50 "1" string.regexp.kstar
+   51 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   52 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   53 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   54 ")" punctuation.section.parens.end.kstar
+> test std.testing.same_language(Has11, std.automata.contains_substring(B, "11"))
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "same_language" entity.name.function.call.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "Has11" variable.other.kstar
+   36 "," punctuation.separator.comma.kstar
+   38 "std" entity.name.namespace.kstar
+   41 "." punctuation.accessor.kstar
+   42 "automata" entity.name.namespace.kstar
+   50 "." punctuation.accessor.kstar
+   51 "contains_substring" entity.name.function.call.kstar
+   69 "(" punctuation.section.parens.begin.kstar
+   70 "B" variable.other.kstar
+   71 "," punctuation.separator.comma.kstar
+   73 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   74 "11" string.quoted.double.kstar
+   76 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   77 ")" punctuation.section.parens.end.kstar
+   78 ")" punctuation.section.parens.end.kstar
+> 
+> # Equal values and equal sets.
+    0 "# Equal values and equal sets." comment.line.number-sign.kstar
+> test std.testing.equal("1011", std.binary.to_binary(11))
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "equal" entity.name.function.call.kstar
+   22 "(" punctuation.section.parens.begin.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   24 "1011" string.quoted.double.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "std" entity.name.namespace.kstar
+   34 "." punctuation.accessor.kstar
+   35 "binary" entity.name.namespace.kstar
+   41 "." punctuation.accessor.kstar
+   42 "to_binary" entity.name.function.call.kstar
+   51 "(" punctuation.section.parens.begin.kstar
+   52 "11" constant.numeric.integer.kstar
+   54 ")" punctuation.section.parens.end.kstar
+   55 ")" punctuation.section.parens.end.kstar
+> test std.testing.equal_sets({"11", "011", "110", "111"}, std.automata.words_up_to(intersect(Has11, std.automata.length_between(B, 2, 3)), 3))
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "equal_sets" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "{" punctuation.section.braces.begin.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "11" string.quoted.double.kstar
+   32 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   36 "011" string.quoted.double.kstar
+   39 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   40 "," punctuation.separator.comma.kstar
+   42 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   43 "110" string.quoted.double.kstar
+   46 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   47 "," punctuation.separator.comma.kstar
+   49 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   50 "111" string.quoted.double.kstar
+   53 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   54 "}" punctuation.section.braces.end.kstar
+   55 "," punctuation.separator.comma.kstar
+   57 "std" entity.name.namespace.kstar
+   60 "." punctuation.accessor.kstar
+   61 "automata" entity.name.namespace.kstar
+   69 "." punctuation.accessor.kstar
+   70 "words_up_to" entity.name.function.call.kstar
+   81 "(" punctuation.section.parens.begin.kstar
+   82 "intersect" support.function.builtin.kstar
+   91 "(" punctuation.section.parens.begin.kstar
+   92 "Has11" variable.other.kstar
+   97 "," punctuation.separator.comma.kstar
+   99 "std" entity.name.namespace.kstar
+  102 "." punctuation.accessor.kstar
+  103 "automata" entity.name.namespace.kstar
+  111 "." punctuation.accessor.kstar
+  112 "length_between" entity.name.function.call.kstar
+  126 "(" punctuation.section.parens.begin.kstar
+  127 "B" variable.other.kstar
+  128 "," punctuation.separator.comma.kstar
+  130 "2" constant.numeric.integer.kstar
+  131 "," punctuation.separator.comma.kstar
+  133 "3" constant.numeric.integer.kstar
+  134 ")" punctuation.section.parens.end.kstar
+  135 ")" punctuation.section.parens.end.kstar
+  136 "," punctuation.separator.comma.kstar
+  138 "3" constant.numeric.integer.kstar
+  139 ")" punctuation.section.parens.end.kstar
+  140 ")" punctuation.section.parens.end.kstar
+> 
+> # A grammar and its PDA cannot be compared with `equivalent` (that is
+    0 "# A grammar and its PDA cannot be compared with `equivalent` (that is" comment.line.number-sign.kstar
+> # undecidable), but they can be compared on every word up to a length.
+    0 "# undecidable), but they can be compared on every word up to a length." comment.line.number-sign.kstar
+> grammar Palindromes over B {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "Palindromes" meta.grammar.kstar entity.name.type.grammar.kstar
+   20 "over" meta.grammar.kstar keyword.other.over.kstar
+   25 "B" meta.grammar.kstar entity.name.type.alphabet.kstar
+   27 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> 0 S 0 | 1 S 1 | 0 | 1 | eps
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "0" meta.grammar.kstar constant.character.terminal.kstar
+   11 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   13 "0" meta.grammar.kstar constant.character.terminal.kstar
+   15 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   17 "1" meta.grammar.kstar constant.character.terminal.kstar
+   19 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   21 "1" meta.grammar.kstar constant.character.terminal.kstar
+   23 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   25 "0" meta.grammar.kstar constant.character.terminal.kstar
+   27 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   29 "1" meta.grammar.kstar constant.character.terminal.kstar
+   31 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   33 "eps" meta.grammar.kstar constant.language.eps.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> test std.testing.agree_up_to(Palindromes, to_pda(Palindromes), 6)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Palindromes" variable.other.kstar
+   40 "," punctuation.separator.comma.kstar
+   42 "to_pda" support.function.builtin.kstar
+   48 "(" punctuation.section.parens.begin.kstar
+   49 "Palindromes" variable.other.kstar
+   60 ")" punctuation.section.parens.end.kstar
+   61 "," punctuation.separator.comma.kstar
+   63 "6" constant.numeric.integer.kstar
+   64 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_on(Palindromes, {"", "0", "1", "00", "11", "010"}, {"", "0", "1", "00", "01", "010", "011"})
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_on" entity.name.function.call.kstar
+   25 "(" punctuation.section.parens.begin.kstar
+   26 "Palindromes" variable.other.kstar
+   37 "," punctuation.separator.comma.kstar
+   39 "{" punctuation.section.braces.begin.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   42 "," punctuation.separator.comma.kstar
+   44 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   45 "0" string.quoted.double.kstar
+   46 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   47 "," punctuation.separator.comma.kstar
+   49 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   50 "1" string.quoted.double.kstar
+   51 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   52 "," punctuation.separator.comma.kstar
+   54 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   55 "00" string.quoted.double.kstar
+   57 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   58 "," punctuation.separator.comma.kstar
+   60 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   61 "11" string.quoted.double.kstar
+   63 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   64 "," punctuation.separator.comma.kstar
+   66 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   67 "010" string.quoted.double.kstar
+   70 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   71 "}" punctuation.section.braces.end.kstar
+   72 "," punctuation.separator.comma.kstar
+   74 "{" punctuation.section.braces.begin.kstar
+   75 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   76 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   77 "," punctuation.separator.comma.kstar
+   79 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   80 "0" string.quoted.double.kstar
+   81 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   82 "," punctuation.separator.comma.kstar
+   84 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   85 "1" string.quoted.double.kstar
+   86 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   87 "," punctuation.separator.comma.kstar
+   89 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   90 "00" string.quoted.double.kstar
+   92 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   93 "," punctuation.separator.comma.kstar
+   95 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   96 "01" string.quoted.double.kstar
+   98 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   99 "," punctuation.separator.comma.kstar
+  101 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+  102 "010" string.quoted.double.kstar
+  105 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+  106 "," punctuation.separator.comma.kstar
+  108 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+  109 "011" string.quoted.double.kstar
+  112 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+  113 "}" punctuation.section.braces.end.kstar
+  114 ")" punctuation.section.parens.end.kstar
+> 

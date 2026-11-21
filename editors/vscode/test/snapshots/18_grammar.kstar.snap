@@ -1,0 +1,398 @@
+> # Chapter 12: the standard library's std.grammar. The steps of the Chomsky
+    0 "# Chapter 12: the standard library's std.grammar. The steps of the Chomsky" comment.line.number-sign.kstar
+> # normal form construction one at a time, the FIRST and FOLLOW sets a
+    0 "# normal form construction one at a time, the FIRST and FOLLOW sets a" comment.line.number-sign.kstar
+> # predictive parser is built from, and ready-made grammars checked against
+    0 "# predictive parser is built from, and ready-made grammars checked against" comment.line.number-sign.kstar
+> # machines and against each other.
+    0 "# machines and against each other." comment.line.number-sign.kstar
+> 
+> alphabet AB = {a, b}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "AB" entity.name.type.alphabet.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+   15 "a" constant.character.symbol.kstar
+   16 "," punctuation.separator.kstar
+   18 "b" constant.character.symbol.kstar
+   19 "}" punctuation.section.braces.end.kstar
+> alphabet P = {l, r}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "P" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "l" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "r" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # A grammar with an eps rule, a unit rule and a variable that is useless.
+    0 "# A grammar with an eps rule, a unit rule and a variable that is useless." comment.line.number-sign.kstar
+> grammar G over AB {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "G" meta.grammar.kstar entity.name.type.grammar.kstar
+   10 "over" meta.grammar.kstar keyword.other.over.kstar
+   15 "AB" meta.grammar.kstar entity.name.type.alphabet.kstar
+   18 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> A B | a C | a
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "A" meta.grammar.kstar variable.other.nonterminal.kstar
+   11 "B" meta.grammar.kstar variable.other.nonterminal.kstar
+   13 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   15 "a" meta.grammar.kstar constant.character.terminal.kstar
+   17 "C" meta.grammar.kstar variable.other.nonterminal.kstar
+   19 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   21 "a" meta.grammar.kstar constant.character.terminal.kstar
+>     A -> B | eps
+    4 "A" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "B" meta.grammar.kstar variable.other.nonterminal.kstar
+   11 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   13 "eps" meta.grammar.kstar constant.language.eps.kstar
+>     B -> b | eps
+    4 "B" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "b" meta.grammar.kstar constant.character.terminal.kstar
+   11 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   13 "eps" meta.grammar.kstar constant.language.eps.kstar
+>     C -> a C
+    4 "C" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "a" meta.grammar.kstar constant.character.terminal.kstar
+   11 "C" meta.grammar.kstar variable.other.nonterminal.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> 
+> # C never finishes a word, so it is useless; A and B can vanish.
+    0 "# C never finishes a word, so it is useless; A and B can vanish." comment.line.number-sign.kstar
+> print std.grammar.generating(G), std.grammar.nullable(G)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "grammar" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "generating" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "G" variable.other.kstar
+   30 ")" punctuation.section.parens.end.kstar
+   31 "," punctuation.separator.comma.kstar
+   33 "std" entity.name.namespace.kstar
+   36 "." punctuation.accessor.kstar
+   37 "grammar" entity.name.namespace.kstar
+   44 "." punctuation.accessor.kstar
+   45 "nullable" entity.name.function.call.kstar
+   53 "(" punctuation.section.parens.begin.kstar
+   54 "G" variable.other.kstar
+   55 ")" punctuation.section.parens.end.kstar
+> 
+> # The CNF construction, one step at a time. Each step keeps the language,
+    0 "# The CNF construction, one step at a time. Each step keeps the language," comment.line.number-sign.kstar
+> # which `std.testing.agree_up_to` checks on every word up to length 6.
+    0 "# which `std.testing.agree_up_to` checks on every word up to length 6." comment.line.number-sign.kstar
+> let Clean = std.grammar.remove_useless(G)
+    0 "let" keyword.control.kstar
+    4 "Clean" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "grammar" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "remove_useless" entity.name.function.call.kstar
+   38 "(" punctuation.section.parens.begin.kstar
+   39 "G" variable.other.kstar
+   40 ")" punctuation.section.parens.end.kstar
+> let NoEps = std.grammar.remove_eps(Clean)
+    0 "let" keyword.control.kstar
+    4 "NoEps" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "grammar" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "remove_eps" support.function.builtin.kstar
+   34 "(" punctuation.section.parens.begin.kstar
+   35 "Clean" variable.other.kstar
+   40 ")" punctuation.section.parens.end.kstar
+> let NoUnits = std.grammar.remove_units(NoEps)
+    0 "let" keyword.control.kstar
+    4 "NoUnits" variable.other.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "std" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "grammar" entity.name.namespace.kstar
+   25 "." punctuation.accessor.kstar
+   26 "remove_units" entity.name.function.call.kstar
+   38 "(" punctuation.section.parens.begin.kstar
+   39 "NoEps" variable.other.kstar
+   44 ")" punctuation.section.parens.end.kstar
+> print NoUnits
+    0 "print" keyword.control.kstar
+    6 "NoUnits" variable.other.kstar
+> test std.testing.agree_up_to(G, NoUnits, 6)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "G" variable.other.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "NoUnits" variable.other.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "6" constant.numeric.integer.kstar
+   42 ")" punctuation.section.parens.end.kstar
+> test std.grammar.is_cnf(to_cnf(NoUnits))
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "grammar" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "is_cnf" entity.name.function.call.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "to_cnf" support.function.builtin.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "NoUnits" variable.other.kstar
+   38 ")" punctuation.section.parens.end.kstar
+   39 ")" punctuation.section.parens.end.kstar
+> 
+> # Brackets that pair up, with l for a left bracket and r for a right one.
+    0 "# Brackets that pair up, with l for a left bracket and r for a right one." comment.line.number-sign.kstar
+> # Written as `S -> l S r S | eps`, the grammar is LL(1): seeing an l the
+    0 "# Written as `S -> l S r S | eps`, the grammar is LL(1): seeing an l the" comment.line.number-sign.kstar
+> # parser expands S, seeing an r or the end it picks eps, which is what
+    0 "# parser expands S, seeing an r or the end it picks eps, which is what" comment.line.number-sign.kstar
+> # FIRST and FOLLOW say.
+    0 "# FIRST and FOLLOW say." comment.line.number-sign.kstar
+> let Brackets = std.grammar.balanced("l", "r")
+    0 "let" keyword.control.kstar
+    4 "Brackets" variable.other.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "std" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "grammar" entity.name.namespace.kstar
+   26 "." punctuation.accessor.kstar
+   27 "balanced" entity.name.function.call.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "l" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   42 "r" string.quoted.double.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   44 ")" punctuation.section.parens.end.kstar
+> print Brackets
+    0 "print" keyword.control.kstar
+    6 "Brackets" variable.other.kstar
+> print std.grammar.first(Brackets, "S"), std.grammar.follow(Brackets, "S")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "grammar" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "first" entity.name.function.call.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "Brackets" variable.other.kstar
+   32 "," punctuation.separator.comma.kstar
+   34 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   35 "S" string.quoted.double.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   37 ")" punctuation.section.parens.end.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "std" entity.name.namespace.kstar
+   43 "." punctuation.accessor.kstar
+   44 "grammar" entity.name.namespace.kstar
+   51 "." punctuation.accessor.kstar
+   52 "follow" entity.name.function.call.kstar
+   58 "(" punctuation.section.parens.begin.kstar
+   59 "Brackets" variable.other.kstar
+   67 "," punctuation.separator.comma.kstar
+   69 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   70 "S" string.quoted.double.kstar
+   71 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   72 ")" punctuation.section.parens.end.kstar
+> test std.grammar.is_ll1(Brackets)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "grammar" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "is_ll1" entity.name.function.call.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "Brackets" variable.other.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> 
+> # The other way of writing it, `S -> S S | l S r | eps`, has the same
+    0 "# The other way of writing it, `S -> S S | l S r | eps`, has the same" comment.line.number-sign.kstar
+> # language but is ambiguous, so it is not LL(1).
+    0 "# language but is ambiguous, so it is not LL(1)." comment.line.number-sign.kstar
+> grammar Ambiguous over P {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "Ambiguous" meta.grammar.kstar entity.name.type.grammar.kstar
+   18 "over" meta.grammar.kstar keyword.other.over.kstar
+   23 "P" meta.grammar.kstar entity.name.type.alphabet.kstar
+   25 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> S S | l S r | eps
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   11 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   13 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   15 "l" meta.grammar.kstar constant.character.terminal.kstar
+   17 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   19 "r" meta.grammar.kstar constant.character.terminal.kstar
+   21 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   23 "eps" meta.grammar.kstar constant.language.eps.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> test not std.grammar.is_ll1(Ambiguous)
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "std" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "grammar" entity.name.namespace.kstar
+   20 "." punctuation.accessor.kstar
+   21 "is_ll1" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "Ambiguous" variable.other.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> test std.testing.agree_up_to(Brackets, Ambiguous, 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Brackets" variable.other.kstar
+   37 "," punctuation.separator.comma.kstar
+   39 "Ambiguous" variable.other.kstar
+   48 "," punctuation.separator.comma.kstar
+   50 "8" constant.numeric.integer.kstar
+   51 ")" punctuation.section.parens.end.kstar
+> 
+> # a^n b^n has as many a's as b's, but not the other way round: "ba" is in
+    0 "# a^n b^n has as many a's as b's, but not the other way round: \"ba\" is in" comment.line.number-sign.kstar
+> # one language only.
+    0 "# one language only." comment.line.number-sign.kstar
+> let AnBn = std.grammar.anbn("a", "b")
+    0 "let" keyword.control.kstar
+    4 "AnBn" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "std" entity.name.namespace.kstar
+   14 "." punctuation.accessor.kstar
+   15 "grammar" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "anbn" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   29 "a" string.quoted.double.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   31 "," punctuation.separator.comma.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   34 "b" string.quoted.double.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> let Equal = std.grammar.equal_count("a", "b")
+    0 "let" keyword.control.kstar
+    4 "Equal" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "grammar" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "equal_count" entity.name.function.call.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "a" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   42 "b" string.quoted.double.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   44 ")" punctuation.section.parens.end.kstar
+> print std.grammar.words_up_to(AnBn, 6)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "grammar" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "words_up_to" entity.name.function.call.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "AnBn" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "6" constant.numeric.integer.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> test std.testing.accepts_all(Equal, std.grammar.words_up_to(AnBn, 8))
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "accepts_all" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Equal" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "std" entity.name.namespace.kstar
+   39 "." punctuation.accessor.kstar
+   40 "grammar" entity.name.namespace.kstar
+   47 "." punctuation.accessor.kstar
+   48 "words_up_to" entity.name.function.call.kstar
+   59 "(" punctuation.section.parens.begin.kstar
+   60 "AnBn" variable.other.kstar
+   64 "," punctuation.separator.comma.kstar
+   66 "8" constant.numeric.integer.kstar
+   67 ")" punctuation.section.parens.end.kstar
+   68 ")" punctuation.section.parens.end.kstar
+> print Equal accepts "ba", AnBn accepts "ba"
+    0 "print" keyword.control.kstar
+    6 "Equal" variable.other.kstar
+   12 "accepts" keyword.operator.word.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "ba" string.quoted.double.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   24 "," punctuation.separator.comma.kstar
+   26 "AnBn" variable.other.kstar
+   31 "accepts" keyword.operator.word.kstar
+   39 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   40 "ba" string.quoted.double.kstar
+   42 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # Palindromes are not a regular language, but their words of each length
+    0 "# Palindromes are not a regular language, but their words of each length" comment.line.number-sign.kstar
+> # can still be counted.
+    0 "# can still be counted." comment.line.number-sign.kstar
+> let Pal = std.grammar.palindromes(AB)
+    0 "let" keyword.control.kstar
+    4 "Pal" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "grammar" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "palindromes" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "AB" variable.other.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> print std.collections.size(std.grammar.words_up_to(Pal, 5))
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "size" entity.name.function.call.kstar
+   26 "(" punctuation.section.parens.begin.kstar
+   27 "std" entity.name.namespace.kstar
+   30 "." punctuation.accessor.kstar
+   31 "grammar" entity.name.namespace.kstar
+   38 "." punctuation.accessor.kstar
+   39 "words_up_to" entity.name.function.call.kstar
+   50 "(" punctuation.section.parens.begin.kstar
+   51 "Pal" variable.other.kstar
+   54 "," punctuation.separator.comma.kstar
+   56 "5" constant.numeric.integer.kstar
+   57 ")" punctuation.section.parens.end.kstar
+   58 ")" punctuation.section.parens.end.kstar
+> 

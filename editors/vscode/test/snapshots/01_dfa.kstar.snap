@@ -1,0 +1,131 @@
+> # Chapter 1: deterministic finite automata.
+    0 "# Chapter 1: deterministic finite automata." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # Accepts binary strings containing the substring 11.
+    0 "# Accepts binary strings containing the substring 11." comment.line.number-sign.kstar
+> dfa HasDouble1 over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "HasDouble1" meta.machine.kstar entity.name.type.machine.kstar
+   15 "over" meta.machine.kstar keyword.other.over.kstar
+   20 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   22 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  none
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "none" meta.machine.kstar variable.other.state.kstar
+>     accept both
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "both" meta.machine.kstar variable.other.state.kstar
+>     none --0  --> none
+    4 "none" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "none" meta.machine.kstar variable.other.state.kstar
+>     none --1  --> one
+    4 "none" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "one" meta.machine.kstar variable.other.state.kstar
+>     one  --0  --> none
+    4 "one" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "none" meta.machine.kstar variable.other.state.kstar
+>     one  --1  --> both
+    4 "one" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "both" meta.machine.kstar variable.other.state.kstar
+>     both --0,1--> both
+    4 "both" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "both" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> print HasDouble1
+    0 "print" keyword.control.kstar
+    6 "HasDouble1" variable.other.kstar
+> 
+> test HasDouble1 accepts "0110"
+    0 "test" keyword.control.kstar
+    5 "HasDouble1" variable.other.kstar
+   16 "accepts" keyword.operator.word.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   25 "0110" string.quoted.double.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test not (HasDouble1 accepts "0101")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "HasDouble1" variable.other.kstar
+   21 "accepts" keyword.operator.word.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "0101" string.quoted.double.kstar
+   34 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   35 ")" punctuation.section.parens.end.kstar
+> test not (HasDouble1 accepts "")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "HasDouble1" variable.other.kstar
+   21 "accepts" keyword.operator.word.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> 
+> for w in {"11", "1", "10101", "001100"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "11" string.quoted.double.kstar
+   13 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   14 "," punctuation.separator.comma.kstar
+   16 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   17 "1" string.quoted.double.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   19 "," punctuation.separator.comma.kstar
+   21 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   22 "10101" string.quoted.double.kstar
+   27 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "001100" string.quoted.double.kstar
+   37 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   38 "}" punctuation.section.braces.end.kstar
+   40 "{" punctuation.section.braces.begin.kstar
+>     print w, HasDouble1 accepts w
+    4 "print" keyword.control.kstar
+   10 "w" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "HasDouble1" variable.other.kstar
+   24 "accepts" keyword.operator.word.kstar
+   32 "w" variable.other.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # Writes HasDouble1.dot, a state diagram you can open with Graphviz.
+    0 "# Writes HasDouble1.dot, a state diagram you can open with Graphviz." comment.line.number-sign.kstar
+> draw HasDouble1
+    0 "draw" keyword.control.kstar
+    5 "HasDouble1" variable.other.kstar
+> 

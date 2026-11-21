@@ -1,0 +1,262 @@
+> # Chapter 7: context-free grammars and pushdown automata.
+    0 "# Chapter 7: context-free grammars and pushdown automata." comment.line.number-sign.kstar
+> 
+> alphabet AB = {a, b}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "AB" entity.name.type.alphabet.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+   15 "a" constant.character.symbol.kstar
+   16 "," punctuation.separator.kstar
+   18 "b" constant.character.symbol.kstar
+   19 "}" punctuation.section.braces.end.kstar
+> 
+> # a^n b^n is not regular, but a grammar generates it easily.
+    0 "# a^n b^n is not regular, but a grammar generates it easily." comment.line.number-sign.kstar
+> grammar Equal over AB {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "Equal" meta.grammar.kstar entity.name.type.grammar.kstar
+   14 "over" meta.grammar.kstar keyword.other.over.kstar
+   19 "AB" meta.grammar.kstar entity.name.type.alphabet.kstar
+   22 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> a S b | eps
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "a" meta.grammar.kstar constant.character.terminal.kstar
+   11 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   13 "b" meta.grammar.kstar constant.character.terminal.kstar
+   15 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   17 "eps" meta.grammar.kstar constant.language.eps.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> 
+> print Equal
+    0 "print" keyword.control.kstar
+    6 "Equal" variable.other.kstar
+> print derive(Equal, "aabb")
+    0 "print" keyword.control.kstar
+    6 "derive" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "Equal" variable.other.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "aabb" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 ")" punctuation.section.parens.end.kstar
+> test Equal accepts "aaabbb"
+    0 "test" keyword.control.kstar
+    5 "Equal" variable.other.kstar
+   11 "accepts" keyword.operator.word.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   20 "aaabbb" string.quoted.double.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test not (Equal accepts "aab")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "Equal" variable.other.kstar
+   16 "accepts" keyword.operator.word.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   25 "aab" string.quoted.double.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   29 ")" punctuation.section.parens.end.kstar
+> test not is_empty(Equal)
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "is_empty" support.function.builtin.kstar
+   17 "(" punctuation.section.parens.begin.kstar
+   18 "Equal" variable.other.kstar
+   23 ")" punctuation.section.parens.end.kstar
+> 
+> # A PDA for the same language: push an A per a, pop one per b.
+    0 "# A PDA for the same language: push an A per a, pop one per b." comment.line.number-sign.kstar
+> pda AnBn over AB {
+    0 "pda" meta.machine.kstar storage.type.machine.kstar
+    4 "AnBn" meta.machine.kstar entity.name.type.machine.kstar
+    9 "over" meta.machine.kstar keyword.other.over.kstar
+   14 "AB" meta.machine.kstar entity.name.type.alphabet.kstar
+   17 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  push
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "push" meta.machine.kstar variable.other.state.kstar
+>     accept done
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "done" meta.machine.kstar variable.other.state.kstar
+>     push --a, eps/A    --> push
+    4 "push" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   14 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   17 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   18 "A" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   23 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   27 "push" meta.machine.kstar variable.other.state.kstar
+>     push --eps, eps/eps--> pop
+    4 "push" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   14 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   19 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   20 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   23 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   27 "pop" meta.machine.kstar variable.other.state.kstar
+>     pop  --b, A/eps    --> pop
+    4 "pop" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   14 "A" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   16 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   23 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   27 "pop" meta.machine.kstar variable.other.state.kstar
+>     pop  --eps, Z/Z    --> done
+    4 "pop" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   14 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   17 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   18 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   23 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   27 "done" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> for w in {"", "ab", "aabb", "abab", "aab"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   12 "," punctuation.separator.comma.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "ab" string.quoted.double.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "aabb" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   29 "abab" string.quoted.double.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "aab" string.quoted.double.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   41 "}" punctuation.section.braces.end.kstar
+   43 "{" punctuation.section.braces.begin.kstar
+>     test (AnBn accepts w) == (Equal accepts w)
+    4 "test" keyword.control.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "AnBn" variable.other.kstar
+   15 "accepts" keyword.operator.word.kstar
+   23 "w" variable.other.kstar
+   24 ")" punctuation.section.parens.end.kstar
+   26 "==" keyword.operator.comparison.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "Equal" variable.other.kstar
+   36 "accepts" keyword.operator.word.kstar
+   44 "w" variable.other.kstar
+   45 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> trace AnBn on "aabb"
+    0 "trace" keyword.control.kstar
+    6 "AnBn" variable.other.kstar
+   11 "on" keyword.control.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "aabb" string.quoted.double.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # Palindromes, as a grammar, in Chomsky normal form, and as a PDA.
+    0 "# Palindromes, as a grammar, in Chomsky normal form, and as a PDA." comment.line.number-sign.kstar
+> grammar Pal over AB {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "Pal" meta.grammar.kstar entity.name.type.grammar.kstar
+   12 "over" meta.grammar.kstar keyword.other.over.kstar
+   17 "AB" meta.grammar.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> a S a | b S b | a | b | eps
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "a" meta.grammar.kstar constant.character.terminal.kstar
+   11 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   13 "a" meta.grammar.kstar constant.character.terminal.kstar
+   15 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   17 "b" meta.grammar.kstar constant.character.terminal.kstar
+   19 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   21 "b" meta.grammar.kstar constant.character.terminal.kstar
+   23 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   25 "a" meta.grammar.kstar constant.character.terminal.kstar
+   27 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   29 "b" meta.grammar.kstar constant.character.terminal.kstar
+   31 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   33 "eps" meta.grammar.kstar constant.language.eps.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> print to_cnf(Pal)
+    0 "print" keyword.control.kstar
+    6 "to_cnf" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "Pal" variable.other.kstar
+   16 ")" punctuation.section.parens.end.kstar
+> let p = to_pda(Pal)
+    0 "let" keyword.control.kstar
+    4 "p" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "to_pda" support.function.builtin.kstar
+   14 "(" punctuation.section.parens.begin.kstar
+   15 "Pal" variable.other.kstar
+   18 ")" punctuation.section.parens.end.kstar
+> test p accepts "abbaabba"
+    0 "test" keyword.control.kstar
+    5 "p" variable.other.kstar
+    7 "accepts" keyword.operator.word.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   16 "abbaabba" string.quoted.double.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test not (p accepts "ab")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "p" variable.other.kstar
+   12 "accepts" keyword.operator.word.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "ab" string.quoted.double.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   24 ")" punctuation.section.parens.end.kstar
+> 
+> # Every regular language has a right-linear grammar.
+    0 "# Every regular language has a right-linear grammar." comment.line.number-sign.kstar
+> let g = to_grammar(/a*b/)
+    0 "let" keyword.control.kstar
+    4 "g" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "to_grammar" support.function.builtin.kstar
+   18 "(" punctuation.section.parens.begin.kstar
+   19 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   20 "a" string.regexp.kstar
+   21 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   22 "b" string.regexp.kstar
+   23 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+   24 ")" punctuation.section.parens.end.kstar
+> print g
+    0 "print" keyword.control.kstar
+    6 "g" variable.other.kstar
+> test g accepts "aaab"
+    0 "test" keyword.control.kstar
+    5 "g" variable.other.kstar
+    7 "accepts" keyword.operator.word.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   16 "aaab" string.quoted.double.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> draw AnBn
+    0 "draw" keyword.control.kstar
+    5 "AnBn" variable.other.kstar
+> 

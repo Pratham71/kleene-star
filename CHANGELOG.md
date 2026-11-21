@@ -12,6 +12,13 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Fixed
+
+- Highlighting in VS Code: names, brackets, commas and the quotes of
+  strings and regexes now have scopes too, so every part of a program is
+  coloured by any theme, and all scope names are standard ones. Snapshot
+  tests over every example keep it that way.
+
 ### Added
 
 - `std.io`: reading and writing text files next to the program, such as a

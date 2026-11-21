@@ -1,0 +1,287 @@
+> # Chapter 9: the standard library's std.automata. Machines for common
+    0 "# Chapter 9: the standard library's std.automata. Machines for common" comment.line.number-sign.kstar
+> # patterns come ready-made and already minimal, and the library answers
+    0 "# patterns come ready-made and already minimal, and the library answers" comment.line.number-sign.kstar
+> # questions about languages that the built-ins only answer with yes or no.
+    0 "# questions about languages that the built-ins only answer with yes or no." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # Binary strings that contain 101, and those with an odd number of 0s.
+    0 "# Binary strings that contain 101, and those with an odd number of 0s." comment.line.number-sign.kstar
+> let Has101 = std.automata.contains_substring(B, "101")
+    0 "let" keyword.control.kstar
+    4 "Has101" variable.other.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "std" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "automata" entity.name.namespace.kstar
+   25 "." punctuation.accessor.kstar
+   26 "contains_substring" entity.name.function.call.kstar
+   44 "(" punctuation.section.parens.begin.kstar
+   45 "B" variable.other.kstar
+   46 "," punctuation.separator.comma.kstar
+   48 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   49 "101" string.quoted.double.kstar
+   52 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   53 ")" punctuation.section.parens.end.kstar
+> let OddZeros = std.automata.count_mod(B, "0", 2, 1)
+    0 "let" keyword.control.kstar
+    4 "OddZeros" variable.other.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "std" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "automata" entity.name.namespace.kstar
+   27 "." punctuation.accessor.kstar
+   28 "count_mod" entity.name.function.call.kstar
+   37 "(" punctuation.section.parens.begin.kstar
+   38 "B" variable.other.kstar
+   39 "," punctuation.separator.comma.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   42 "0" string.quoted.double.kstar
+   43 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   44 "," punctuation.separator.comma.kstar
+   46 "2" constant.numeric.integer.kstar
+   47 "," punctuation.separator.comma.kstar
+   49 "1" constant.numeric.integer.kstar
+   50 ")" punctuation.section.parens.end.kstar
+> print Has101
+    0 "print" keyword.control.kstar
+    6 "Has101" variable.other.kstar
+> 
+> # They are ordinary machines: combine them with the built-ins.
+    0 "# They are ordinary machines: combine them with the built-ins." comment.line.number-sign.kstar
+> let Both = intersect(Has101, OddZeros)
+    0 "let" keyword.control.kstar
+    4 "Both" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "intersect" support.function.builtin.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "Has101" variable.other.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "OddZeros" variable.other.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> print states(Both), states(minimize(Both))
+    0 "print" keyword.control.kstar
+    6 "states" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "Both" variable.other.kstar
+   17 ")" punctuation.section.parens.end.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "states" support.function.builtin.kstar
+   26 "(" punctuation.section.parens.begin.kstar
+   27 "minimize" support.function.builtin.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "Both" variable.other.kstar
+   40 ")" punctuation.section.parens.end.kstar
+   41 ")" punctuation.section.parens.end.kstar
+> print "shortest word in both:", std.automata.shortest_word(Both)
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "shortest word in both:" string.quoted.double.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "std" entity.name.namespace.kstar
+   35 "." punctuation.accessor.kstar
+   36 "automata" entity.name.namespace.kstar
+   44 "." punctuation.accessor.kstar
+   45 "shortest_word" entity.name.function.call.kstar
+   58 "(" punctuation.section.parens.begin.kstar
+   59 "Both" variable.other.kstar
+   63 ")" punctuation.section.parens.end.kstar
+> print "words of length 5 in both:", std.automata.count_words(Both, 5)
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "words of length 5 in both:" string.quoted.double.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "std" entity.name.namespace.kstar
+   39 "." punctuation.accessor.kstar
+   40 "automata" entity.name.namespace.kstar
+   48 "." punctuation.accessor.kstar
+   49 "count_words" entity.name.function.call.kstar
+   60 "(" punctuation.section.parens.begin.kstar
+   61 "Both" variable.other.kstar
+   65 "," punctuation.separator.comma.kstar
+   67 "5" constant.numeric.integer.kstar
+   68 ")" punctuation.section.parens.end.kstar
+> 
+> # A hand-written machine for "ends in 01", checked against the library's.
+    0 "# A hand-written machine for \"ends in 01\", checked against the library's." comment.line.number-sign.kstar
+> dfa EndsIn01 over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "EndsIn01" meta.machine.kstar entity.name.type.machine.kstar
+   13 "over" meta.machine.kstar keyword.other.over.kstar
+   18 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  s
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "s" meta.machine.kstar variable.other.state.kstar
+>     accept seen01
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "seen01" meta.machine.kstar variable.other.state.kstar
+>     s      --0--> seen0
+    4 "s" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "seen0" meta.machine.kstar variable.other.state.kstar
+>     s      --1--> s
+    4 "s" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "s" meta.machine.kstar variable.other.state.kstar
+>     seen0  --0--> seen0
+    4 "seen0" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "seen0" meta.machine.kstar variable.other.state.kstar
+>     seen0  --1--> seen01
+    4 "seen0" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "seen01" meta.machine.kstar variable.other.state.kstar
+>     seen01 --0--> seen0
+    4 "seen01" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "seen0" meta.machine.kstar variable.other.state.kstar
+>     seen01 --1--> s
+    4 "seen01" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "s" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> test equivalent(EndsIn01, std.automata.ends_with(B, "01"))
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "EndsIn01" variable.other.kstar
+   24 "," punctuation.separator.comma.kstar
+   26 "std" entity.name.namespace.kstar
+   29 "." punctuation.accessor.kstar
+   30 "automata" entity.name.namespace.kstar
+   38 "." punctuation.accessor.kstar
+   39 "ends_with" entity.name.function.call.kstar
+   48 "(" punctuation.section.parens.begin.kstar
+   49 "B" variable.other.kstar
+   50 "," punctuation.separator.comma.kstar
+   52 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   53 "01" string.quoted.double.kstar
+   55 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   56 ")" punctuation.section.parens.end.kstar
+   57 ")" punctuation.section.parens.end.kstar
+> 
+> # A mistake: this regex is meant to be "ends in 01" but is not. The
+    0 "# A mistake: this regex is meant to be \"ends in 01\" but is not. The" comment.line.number-sign.kstar
+> # library finds the shortest word on which the two disagree.
+    0 "# library finds the shortest word on which the two disagree." comment.line.number-sign.kstar
+> let attempt = /(0|1)*0(0|1)/
+    0 "let" keyword.control.kstar
+    4 "attempt" variable.other.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+   15 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   16 "0" string.regexp.kstar
+   17 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   18 "1" string.regexp.kstar
+   19 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   20 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   21 "0" string.regexp.kstar
+   22 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   23 "0" string.regexp.kstar
+   24 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   25 "1" string.regexp.kstar
+   26 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   27 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+> print "first difference:", std.automata.distinguishing_word(EndsIn01, attempt)
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "first difference:" string.quoted.double.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   25 "," punctuation.separator.comma.kstar
+   27 "std" entity.name.namespace.kstar
+   30 "." punctuation.accessor.kstar
+   31 "automata" entity.name.namespace.kstar
+   39 "." punctuation.accessor.kstar
+   40 "distinguishing_word" entity.name.function.call.kstar
+   59 "(" punctuation.section.parens.begin.kstar
+   60 "EndsIn01" variable.other.kstar
+   68 "," punctuation.separator.comma.kstar
+   70 "attempt" variable.other.kstar
+   77 ")" punctuation.section.parens.end.kstar
+> 
+> # Finite or not: a language is infinite when its DFA can loop on the way
+    0 "# Finite or not: a language is infinite when its DFA can loop on the way" comment.line.number-sign.kstar
+> # to acceptance.
+    0 "# to acceptance." comment.line.number-sign.kstar
+> print std.automata.is_finite(std.automata.length_between(B, 1, 3)), std.automata.is_finite(Has101)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "automata" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "is_finite" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "std" entity.name.namespace.kstar
+   32 "." punctuation.accessor.kstar
+   33 "automata" entity.name.namespace.kstar
+   41 "." punctuation.accessor.kstar
+   42 "length_between" entity.name.function.call.kstar
+   56 "(" punctuation.section.parens.begin.kstar
+   57 "B" variable.other.kstar
+   58 "," punctuation.separator.comma.kstar
+   60 "1" constant.numeric.integer.kstar
+   61 "," punctuation.separator.comma.kstar
+   63 "3" constant.numeric.integer.kstar
+   64 ")" punctuation.section.parens.end.kstar
+   65 ")" punctuation.section.parens.end.kstar
+   66 "," punctuation.separator.comma.kstar
+   68 "std" entity.name.namespace.kstar
+   71 "." punctuation.accessor.kstar
+   72 "automata" entity.name.namespace.kstar
+   80 "." punctuation.accessor.kstar
+   81 "is_finite" entity.name.function.call.kstar
+   90 "(" punctuation.section.parens.begin.kstar
+   91 "Has101" variable.other.kstar
+   97 ")" punctuation.section.parens.end.kstar
+> print std.automata.words_up_to(std.automata.exactly(B, "1", 2), 3)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "automata" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "words_up_to" entity.name.function.call.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "std" entity.name.namespace.kstar
+   34 "." punctuation.accessor.kstar
+   35 "automata" entity.name.namespace.kstar
+   43 "." punctuation.accessor.kstar
+   44 "exactly" entity.name.function.call.kstar
+   51 "(" punctuation.section.parens.begin.kstar
+   52 "B" variable.other.kstar
+   53 "," punctuation.separator.comma.kstar
+   55 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   56 "1" string.quoted.double.kstar
+   57 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   58 "," punctuation.separator.comma.kstar
+   60 "2" constant.numeric.integer.kstar
+   61 ")" punctuation.section.parens.end.kstar
+   62 "," punctuation.separator.comma.kstar
+   64 "3" constant.numeric.integer.kstar
+   65 ")" punctuation.section.parens.end.kstar
+> 

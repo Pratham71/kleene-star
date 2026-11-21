@@ -1,0 +1,297 @@
+> # Chapter 13: the standard library's std.random. Random machines and words
+    0 "# Chapter 13: the standard library's std.random. Random machines and words" comment.line.number-sign.kstar
+> # that are the same every run, so they can drive tests: a law checked on
+    0 "# that are the same every run, so they can drive tests: a law checked on" comment.line.number-sign.kstar
+> # many machines at once, instead of on the few written by hand.
+    0 "# many machines at once, instead of on the few written by hand." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # The same seed always gives the same answer, so this prints the same on
+    0 "# The same seed always gives the same answer, so this prints the same on" comment.line.number-sign.kstar
+> # every run and every computer. Different seeds give different answers.
+    0 "# every run and every computer. Different seeds give different answers." comment.line.number-sign.kstar
+> print std.random.int(1, 1, 6), std.random.int(1, 1, 6), std.random.int(2, 1, 6)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "random" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "int" entity.name.function.call.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "1" constant.numeric.integer.kstar
+   22 "," punctuation.separator.comma.kstar
+   24 "1" constant.numeric.integer.kstar
+   25 "," punctuation.separator.comma.kstar
+   27 "6" constant.numeric.integer.kstar
+   28 ")" punctuation.section.parens.end.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "std" entity.name.namespace.kstar
+   34 "." punctuation.accessor.kstar
+   35 "random" entity.name.namespace.kstar
+   41 "." punctuation.accessor.kstar
+   42 "int" entity.name.function.call.kstar
+   45 "(" punctuation.section.parens.begin.kstar
+   46 "1" constant.numeric.integer.kstar
+   47 "," punctuation.separator.comma.kstar
+   49 "1" constant.numeric.integer.kstar
+   50 "," punctuation.separator.comma.kstar
+   52 "6" constant.numeric.integer.kstar
+   53 ")" punctuation.section.parens.end.kstar
+   54 "," punctuation.separator.comma.kstar
+   56 "std" entity.name.namespace.kstar
+   59 "." punctuation.accessor.kstar
+   60 "random" entity.name.namespace.kstar
+   66 "." punctuation.accessor.kstar
+   67 "int" entity.name.function.call.kstar
+   70 "(" punctuation.section.parens.begin.kstar
+   71 "2" constant.numeric.integer.kstar
+   72 "," punctuation.separator.comma.kstar
+   74 "1" constant.numeric.integer.kstar
+   75 "," punctuation.separator.comma.kstar
+   77 "6" constant.numeric.integer.kstar
+   78 ")" punctuation.section.parens.end.kstar
+> print std.random.word(1, B, 10)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "random" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "word" entity.name.function.call.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "1" constant.numeric.integer.kstar
+   23 "," punctuation.separator.comma.kstar
+   25 "B" variable.other.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "10" constant.numeric.integer.kstar
+   30 ")" punctuation.section.parens.end.kstar
+> 
+> # De Morgan's law, on 30 random pairs of DFAs: the complement of a union is
+    0 "# De Morgan's law, on 30 random pairs of DFAs: the complement of a union is" comment.line.number-sign.kstar
+> # the intersection of the complements. Each seed gives one pair.
+    0 "# the intersection of the complements. Each seed gives one pair." comment.line.number-sign.kstar
+> for seed in 0..30 {
+    0 "for" keyword.control.kstar
+    4 "seed" variable.other.kstar
+    9 "in" keyword.control.kstar
+   12 "0" constant.numeric.integer.kstar
+   13 ".." keyword.operator.range.kstar
+   15 "30" constant.numeric.integer.kstar
+   18 "{" punctuation.section.braces.begin.kstar
+>     let M = std.random.random_dfa(seed, B, 3)
+    4 "let" keyword.control.kstar
+    8 "M" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "random" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "random_dfa" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "seed" variable.other.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "B" variable.other.kstar
+   41 "," punctuation.separator.comma.kstar
+   43 "3" constant.numeric.integer.kstar
+   44 ")" punctuation.section.parens.end.kstar
+>     let N = std.random.random_dfa(seed + 1000, B, 4)
+    4 "let" keyword.control.kstar
+    8 "N" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "random" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "random_dfa" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "seed" variable.other.kstar
+   39 "+" keyword.operator.arithmetic.kstar
+   41 "1000" constant.numeric.integer.kstar
+   45 "," punctuation.separator.comma.kstar
+   47 "B" variable.other.kstar
+   48 "," punctuation.separator.comma.kstar
+   50 "4" constant.numeric.integer.kstar
+   51 ")" punctuation.section.parens.end.kstar
+>     test equivalent(complement(union(M, N)), intersect(complement(M), complement(N)))
+    4 "test" keyword.control.kstar
+    9 "equivalent" support.function.builtin.kstar
+   19 "(" punctuation.section.parens.begin.kstar
+   20 "complement" support.function.builtin.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "union" support.function.builtin.kstar
+   36 "(" punctuation.section.parens.begin.kstar
+   37 "M" variable.other.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "N" variable.other.kstar
+   41 ")" punctuation.section.parens.end.kstar
+   42 ")" punctuation.section.parens.end.kstar
+   43 "," punctuation.separator.comma.kstar
+   45 "intersect" support.function.builtin.kstar
+   54 "(" punctuation.section.parens.begin.kstar
+   55 "complement" support.function.builtin.kstar
+   65 "(" punctuation.section.parens.begin.kstar
+   66 "M" variable.other.kstar
+   67 ")" punctuation.section.parens.end.kstar
+   68 "," punctuation.separator.comma.kstar
+   70 "complement" support.function.builtin.kstar
+   80 "(" punctuation.section.parens.begin.kstar
+   81 "N" variable.other.kstar
+   82 ")" punctuation.section.parens.end.kstar
+   83 ")" punctuation.section.parens.end.kstar
+   84 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # The subset construction keeps the language of random NFAs, eps moves and
+    0 "# The subset construction keeps the language of random NFAs, eps moves and" comment.line.number-sign.kstar
+> # all.
+    0 "# all." comment.line.number-sign.kstar
+> for seed in 0..30 {
+    0 "for" keyword.control.kstar
+    4 "seed" variable.other.kstar
+    9 "in" keyword.control.kstar
+   12 "0" constant.numeric.integer.kstar
+   13 ".." keyword.operator.range.kstar
+   15 "30" constant.numeric.integer.kstar
+   18 "{" punctuation.section.braces.begin.kstar
+>     let M = std.random.random_nfa(seed, B, 4)
+    4 "let" keyword.control.kstar
+    8 "M" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "random" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "random_nfa" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "seed" variable.other.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "B" variable.other.kstar
+   41 "," punctuation.separator.comma.kstar
+   43 "4" constant.numeric.integer.kstar
+   44 ")" punctuation.section.parens.end.kstar
+>     test equivalent(M, to_dfa(M))
+    4 "test" keyword.control.kstar
+    9 "equivalent" support.function.builtin.kstar
+   19 "(" punctuation.section.parens.begin.kstar
+   20 "M" variable.other.kstar
+   21 "," punctuation.separator.comma.kstar
+   23 "to_dfa" support.function.builtin.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "M" variable.other.kstar
+   31 ")" punctuation.section.parens.end.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # Chomsky normal form keeps the language of random grammars, checked on
+    0 "# Chomsky normal form keeps the language of random grammars, checked on" comment.line.number-sign.kstar
+> # every word up to length 6.
+    0 "# every word up to length 6." comment.line.number-sign.kstar
+> for seed in 0..20 {
+    0 "for" keyword.control.kstar
+    4 "seed" variable.other.kstar
+    9 "in" keyword.control.kstar
+   12 "0" constant.numeric.integer.kstar
+   13 ".." keyword.operator.range.kstar
+   15 "20" constant.numeric.integer.kstar
+   18 "{" punctuation.section.braces.begin.kstar
+>     let G = std.random.random_grammar(seed, B, 3)
+    4 "let" keyword.control.kstar
+    8 "G" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "random" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "random_grammar" entity.name.function.call.kstar
+   37 "(" punctuation.section.parens.begin.kstar
+   38 "seed" variable.other.kstar
+   42 "," punctuation.separator.comma.kstar
+   44 "B" variable.other.kstar
+   45 "," punctuation.separator.comma.kstar
+   47 "3" constant.numeric.integer.kstar
+   48 ")" punctuation.section.parens.end.kstar
+>     test std.testing.agree_up_to(G, to_cnf(G), 6)
+    4 "test" keyword.control.kstar
+    9 "std" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "testing" entity.name.namespace.kstar
+   20 "." punctuation.accessor.kstar
+   21 "agree_up_to" entity.name.function.call.kstar
+   32 "(" punctuation.section.parens.begin.kstar
+   33 "G" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "to_cnf" support.function.builtin.kstar
+   42 "(" punctuation.section.parens.begin.kstar
+   43 "G" variable.other.kstar
+   44 ")" punctuation.section.parens.end.kstar
+   45 "," punctuation.separator.comma.kstar
+   47 "6" constant.numeric.integer.kstar
+   48 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # A fair sample of the multiples of 3 written with 8 bits: every one of
+    0 "# A fair sample of the multiples of 3 written with 8 bits: every one of" comment.line.number-sign.kstar
+> # them is as likely, though they are only a third of all 8-bit strings.
+    0 "# them is as likely, though they are only a third of all 8-bit strings." comment.line.number-sign.kstar
+> let Div3 = std.binary.divisible_by(3)
+    0 "let" keyword.control.kstar
+    4 "Div3" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "std" entity.name.namespace.kstar
+   14 "." punctuation.accessor.kstar
+   15 "binary" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "divisible_by" entity.name.function.call.kstar
+   34 "(" punctuation.section.parens.begin.kstar
+   35 "3" constant.numeric.integer.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> for seed in 0..5 {
+    0 "for" keyword.control.kstar
+    4 "seed" variable.other.kstar
+    9 "in" keyword.control.kstar
+   12 "0" constant.numeric.integer.kstar
+   13 ".." keyword.operator.range.kstar
+   15 "5" constant.numeric.integer.kstar
+   17 "{" punctuation.section.braces.begin.kstar
+>     let w = std.random.word_in(seed, Div3, 8)
+    4 "let" keyword.control.kstar
+    8 "w" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "random" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "word_in" entity.name.function.call.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "seed" variable.other.kstar
+   35 "," punctuation.separator.comma.kstar
+   37 "Div3" variable.other.kstar
+   41 "," punctuation.separator.comma.kstar
+   43 "8" constant.numeric.integer.kstar
+   44 ")" punctuation.section.parens.end.kstar
+>     print w, std.binary.from_binary(w)
+    4 "print" keyword.control.kstar
+   10 "w" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "std" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "binary" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "from_binary" entity.name.function.call.kstar
+   35 "(" punctuation.section.parens.begin.kstar
+   36 "w" variable.other.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
