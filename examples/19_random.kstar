@@ -1,0 +1,40 @@
+# Chapter 13: the standard library's std.random. Random machines and words
+# that are the same every run, so they can drive tests: a law checked on
+# many machines at once, instead of on the few written by hand.
+
+alphabet B = {0, 1}
+
+# The same seed always gives the same answer, so this prints the same on
+# every run and every computer. Different seeds give different answers.
+print std.random.int(1, 1, 6), std.random.int(1, 1, 6), std.random.int(2, 1, 6)
+print std.random.word(1, B, 10)
+
+# De Morgan's law, on 30 random pairs of DFAs: the complement of a union is
+# the intersection of the complements. Each seed gives one pair.
+for seed in 0..30 {
+    let M = std.random.random_dfa(seed, B, 3)
+    let N = std.random.random_dfa(seed + 1000, B, 4)
+    test equivalent(complement(union(M, N)), intersect(complement(M), complement(N)))
+}
+
+# The subset construction keeps the language of random NFAs, eps moves and
+# all.
+for seed in 0..30 {
+    let M = std.random.random_nfa(seed, B, 4)
+    test equivalent(M, to_dfa(M))
+}
+
+# Chomsky normal form keeps the language of random grammars, checked on
+# every word up to length 6.
+for seed in 0..20 {
+    let G = std.random.random_grammar(seed, B, 3)
+    test std.testing.agree_up_to(G, to_cnf(G), 6)
+}
+
+# A fair sample of the multiples of 3 written with 8 bits: every one of
+# them is as likely, though they are only a third of all 8-bit strings.
+let Div3 = std.binary.divisible_by(3)
+for seed in 0..5 {
+    let w = std.random.word_in(seed, Div3, 8)
+    print w, std.binary.from_binary(w)
+}

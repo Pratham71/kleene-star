@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_random_bad_range.kstar, line 1, in <main>
+    print std.random.int(1, 6, 1)
+                               ^
+MathError[E0609]: there is no Int from 6 to 1
+  hint: `low` must not be larger than `high`

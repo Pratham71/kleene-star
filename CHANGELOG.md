@@ -24,6 +24,12 @@ its GitHub release, so write it for people who use Kleene Star.
   module is used by its full name, with `from ... import`, or imported with
   `as`; plain `import std.grammar` asks for a name.
 - Error code E0617, for a variable name a grammar does not have.
+- `std.random`: random Ints, words, DFAs, NFAs and grammars from a seed. The
+  same seed always gives the same result, on every computer, so programs and
+  tests that use it stay repeatable: `int`, `pick`, `word`, `words`,
+  `word_in` (a word of a regular language, each as likely),
+  `random_dfa`, `random_nfa` and `random_grammar`. Example:
+  `examples/19_random.kstar`.
 
 ### Changed
 

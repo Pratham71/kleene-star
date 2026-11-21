@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_random_too_long.kstar, line 2, in <main>
+    print std.random.word(1, B, 10001)
+                                ^^^^^
+LimitError[E0612]: a length can be at most 10000, but this is 10001
+  hint: use 10000 or less

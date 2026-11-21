@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_random_empty_set.kstar, line 1, in <main>
+    print std.random.pick(1, {})
+                             ^^
+ValueError[E0613]: cannot pick a member of the empty set
+  hint: give a set with at least one member

@@ -1,0 +1,20 @@
+# Every function of std.random, by its full name and imported, twice with
+# the same seed to show the results repeat.
+alphabet B = {0, 1}
+alphabet ABC = {a, b, c}
+print std.random.int(1, 1, 6), std.random.int(1, 1, 6), std.random.int(-1, -5, 5)
+print std.random.int(0, 7, 7), std.random.int(3, -9223372036854775807 - 1, 9223372036854775807)
+print std.random.pick(1, {"x", "y", "z"}), std.random.pick(1, {true}), std.random.pick(2, {1, 2, 3})
+print std.random.word(4, ABC, 12), std.random.word(4, ABC, 12), std.random.word(4, ABC, 0)
+print std.random.words(5, B, 8, 3)
+print std.random.words(5, B, 0, 3), std.random.words(5, B, 3, 0)
+from std.random import word_in, random_dfa, random_nfa, random_grammar
+print word_in(6, /a*b(a|b)/, 5), word_in(6, {"ab", "ba", "aaa"}, 2)
+print random_dfa(7, B, 4)
+test std.testing.same_language(random_dfa(7, B, 4), random_dfa(7, B, 4))
+print random_nfa(8, ABC, 3)
+print random_grammar(9, B, 4)
+import std.random as r
+print states(r.random_dfa(1, B, 10000))
+test r.word(10, B, 20) == r.word(10, B, 20)
+test r.word(10, B, 20) != r.word(11, B, 20)

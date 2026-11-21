@@ -649,6 +649,87 @@ print std.math.abs(-3), std.math.min(3, -2), std.math.max(3, -2)
 3 -2 3
 ```
 
+### `std.random`
+
+Random Ints, words, DFAs, NFAs and grammars from a seed: the same seed always gives the same result.
+
+| Function | What it does |
+|---|---|
+| `int(seed: Int, low: Int, high: Int) -> Int` | An Int from `low` to `high`, both included, each as likely. |
+| `pick(seed: Int, s: Set[T]) -> T` | A member of the set `s`, each as likely; the set must not be empty. |
+| `word(seed: Int, alphabet: Alphabet, n: Int) -> Str` | A word of length `n` over `alphabet`, each symbol drawn on its own. |
+| `words(seed: Int, alphabet: Alphabet, count: Int, max: Int) -> Set[Str]` | `count` random words of length 0 to `max`, as a set, so fewer if some are drawn twice. |
+| `word_in(seed: Int, lang: Lang, n: Int) -> Str` | A word of length `n` in the language, each such word as likely; there must be one. |
+| `random_dfa(seed: Int, alphabet: Alphabet, states: Int) -> Dfa` | A random DFA with `states` states named `q0`, `q1`, ... |
+| `random_nfa(seed: Int, alphabet: Alphabet, states: Int) -> Nfa` | A random NFA with `states` states named `q0`, `q1`, ..., which may have eps moves. |
+| `random_grammar(seed: Int, alphabet: Alphabet, variables: Int) -> Grammar` | A random grammar with `variables` variables, from 1 to 26, named `S`, `A`, `B`, ... |
+
+**Seeds, not luck.** Every function takes a seed, any `Int`, as its first
+argument, and its result depends only on its arguments. The same call gives
+the same result every time and on every computer, so a program that uses
+`std.random` still has one output, and a `test` built on it cannot fail by
+chance. To get different results, pass different seeds: the counter of a
+`for` loop is the usual one. Kleene Star never asks the operating system for
+randomness. The numbers come from SplitMix64, a small, well-tested generator
+(not one for passwords or keys), started from the seed for each call.
+
+**What each draw means.**
+
+- `int` and `pick` give every possible answer the same chance. `pick` of
+  the empty set is a `ValueError` (E0613), and `int` with `low` larger than
+  `high` is a `MathError` (E0609).
+- `word` draws each symbol on its own; `words` draws `count` words, each of
+  a length from 0 to `max` with every length as likely.
+- `word_in` gives every word of length `n` in the language the same chance
+  (up to rounding), so `word_in(seed, L, 8)` is a fair sample of L's words
+  of length 8, however rare they are among all words. A language with no
+  word of that length is a `ValueError` (E0615);
+  `std.automata.count_words` says how many there are.
+- `random_dfa` is total: each move goes to any state with the same chance,
+  and each state accepts with chance 1/2. `random_nfa` gives each state
+  zero, one or two moves on each symbol, an eps move to another state with
+  chance 1/4, and
+  makes it accepting with chance 1/3. The start state is `q0`.
+- `random_grammar` gives each variable one to three rules, each with up to
+  three symbols, every symbol a terminal or a variable with the same chance.
+  Its language may well be empty: random grammars are for testing that two
+  ways of doing something agree, such as a grammar and its `to_cnf`.
+
+Lengths may be up to 10000 and machines up to 10000 states (larger is a
+`LimitError`, E0612); a negative length or count, or fewer than one state or
+variable, is E0610. `words` may draw at most 100000 words and `count` times
+`max` may be at most a million. An alphabet with no symbols is E0613.
+
+The names `random_dfa`, `random_nfa` and `random_grammar` repeat the module's
+name because `dfa`, `nfa` and `grammar` are keywords.
+
+```kstar
+alphabet B = {0, 1}
+print std.random.int(1, 1, 6), std.random.int(1, 1, 6), std.random.int(2, 1, 6)
+print std.random.pick(7, {"red", "green", "blue"})
+print std.random.word(3, B, 8), std.random.words(3, B, 4, 3)
+print std.random.word_in(5, std.binary.divisible_by(5), 6)
+let D = std.random.random_dfa(11, B, 3)
+print D
+for seed in 0..20 {
+    let M = std.random.random_dfa(seed, B, 4)
+    test equivalent(M, minimize(M))
+}
+```
+
+```text
+6 6 5
+blue
+11110100 {"00", "1", "10"}
+010100
+DFA with 3 states over {0, 1}
+       | 0  | 1
+-> *q0 | q2 | q2
+   *q1 | q1 | q0
+    q2 | q2 | q2
+tests: 20 passed, 0 failed
+```
+
 ### `std.regex`
 
 Regular expressions built at run time and put together from pieces: from text, from a word or an alphabet, by choice, sequence and repetition, and the common prefix, suffix and substring forms.

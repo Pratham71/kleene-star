@@ -18,6 +18,7 @@ pub mod ops;
 pub mod patterns;
 pub mod pda;
 pub mod questions;
+pub mod random;
 pub mod tm;
 pub mod regex;
 pub mod trace;
