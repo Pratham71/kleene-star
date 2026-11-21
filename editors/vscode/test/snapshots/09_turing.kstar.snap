@@ -1,0 +1,510 @@
+> # Chapter 8: Turing machines.
+    0 "# Chapter 8: Turing machines." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # Adds one to a binary number: walk right, then carry leftwards.
+    0 "# Adds one to a binary number: walk right, then carry leftwards." comment.line.number-sign.kstar
+> tm Increment over B {
+    0 "tm" meta.machine.kstar storage.type.machine.kstar
+    3 "Increment" meta.machine.kstar entity.name.type.machine.kstar
+   13 "over" meta.machine.kstar keyword.other.over.kstar
+   18 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  right
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "right" meta.machine.kstar variable.other.state.kstar
+>     accept done
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "done" meta.machine.kstar variable.other.state.kstar
+>     right --0/0,R--> right
+    4 "right" meta.machine.kstar variable.other.state.kstar
+   10 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   12 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   17 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   21 "right" meta.machine.kstar variable.other.state.kstar
+>     right --1/1,R--> right
+    4 "right" meta.machine.kstar variable.other.state.kstar
+   10 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   12 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   17 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   21 "right" meta.machine.kstar variable.other.state.kstar
+>     right --_/_,L--> carry
+    4 "right" meta.machine.kstar variable.other.state.kstar
+   10 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   12 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   15 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "L" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   17 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   21 "carry" meta.machine.kstar variable.other.state.kstar
+>     carry --1/0,L--> carry
+    4 "carry" meta.machine.kstar variable.other.state.kstar
+   10 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   12 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "L" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   17 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   21 "carry" meta.machine.kstar variable.other.state.kstar
+>     carry --0/1,S--> done
+    4 "carry" meta.machine.kstar variable.other.state.kstar
+   10 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   12 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   17 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   21 "done" meta.machine.kstar variable.other.state.kstar
+>     carry --_/1,S--> done
+    4 "carry" meta.machine.kstar variable.other.state.kstar
+   10 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   12 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   16 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   17 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   21 "done" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> test run(Increment, "1011") == "1100"
+    0 "test" keyword.control.kstar
+    5 "run" support.function.builtin.kstar
+    8 "(" punctuation.section.parens.begin.kstar
+    9 "Increment" variable.other.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "1011" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 ")" punctuation.section.parens.end.kstar
+   28 "==" keyword.operator.comparison.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   32 "1100" string.quoted.double.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test run(Increment, "111") == "1000"
+    0 "test" keyword.control.kstar
+    5 "run" support.function.builtin.kstar
+    8 "(" punctuation.section.parens.begin.kstar
+    9 "Increment" variable.other.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "111" string.quoted.double.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   25 ")" punctuation.section.parens.end.kstar
+   27 "==" keyword.operator.comparison.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "1000" string.quoted.double.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> test run(Increment, "") == "1"
+    0 "test" keyword.control.kstar
+    5 "run" support.function.builtin.kstar
+    8 "(" punctuation.section.parens.begin.kstar
+    9 "Increment" variable.other.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   22 ")" punctuation.section.parens.end.kstar
+   24 "==" keyword.operator.comparison.kstar
+   27 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   28 "1" string.quoted.double.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> trace Increment on "1011"
+    0 "trace" keyword.control.kstar
+    6 "Increment" variable.other.kstar
+   16 "on" keyword.control.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   20 "1011" string.quoted.double.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # a^n b^n c^n: beyond any PDA, easy for a Turing machine.
+    0 "# a^n b^n c^n: beyond any PDA, easy for a Turing machine." comment.line.number-sign.kstar
+> # Cross off one a, b and c per pass (as X, Y and Z).
+    0 "# Cross off one a, b and c per pass (as X, Y and Z)." comment.line.number-sign.kstar
+> alphabet ABC = {a, b, c}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "ABC" entity.name.type.alphabet.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "{" punctuation.section.braces.begin.kstar
+   16 "a" constant.character.symbol.kstar
+   17 "," punctuation.separator.kstar
+   19 "b" constant.character.symbol.kstar
+   20 "," punctuation.separator.kstar
+   22 "c" constant.character.symbol.kstar
+   23 "}" punctuation.section.braces.end.kstar
+> tm Abc over ABC {
+    0 "tm" meta.machine.kstar storage.type.machine.kstar
+    3 "Abc" meta.machine.kstar entity.name.type.machine.kstar
+    7 "over" meta.machine.kstar keyword.other.over.kstar
+   12 "ABC" meta.machine.kstar entity.name.type.alphabet.kstar
+   16 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  find_a
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "find_a" meta.machine.kstar variable.other.state.kstar
+>     accept yes
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "yes" meta.machine.kstar variable.other.state.kstar
+>     reject no
+    4 "reject" meta.machine.kstar keyword.control.state-role.kstar
+   11 "no" meta.machine.kstar variable.other.state.kstar
+>     find_a --a/X,R--> find_b
+    4 "find_a" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "X" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "find_b" meta.machine.kstar variable.other.state.kstar
+>     find_a --Y/Y,R--> check
+    4 "find_a" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "check" meta.machine.kstar variable.other.state.kstar
+>     find_a --_/_,S--> yes
+    4 "find_a" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "yes" meta.machine.kstar variable.other.state.kstar
+>     find_a --b/b,S--> no
+    4 "find_a" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     find_a --c/c,S--> no
+    4 "find_a" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "c" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "c" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     find_b --a/a,R--> find_b
+    4 "find_b" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "find_b" meta.machine.kstar variable.other.state.kstar
+>     find_b --Y/Y,R--> find_b
+    4 "find_b" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "find_b" meta.machine.kstar variable.other.state.kstar
+>     find_b --b/Y,R--> find_c
+    4 "find_b" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "find_c" meta.machine.kstar variable.other.state.kstar
+>     find_b --c/c,S--> no
+    4 "find_b" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "c" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "c" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     find_b --_/_,S--> no
+    4 "find_b" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     find_c --b/b,R--> find_c
+    4 "find_c" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "find_c" meta.machine.kstar variable.other.state.kstar
+>     find_c --Z/Z,R--> find_c
+    4 "find_c" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "find_c" meta.machine.kstar variable.other.state.kstar
+>     find_c --c/Z,L--> back
+    4 "find_c" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "c" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "L" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "back" meta.machine.kstar variable.other.state.kstar
+>     find_c --a/a,S--> no
+    4 "find_c" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     find_c --_/_,S--> no
+    4 "find_c" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     back   --a/a,L--> back
+    4 "back" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "L" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "back" meta.machine.kstar variable.other.state.kstar
+>     back   --b/b,L--> back
+    4 "back" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "L" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "back" meta.machine.kstar variable.other.state.kstar
+>     back   --Y/Y,L--> back
+    4 "back" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "L" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "back" meta.machine.kstar variable.other.state.kstar
+>     back   --Z/Z,L--> back
+    4 "back" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "L" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "back" meta.machine.kstar variable.other.state.kstar
+>     back   --X/X,R--> find_a
+    4 "back" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "X" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "X" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "find_a" meta.machine.kstar variable.other.state.kstar
+>     check  --Y/Y,R--> check
+    4 "check" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Y" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "check" meta.machine.kstar variable.other.state.kstar
+>     check  --Z/Z,R--> check
+    4 "check" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "R" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "check" meta.machine.kstar variable.other.state.kstar
+>     check  --_/_,S--> yes
+    4 "check" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "_" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "yes" meta.machine.kstar variable.other.state.kstar
+>     check  --a/a,S--> no
+    4 "check" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     check  --b/b,S--> no
+    4 "check" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+>     check  --c/c,S--> no
+    4 "check" meta.machine.kstar variable.other.state.kstar
+   11 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   13 "c" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "c" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "no" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> for w in {"", "abc", "aabbcc", "aaabbbccc"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   12 "," punctuation.separator.comma.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "abc" string.quoted.double.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   19 "," punctuation.separator.comma.kstar
+   21 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   22 "aabbcc" string.quoted.double.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   32 "aaabbbccc" string.quoted.double.kstar
+   41 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   42 "}" punctuation.section.braces.end.kstar
+   44 "{" punctuation.section.braces.begin.kstar
+>     test Abc accepts w
+    4 "test" keyword.control.kstar
+    9 "Abc" variable.other.kstar
+   13 "accepts" keyword.operator.word.kstar
+   21 "w" variable.other.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> for w in {"aabbc", "abcabc", "acb", "cba"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "aabbc" string.quoted.double.kstar
+   16 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   17 "," punctuation.separator.comma.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   20 "abcabc" string.quoted.double.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "acb" string.quoted.double.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "cba" string.quoted.double.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   41 "}" punctuation.section.braces.end.kstar
+   43 "{" punctuation.section.braces.begin.kstar
+>     test not (Abc accepts w)
+    4 "test" keyword.control.kstar
+    9 "not" keyword.operator.word.kstar
+   13 "(" punctuation.section.parens.begin.kstar
+   14 "Abc" variable.other.kstar
+   18 "accepts" keyword.operator.word.kstar
+   26 "w" variable.other.kstar
+   27 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> print states(Abc)
+    0 "print" keyword.control.kstar
+    6 "states" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "Abc" variable.other.kstar
+   16 ")" punctuation.section.parens.end.kstar
+> trace Abc on "abc"
+    0 "trace" keyword.control.kstar
+    6 "Abc" variable.other.kstar
+   10 "on" keyword.control.kstar
+   13 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   14 "abc" string.quoted.double.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> draw Increment
+    0 "draw" keyword.control.kstar
+    5 "Increment" variable.other.kstar
+> 

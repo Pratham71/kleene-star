@@ -124,7 +124,12 @@ have one.)
 
 `npm test` checks the highlighting with VS Code's own TextMate engine
 (including that every keyword and built-in of the language is
-highlighted), checks that every snippet expands to a valid program, and
+highlighted). It compares the scopes of every token of every program in
+`examples/`, and of `test/fixtures/`, with the snapshots in
+`test/snapshots/`, fails on any token without a scope, and checks that
+every scope is a standard TextMate name so that every colour theme colours
+it. After a deliberate change to the grammar, run
+`UPDATE_SNAPSHOTS=1 npm test` and review the snapshot diff. It also checks that every snippet expands to a valid program, and
 talks to the language server over the protocol for every feature listed
 above (the last two use the `kstar` and `kstar-lsp` from `cargo build`). To try changes, open this folder in VS Code
 and press F5, which starts a second VS Code window with the extension

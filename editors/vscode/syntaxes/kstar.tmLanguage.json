@@ -61,7 +61,8 @@
           ]
         },
         { "include": "#transition" },
-        { "include": "#state" }
+        { "include": "#state" },
+        { "match": ",", "name": "punctuation.separator.comma.kstar" }
       ]
     },
     "state": {
@@ -176,11 +177,34 @@
         { "include": "#namespace" },
         { "include": "#call" },
         { "include": "#number" },
-        { "include": "#operator" }
+        { "include": "#operator" },
+        { "include": "#punctuation" },
+        { "include": "#identifier" }
       ]
+    },
+    "punctuation": {
+      "comment": "Brackets of blocks, set literals, calls and indexes, and commas.",
+      "patterns": [
+        { "match": "\\{", "name": "punctuation.section.braces.begin.kstar" },
+        { "match": "\\}", "name": "punctuation.section.braces.end.kstar" },
+        { "match": "\\(", "name": "punctuation.section.parens.begin.kstar" },
+        { "match": "\\)", "name": "punctuation.section.parens.end.kstar" },
+        { "match": "\\[", "name": "punctuation.section.brackets.begin.kstar" },
+        { "match": "\\]", "name": "punctuation.section.brackets.end.kstar" },
+        { "match": ",", "name": "punctuation.separator.comma.kstar" },
+        { "match": ":", "name": "punctuation.separator.type.kstar" },
+        { "match": "\\.", "name": "punctuation.accessor.kstar" }
+      ]
+    },
+    "identifier": {
+      "comment": "Any other name: a variable, machine, alphabet or grammar.",
+      "match": "\\b[A-Za-z_]\\w*\\b",
+      "name": "variable.other.kstar"
     },
     "string": {
       "begin": "\"",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.kstar" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.kstar" } },
       "end": "\"|$",
       "name": "string.quoted.double.kstar",
       "patterns": [{ "match": "\\\\[\"\\\\]", "name": "constant.character.escape.kstar" }]
@@ -188,6 +212,8 @@
     "regex": {
       "comment": "A `/` after a name, number, `eps` or closing bracket is a PDA slash, not a regex.",
       "begin": "(?<![\\w)\\]])/",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.kstar" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.string.end.kstar" } },
       "end": "/|$",
       "name": "string.regexp.kstar",
       "patterns": [

@@ -1,0 +1,186 @@
+> # Chapter 9: a program in two files. The machines live in lib/binary.kstar.
+    0 "# Chapter 9: a program in two files. The machines live in lib/binary.kstar." comment.line.number-sign.kstar
+> 
+> import "lib/binary.kstar"
+    0 "import" keyword.control.import.kstar
+    7 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    8 "lib/binary.kstar" string.quoted.double.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> from "lib/binary.kstar" import div_by as divisible_by
+    0 "from" keyword.control.import.kstar
+    5 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    6 "lib/binary.kstar" string.quoted.double.kstar
+   22 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   24 "import" keyword.control.import.kstar
+   31 "div_by" variable.other.kstar
+   38 "as" keyword.control.import.kstar
+   41 "divisible_by" variable.other.kstar
+> 
+> # A qualified name works wherever a name does, even after `over`.
+    0 "# A qualified name works wherever a name does, even after `over`." comment.line.number-sign.kstar
+> dfa Ones over binary.B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "Ones" meta.machine.kstar entity.name.type.machine.kstar
+    9 "over" meta.machine.kstar keyword.other.over.kstar
+   14 "binary.B" meta.machine.kstar entity.name.type.alphabet.kstar
+   23 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  s
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "s" meta.machine.kstar variable.other.state.kstar
+>     accept s
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "s" meta.machine.kstar variable.other.state.kstar
+>     s    --1  --> s
+    4 "s" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "s" meta.machine.kstar variable.other.state.kstar
+>     s    --0  --> dead
+    4 "s" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "dead" meta.machine.kstar variable.other.state.kstar
+>     dead --0,1--> dead
+    4 "dead" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "dead" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> print binary.EvenZeros accepts "0110"
+    0 "print" keyword.control.kstar
+    6 "binary" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "EvenZeros" variable.other.kstar
+   23 "accepts" keyword.operator.word.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   32 "0110" string.quoted.double.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> print divisible_by(5) accepts "1010"  # 10 is divisible by 5
+    0 "print" keyword.control.kstar
+    6 "divisible_by" entity.name.function.call.kstar
+   18 "(" punctuation.section.parens.begin.kstar
+   19 "5" constant.numeric.integer.kstar
+   20 ")" punctuation.section.parens.end.kstar
+   22 "accepts" keyword.operator.word.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "1010" string.quoted.double.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   38 "# 10 is divisible by 5" comment.line.number-sign.kstar
+> 
+> # Words with an even number of 0s that are also multiples of 3.
+    0 "# Words with an even number of 0s that are also multiples of 3." comment.line.number-sign.kstar
+> let both = intersect(binary.EvenZeros, divisible_by(3))
+    0 "let" keyword.control.kstar
+    4 "both" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "intersect" support.function.builtin.kstar
+   20 "(" punctuation.section.parens.begin.kstar
+   21 "binary" entity.name.namespace.kstar
+   27 "." punctuation.accessor.kstar
+   28 "EvenZeros" variable.other.kstar
+   37 "," punctuation.separator.comma.kstar
+   39 "divisible_by" entity.name.function.call.kstar
+   51 "(" punctuation.section.parens.begin.kstar
+   52 "3" constant.numeric.integer.kstar
+   53 ")" punctuation.section.parens.end.kstar
+   54 ")" punctuation.section.parens.end.kstar
+> for w in {"0", "11", "110", "1001"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "0" string.quoted.double.kstar
+   12 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   13 "," punctuation.separator.comma.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   16 "11" string.quoted.double.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   19 "," punctuation.separator.comma.kstar
+   21 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   22 "110" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   29 "1001" string.quoted.double.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   34 "}" punctuation.section.braces.end.kstar
+   36 "{" punctuation.section.braces.begin.kstar
+>     print w, both accepts w
+    4 "print" keyword.control.kstar
+   10 "w" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "both" variable.other.kstar
+   18 "accepts" keyword.operator.word.kstar
+   26 "w" variable.other.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> test equivalent(intersect(Ones, binary.EvenZeros), Ones)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "intersect" support.function.builtin.kstar
+   25 "(" punctuation.section.parens.begin.kstar
+   26 "Ones" variable.other.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "binary" entity.name.namespace.kstar
+   38 "." punctuation.accessor.kstar
+   39 "EvenZeros" variable.other.kstar
+   48 ")" punctuation.section.parens.end.kstar
+   49 "," punctuation.separator.comma.kstar
+   51 "Ones" variable.other.kstar
+   55 ")" punctuation.section.parens.end.kstar
+> 
+> # Multiples of both 4 and 6 are the multiples of lcm(4, 6) = 12, and their
+    0 "# Multiples of both 4 and 6 are the multiples of lcm(4, 6) = 12, and their" comment.line.number-sign.kstar
+> # smallest DFA has only 5 states. The standard library needs no import.
+    0 "# smallest DFA has only 5 states. The standard library needs no import." comment.line.number-sign.kstar
+> print states(minimize(intersect(divisible_by(4), divisible_by(6)))), std.math.lcm(4, 6)
+    0 "print" keyword.control.kstar
+    6 "states" support.function.builtin.kstar
+   12 "(" punctuation.section.parens.begin.kstar
+   13 "minimize" support.function.builtin.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "intersect" support.function.builtin.kstar
+   31 "(" punctuation.section.parens.begin.kstar
+   32 "divisible_by" entity.name.function.call.kstar
+   44 "(" punctuation.section.parens.begin.kstar
+   45 "4" constant.numeric.integer.kstar
+   46 ")" punctuation.section.parens.end.kstar
+   47 "," punctuation.separator.comma.kstar
+   49 "divisible_by" entity.name.function.call.kstar
+   61 "(" punctuation.section.parens.begin.kstar
+   62 "6" constant.numeric.integer.kstar
+   63 ")" punctuation.section.parens.end.kstar
+   64 ")" punctuation.section.parens.end.kstar
+   65 ")" punctuation.section.parens.end.kstar
+   66 ")" punctuation.section.parens.end.kstar
+   67 "," punctuation.separator.comma.kstar
+   69 "std" entity.name.namespace.kstar
+   72 "." punctuation.accessor.kstar
+   73 "math" entity.name.namespace.kstar
+   77 "." punctuation.accessor.kstar
+   78 "lcm" entity.name.function.call.kstar
+   81 "(" punctuation.section.parens.begin.kstar
+   82 "4" constant.numeric.integer.kstar
+   83 "," punctuation.separator.comma.kstar
+   85 "6" constant.numeric.integer.kstar
+   86 ")" punctuation.section.parens.end.kstar
+> trace binary.EvenZeros on "010"
+    0 "trace" keyword.control.kstar
+    6 "binary" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "EvenZeros" variable.other.kstar
+   23 "on" keyword.control.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   27 "010" string.quoted.double.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 

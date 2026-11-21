@@ -1,0 +1,276 @@
+> # A quick tour of Kleene Star. Run it with:  kstar run examples/tour.kstar
+    0 "# A quick tour of Kleene Star. Run it with:  kstar run examples/tour.kstar" comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # A DFA: one transition per state and symbol.
+    0 "# A DFA: one transition per state and symbol." comment.line.number-sign.kstar
+> dfa EvenZeros over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "EvenZeros" meta.machine.kstar entity.name.type.machine.kstar
+   14 "over" meta.machine.kstar keyword.other.over.kstar
+   19 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   21 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  q0
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "q0" meta.machine.kstar variable.other.state.kstar
+>     accept q0
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "q0" meta.machine.kstar variable.other.state.kstar
+>     q0 --0--> q1
+    4 "q0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "q1" meta.machine.kstar variable.other.state.kstar
+>     q0 --1--> q0
+    4 "q0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "q0" meta.machine.kstar variable.other.state.kstar
+>     q1 --0--> q0
+    4 "q1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "q0" meta.machine.kstar variable.other.state.kstar
+>     q1 --1--> q1
+    4 "q1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "q1" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> # An NFA may have several choices, or none. eps moves look like: a --eps--> b
+    0 "# An NFA may have several choices, or none. eps moves look like: a --eps--> b" comment.line.number-sign.kstar
+> nfa EndsIn01 over B {
+    0 "nfa" meta.machine.kstar storage.type.machine.kstar
+    4 "EndsIn01" meta.machine.kstar entity.name.type.machine.kstar
+   13 "over" meta.machine.kstar keyword.other.over.kstar
+   18 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  a
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "a" meta.machine.kstar variable.other.state.kstar
+>     accept c
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "c" meta.machine.kstar variable.other.state.kstar
+>     a --0,1--> a
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   10 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "a" meta.machine.kstar variable.other.state.kstar
+>     a --0  --> b
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "b" meta.machine.kstar variable.other.state.kstar
+>     b --1  --> c
+    4 "b" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "c" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> # A function that builds a whole family of machines:
+    0 "# A function that builds a whole family of machines:" comment.line.number-sign.kstar
+> # binary numbers divisible by n.
+    0 "# binary numbers divisible by n." comment.line.number-sign.kstar
+> fn div_by(n: Int) -> Dfa {
+    0 "fn" storage.type.function.kstar
+    3 "div_by" entity.name.function.kstar
+    9 "(" punctuation.definition.parameters.begin.kstar
+   10 "n" variable.parameter.kstar
+   11 ":" punctuation.separator.type.kstar
+   13 "Int" support.type.kstar
+   16 ")" punctuation.definition.parameters.end.kstar
+   18 "->" keyword.operator.arrow.kstar
+   21 "Dfa" support.type.kstar
+   25 "{" punctuation.section.braces.begin.kstar
+>     return dfa over B {
+    4 "return" keyword.control.kstar
+   11 "dfa" meta.machine.kstar storage.type.machine.kstar
+   15 "over" meta.machine.kstar keyword.other.over.kstar
+   20 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   22 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>         start  q[0]
+    8 "start" meta.machine.kstar keyword.control.state-role.kstar
+   15 "q" meta.machine.kstar variable.other.state.kstar
+   16 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   17 "0" meta.machine.kstar constant.numeric.integer.kstar
+   18 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         accept q[0]
+    8 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   15 "q" meta.machine.kstar variable.other.state.kstar
+   16 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   17 "0" meta.machine.kstar constant.numeric.integer.kstar
+   18 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         for i in 0..n {
+    8 "for" meta.machine.kstar keyword.control.kstar
+   12 "i" meta.machine.kstar variable.other.kstar
+   14 "in" meta.machine.kstar keyword.control.kstar
+   17 "0" meta.machine.kstar constant.numeric.integer.kstar
+   18 ".." meta.machine.kstar keyword.operator.range.kstar
+   20 "n" meta.machine.kstar variable.other.state.kstar
+   22 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>             q[i] --0--> q[(2 * i) % n]
+   12 "q" meta.machine.kstar variable.other.state.kstar
+   13 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   14 "i" meta.machine.kstar variable.other.kstar
+   15 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+   17 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   19 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q" meta.machine.kstar variable.other.state.kstar
+   25 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   26 "(" meta.machine.kstar punctuation.section.parens.begin.kstar
+   27 "2" meta.machine.kstar constant.numeric.integer.kstar
+   29 "*" meta.machine.kstar keyword.operator.arithmetic.kstar
+   31 "i" meta.machine.kstar variable.other.kstar
+   32 ")" meta.machine.kstar punctuation.section.parens.end.kstar
+   34 "%" meta.machine.kstar keyword.operator.arithmetic.kstar
+   36 "n" meta.machine.kstar variable.other.kstar
+   37 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>             q[i] --1--> q[(2 * i + 1) % n]
+   12 "q" meta.machine.kstar variable.other.state.kstar
+   13 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   14 "i" meta.machine.kstar variable.other.kstar
+   15 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+   17 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   19 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q" meta.machine.kstar variable.other.state.kstar
+   25 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   26 "(" meta.machine.kstar punctuation.section.parens.begin.kstar
+   27 "2" meta.machine.kstar constant.numeric.integer.kstar
+   29 "*" meta.machine.kstar keyword.operator.arithmetic.kstar
+   31 "i" meta.machine.kstar variable.other.kstar
+   33 "+" meta.machine.kstar keyword.operator.arithmetic.kstar
+   35 "1" meta.machine.kstar constant.numeric.integer.kstar
+   36 ")" meta.machine.kstar punctuation.section.parens.end.kstar
+   38 "%" meta.machine.kstar keyword.operator.arithmetic.kstar
+   40 "n" meta.machine.kstar variable.other.kstar
+   41 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         }
+    8 "}" meta.machine.kstar punctuation.section.block.end.kstar
+>     }
+    4 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> let r = /(0|1)*01/
+    0 "let" keyword.control.kstar
+    4 "r" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "/" string.regexp.kstar punctuation.definition.string.begin.kstar
+    9 "(" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   10 "0" string.regexp.kstar
+   11 "|" string.regexp.kstar keyword.operator.or.regexp.kstar
+   12 "1" string.regexp.kstar
+   13 ")" string.regexp.kstar punctuation.definition.group.regexp.kstar
+   14 "*" string.regexp.kstar keyword.operator.quantifier.regexp.kstar
+   15 "01" string.regexp.kstar
+   17 "/" string.regexp.kstar punctuation.definition.string.end.kstar
+> let d = minimize(to_dfa(EndsIn01))
+    0 "let" keyword.control.kstar
+    4 "d" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "minimize" support.function.builtin.kstar
+   16 "(" punctuation.section.parens.begin.kstar
+   17 "to_dfa" support.function.builtin.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "EndsIn01" variable.other.kstar
+   32 ")" punctuation.section.parens.end.kstar
+   33 ")" punctuation.section.parens.end.kstar
+> 
+> print EvenZeros accepts "0011"
+    0 "print" keyword.control.kstar
+    6 "EvenZeros" variable.other.kstar
+   16 "accepts" keyword.operator.word.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   25 "0011" string.quoted.double.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> print equivalent(d, r)
+    0 "print" keyword.control.kstar
+    6 "equivalent" support.function.builtin.kstar
+   16 "(" punctuation.section.parens.begin.kstar
+   17 "d" variable.other.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "r" variable.other.kstar
+   21 ")" punctuation.section.parens.end.kstar
+> test div_by(3) accepts "110"
+    0 "test" keyword.control.kstar
+    5 "div_by" entity.name.function.call.kstar
+   11 "(" punctuation.section.parens.begin.kstar
+   12 "3" constant.numeric.integer.kstar
+   13 ")" punctuation.section.parens.end.kstar
+   15 "accepts" keyword.operator.word.kstar
+   23 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   24 "110" string.quoted.double.kstar
+   27 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> for w in {"", "01", "1101"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   12 "," punctuation.separator.comma.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "01" string.quoted.double.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "1101" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 "}" punctuation.section.braces.end.kstar
+   28 "{" punctuation.section.braces.begin.kstar
+>     if d accepts w {
+    4 "if" keyword.control.kstar
+    7 "d" variable.other.kstar
+    9 "accepts" keyword.operator.word.kstar
+   17 "w" variable.other.kstar
+   19 "{" punctuation.section.braces.begin.kstar
+>         print w, "ends in 01"
+    8 "print" keyword.control.kstar
+   14 "w" variable.other.kstar
+   15 "," punctuation.separator.comma.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   18 "ends in 01" string.quoted.double.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+>     }
+    4 "}" punctuation.section.braces.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> print d
+    0 "print" keyword.control.kstar
+    6 "d" variable.other.kstar
+> print to_regex(EvenZeros)
+    0 "print" keyword.control.kstar
+    6 "to_regex" support.function.builtin.kstar
+   14 "(" punctuation.section.parens.begin.kstar
+   15 "EvenZeros" variable.other.kstar
+   24 ")" punctuation.section.parens.end.kstar
+> draw d
+    0 "draw" keyword.control.kstar
+    5 "d" variable.other.kstar
+> 
