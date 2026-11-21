@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_pda_too_large.kstar, line 16, in <main>
+    print std.pda.to_grammar(Wide)
+                             ^^^^
+LimitError[E0612]: the grammar of this PDA would have more than 100000 rules
+  hint: a move that pushes k symbols gives (number of states + 2)^k rules; push fewer symbols per move

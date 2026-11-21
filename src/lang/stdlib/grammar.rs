@@ -100,7 +100,7 @@ fn variable(args: &[Value], i: usize) -> Result<usize, Failure> {
 
 /// Argument `i`: a string of exactly one symbol, a letter or digit as in
 /// an alphabet written in a program.
-fn symbol(args: &[Value], i: usize) -> Result<char, Failure> {
+pub(super) fn symbol(args: &[Value], i: usize) -> Result<char, Failure> {
     let given = text(args, i);
     let mut chars = given.chars();
     match (chars.next(), chars.next()) {
@@ -121,7 +121,7 @@ fn symbol(args: &[Value], i: usize) -> Result<char, Failure> {
 }
 
 /// Arguments 0 and 1: two different symbols.
-fn two_symbols(args: &[Value]) -> Result<(char, char), Failure> {
+pub(super) fn two_symbols(args: &[Value]) -> Result<(char, char), Failure> {
     let (a, b) = (symbol(args, 0)?, symbol(args, 1)?);
     if a == b {
         return Err(Failure {
@@ -197,10 +197,16 @@ fn is_ll1(args: &[Value]) -> Result<Value, Failure> {
 
 fn words_up_to(args: &[Value]) -> Result<Value, Failure> {
     let n = int(args, 1);
+    check_length(n, 1)?;
+    list_words(grammar(args, 0), n as usize)
+}
+
+/// Argument `arg`, `n`: a length `words_up_to` takes, from 0 to `MAX_LENGTH`.
+pub(super) fn check_length(n: i64, arg: usize) -> Result<(), Failure> {
     if n < 0 {
         return Err(Failure {
             code: codes::STRING_RANGE,
-            arg: Some(1),
+            arg: Some(arg),
             message: format!("a length cannot be negative, but this is {n}"),
             hint: "use 0 or more".into(),
         });
@@ -208,18 +214,24 @@ fn words_up_to(args: &[Value]) -> Result<Value, Failure> {
     if n > MAX_LENGTH {
         return Err(Failure {
             code: codes::RESULT_TOO_LARGE,
-            arg: Some(1),
+            arg: Some(arg),
             message: format!("words of length up to {n} are too long to list"),
             hint: format!("the longest length `words_up_to` takes is {MAX_LENGTH}"),
         });
     }
+    Ok(())
+}
+
+/// The words of `g` of length at most `n`, as a set value, within the
+/// limits of `words_up_to`.
+pub(super) fn list_words(g: &Grammar, n: usize) -> Result<Value, Failure> {
     let too_many = || Failure {
         code: codes::RESULT_TOO_LARGE,
         arg: None,
         message: format!("the words of length up to {n} are too many to list"),
         hint: format!("ask for shorter words (at most {MAX_WORDS} are listed)"),
     };
-    let words = cfg::words_up_to(grammar(args, 0), n as usize, MAX_WORK).ok_or_else(too_many)?;
+    let words = cfg::words_up_to(g, n, MAX_WORK).ok_or_else(too_many)?;
     if words.len() > MAX_WORDS {
         return Err(too_many());
     }

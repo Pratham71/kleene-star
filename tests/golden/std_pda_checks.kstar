@@ -1,0 +1,5 @@
+# Mistakes the checker finds before anything runs.
+print std.pda.member(std.grammar.anbn("a", "b"), "ab")
+print std.pda.to_grammar(/ab/)
+print std.pda.words_up_to(std.pda.anbn("a", "b"), "3")
+print std.pda.is_deterministic(std.pda.anbn("a", "b")) + 1

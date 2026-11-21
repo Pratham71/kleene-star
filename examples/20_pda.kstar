@@ -1,0 +1,47 @@
+# Chapter 14: the standard library's std.pda. Ready-made pushdown automata,
+# checked against their grammars, and the triple construction, which turns
+# any PDA into a grammar and so answers questions the PDA's own search can
+# give up on.
+
+alphabet AB = {a, b}
+alphabet LR = {l, r}
+
+# a^n b^n with a stack of X's: push one per a, pop one per b. Only one move
+# fits each step, so the machine is deterministic.
+let AnBn = std.pda.anbn("a", "b")
+print AnBn
+test std.pda.is_deterministic(AnBn)
+trace AnBn on "aabb"
+
+# Each ready-made PDA has the language of the std.grammar grammar of the
+# same name, checked on every word up to length 8.
+test std.testing.agree_up_to(AnBn, std.grammar.anbn("a", "b"), 8)
+test std.testing.agree_up_to(std.pda.balanced("l", "r"), std.grammar.balanced("l", "r"), 8)
+test std.testing.agree_up_to(std.pda.palindromes(AB), std.grammar.palindromes(AB), 8)
+test std.testing.agree_up_to(std.pda.equal_count("a", "b"), std.grammar.equal_count("a", "b"), 8)
+
+# Palindromes need a guess: where is the middle?
+test not std.pda.is_deterministic(std.pda.palindromes(AB))
+
+# The triple construction: a variable [p X q] derives the words that take
+# the PDA from p to q while popping X.
+let G = std.pda.to_grammar(AnBn)
+print G
+test std.testing.agree_up_to(G, AnBn, 8)
+
+# Grammar to PDA and back: the built-in to_pda, then to_grammar, keeps the
+# language.
+let Balanced = std.grammar.balanced("l", "r")
+test std.testing.agree_up_to(Balanced, std.pda.to_grammar(to_pda(Balanced)), 8)
+
+# A PDA whose eps move pushes forever. Searching its runs never ends, so
+# `accepts` would give up on "b"; going through the grammar, `member`
+# answers.
+pda Forever over AB {
+    start  q
+    accept f
+    q --eps, eps/A--> q
+    q --a, eps/eps--> f
+}
+print std.pda.member(Forever, "a"), std.pda.member(Forever, "b")
+print std.pda.words_up_to(Forever, 3)

@@ -1,0 +1,30 @@
+# Every function of std.pda, by its full name and imported.
+alphabet AB = {a, b}
+alphabet Bits = {0, 1}
+let P = std.pda.anbn("a", "b")
+print P
+print std.pda.balanced("l", "r")
+print std.pda.palindromes(Bits)
+print std.pda.equal_count("a", "b")
+from std.pda import to_grammar as grammar_of, is_deterministic, stack_symbols, member, words_up_to
+import std.pda as pdas
+print grammar_of(pdas.balanced("l", "r"))
+print is_deterministic(P), is_deterministic(pdas.palindromes(AB)), is_deterministic(to_pda(std.grammar.anbn("a", "b")))
+print stack_symbols(pdas.palindromes(Bits)), stack_symbols(pdas.equal_count("a", "b"))
+print member(P, "aabb"), member(P, "abab"), member(P, "")
+print words_up_to(pdas.equal_count("x", "y"), 4)
+print words_up_to(P, 0)
+
+# A palindrome PDA over an alphabet with Z in it picks another bottom.
+alphabet ZA = {Z, a}
+print stack_symbols(pdas.palindromes(ZA))
+test std.testing.agree_up_to(pdas.palindromes(ZA), std.grammar.palindromes(ZA), 6)
+
+# A PDA whose eps move pushes forever: `member` still answers.
+pda Forever over AB {
+    start  q
+    accept f
+    q --eps, eps/A--> q
+    q --a, eps/eps--> f
+}
+print member(Forever, "a"), member(Forever, "b"), member(Forever, "aa")

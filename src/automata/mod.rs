@@ -17,6 +17,7 @@ pub mod nfa;
 pub mod ops;
 pub mod patterns;
 pub mod pda;
+pub mod pdas;
 pub mod questions;
 pub mod random;
 pub mod tm;

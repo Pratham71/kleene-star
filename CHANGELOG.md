@@ -30,6 +30,11 @@ its GitHub release, so write it for people who use Kleene Star.
   `word_in` (a word of a regular language, each as likely),
   `random_dfa`, `random_nfa` and `random_grammar`. Example:
   `examples/19_random.kstar`.
+- `std.pda`: ready-made PDAs (`anbn`, `balanced`, `palindromes`,
+  `equal_count`), `to_grammar` (a PDA's grammar, by the triple construction,
+  the converse of `to_pda`), `is_deterministic`, `stack_symbols`, and
+  `member` and `words_up_to`, which go through the grammar and so always
+  answer where `accepts` would give up. Example: `examples/20_pda.kstar`.
 
 ### Changed
 

@@ -1,0 +1,1 @@
+print std.pda.member(std.pda.anbn("a", "b"), "abc")

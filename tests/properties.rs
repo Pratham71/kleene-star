@@ -770,3 +770,59 @@ fn random_results_repeat_for_the_same_seed() {
         }
     }
 }
+
+/// A small random PDA over {a, b}: one to three states, stack symbols `Z`
+/// and `A`, and moves that may read or pop nothing and push up to two
+/// symbols.
+fn random_pda(rng: &mut Rng) -> Pda {
+    use kstar::automata::pda::Move;
+    let n = 1 + rng.below(3);
+    let stack = ["Z", "A"];
+    let moves = (0..1 + rng.below(6))
+        .map(|_| Move {
+            from: rng.below(n),
+            read: if rng.chance(30) { None } else { Some(*rng.pick(&ALPHABET)) },
+            pop: if rng.chance(25) { None } else { Some(rng.pick(&stack).to_string()) },
+            push: (0..rng.below(3)).map(|_| rng.pick(&stack).to_string()).collect(),
+            to: rng.below(n),
+        })
+        .collect();
+    Pda {
+        alphabet: ALPHABET.to_vec(),
+        states: (0..n).map(|i| format!("p{i}")).collect(),
+        start: 0,
+        accept: (0..n).filter(|_| rng.chance(40)).collect(),
+        moves,
+        bottom: "Z".into(),
+    }
+}
+
+/// The triple construction keeps the language: of random PDAs (where the
+/// PDA's own search answers), and of the PDAs built from random grammars,
+/// so that grammar to PDA to grammar comes back to the same language.
+#[test]
+fn the_grammar_of_a_pda_has_its_language() {
+    use kstar::automata::pdas;
+    let mut rng = Rng::new(seed());
+    let mut decided = 0;
+    for case in 0..CASES {
+        let pda = random_pda(&mut rng);
+        let g = pdas::to_grammar(&pda, 1_000_000).expect("small PDAs give small grammars");
+        for word in words(4) {
+            let by_grammar = g.accepts(&word).unwrap();
+            match pda.search(&word, 2_000).outcome {
+                Outcome::Accepted => assert!(by_grammar, "case {case}: {pda}\nthe grammar rejects {word:?}:\n{g}"),
+                Outcome::Rejected => assert!(!by_grammar, "case {case}: {pda}\nthe grammar accepts {word:?}:\n{g}"),
+                Outcome::GaveUp => continue,
+                Outcome::Foreign { .. } => unreachable!(),
+            }
+            decided += 1;
+        }
+        let original = random_grammar(&mut rng);
+        let back = pdas::to_grammar(&Pda::from_grammar(&original), 1_000_000).unwrap();
+        for word in words(4) {
+            assert_eq!(back.accepts(&word).unwrap(), original.accepts(&word).unwrap(), "case {case}: {original}\n{word:?}");
+        }
+    }
+    assert!(decided > CASES * 20, "the PDA search gave up too often: only {decided} answers");
+}
