@@ -19,9 +19,68 @@
 #   KSTAR_INSTALL_FROM  a folder that already holds the release files; used
 #                       to test this script without downloading anything
 #   KSTAR_NO_PATH       set to 1 to leave the PATH alone
+#   KSTAR_NO_VSCODE     set to 1 to leave VS Code alone
+#   KSTAR_CODE          VS Code's code command, if it is not code.cmd on the PATH
+#
+# If VS Code is installed, the script also installs (or updates) the Kleene
+# Star extension of the same release, kleene-star-<version>.vsix, after
+# checking its checksum too, so the editor and the language server match.
 #
 # The installer, kstar-setup-x64.exe from the releases page, does the same
 # and also associates .kstar files; use one or the other.
+
+# Downloads one release file into $Work: from KSTAR_INSTALL_FROM, with the
+# GitHub CLI, or from the releases page.
+function Get-ReleaseFile($Repo, $Tag, $Name, $Work) {
+    if ($env:KSTAR_INSTALL_FROM) {
+        Copy-Item (Join-Path $env:KSTAR_INSTALL_FROM $Name) $Work
+    } elseif (Get-Command gh -ErrorAction SilentlyContinue) {
+        $ghArgs = @("release", "download") + $(if ($Tag) { @($Tag) } else { @() }) + @("-R", $Repo, "-p", $Name, "-D", $Work)
+        & gh @ghArgs
+        if ($LASTEXITCODE -ne 0) { throw "gh could not download $Name" }
+    } else {
+        $base = if ($Tag) { "https://github.com/$Repo/releases/download/$Tag" } else { "https://github.com/$Repo/releases/latest/download" }
+        Invoke-WebRequest -UseBasicParsing "$base/$Name" -OutFile (Join-Path $Work $Name)
+    }
+}
+
+# VS Code's command-line script: KSTAR_CODE, code.cmd on the PATH, or where
+# VS Code's user and system installers put it. $null if VS Code is not installed.
+function Find-VSCode {
+    if ($env:KSTAR_CODE) { return $env:KSTAR_CODE }
+    $onPath = Get-Command code.cmd -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($onPath) { return $onPath.Source }
+    foreach ($candidate in @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Microsoft VS Code\bin\code.cmd"),
+        (Join-Path $env:ProgramFiles "Microsoft VS Code\bin\code.cmd"))) {
+        if (Test-Path $candidate) { return $candidate }
+    }
+    return $null
+}
+
+# Installs the extension of release $Version in VS Code, if VS Code is
+# installed. A problem here is a warning: kstar itself is installed already.
+function Install-Extension($Repo, $Version) {
+    $code = Find-VSCode
+    if (-not $code) { return }
+    $vsix = "kleene-star-$Version.vsix"
+    $work = Join-Path ([System.IO.Path]::GetTempPath()) ("kstar-vsix-" + [guid]::NewGuid())
+    New-Item -ItemType Directory -Path $work | Out-Null
+    try {
+        Get-ReleaseFile $Repo "v$Version" $vsix $work
+        Get-ReleaseFile $Repo "v$Version" "$vsix.sha256" $work
+        $expected = ((Get-Content (Join-Path $work "$vsix.sha256") -Raw).Trim() -split "\s+")[0].ToLower()
+        $actual = (Get-FileHash (Join-Path $work $vsix) -Algorithm SHA256).Hash.ToLower()
+        if ($expected -ne $actual) { throw "the checksum of $vsix does not match (expected $expected, got $actual)" }
+        & $code --install-extension (Join-Path $work $vsix) --force | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "VS Code could not install $vsix" }
+        Write-Host "Installed the Kleene Star extension $Version in VS Code."
+    } catch {
+        Write-Warning "The VS Code extension was not installed: $($_.Exception.Message). Run 'kstar update' later to try again."
+    } finally {
+        Remove-Item -Recurse -Force $work -ErrorAction SilentlyContinue
+    }
+}
 
 function Install-KleeneStar {
     $ErrorActionPreference = "Stop"
@@ -89,6 +148,11 @@ function Install-KleeneStar {
     & $kstar version
     Write-Host ""
     Write-Host "Installed kstar and kstar-lsp in $bin"
+
+    if ($env:KSTAR_NO_VSCODE -ne "1") {
+        $version = ((& $kstar version | Select-Object -First 1) -split " ")[1]
+        Install-Extension $repo $version
+    }
 
     if ($env:KSTAR_NO_PATH -ne "1") {
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")

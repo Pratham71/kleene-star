@@ -120,7 +120,9 @@ impl LanguageServer for Backend {
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
-                completion_provider: Some(CompletionOptions::default()),
+                // `.` opens the members of a module (`std.`, `std.math.`,
+                // `utils.`) as soon as it is typed.
+                completion_provider: Some(CompletionOptions { trigger_characters: Some(vec![".".into()]), ..Default::default() }),
                 signature_help_provider: Some(SignatureHelpOptions {
                     trigger_characters: Some(vec!["(".into(), ",".into()]),
                     ..Default::default()

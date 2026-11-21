@@ -12,6 +12,8 @@ const { execFile } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const { traceable, versionMismatch } = require("./lib.js");
+const { version: extensionVersion } = require("./package.json");
 
 const windows = process.platform === "win32";
 
@@ -88,6 +90,27 @@ async function startServer() {
   } catch (error) {
     client = undefined;
     vscode.window.showErrorMessage(`Kleene Star: ${command} did not start (${error.message}).`);
+    return;
+  }
+  warnAboutVersions(client.initializeResult && client.initializeResult.serverInfo);
+}
+
+/// Warns, once per start of the server, when the server and this extension
+/// come from different releases: `kstar update` and the install scripts
+/// update the programs, and an extension left behind highlights and offers
+/// less than the server knows.
+async function warnAboutVersions(serverInfo) {
+  const warning = versionMismatch(extensionVersion, serverInfo && serverInfo.version);
+  if (!warning) return;
+  output.appendLine(warning);
+  const choice = await vscode.window.showWarningMessage(warning, "Run kstar update", "How to Install");
+  if (choice === "Run kstar update") {
+    const kstar = find("kstar", "path");
+    if (kstar) runInTerminal(kstar, ["update"], os.homedir());
+    else await missing("kstar", "path");
+  } else if (choice === "How to Install") {
+    const readme = vscode.Uri.file(path.join(__dirname, "README.md"));
+    vscode.commands.executeCommand("markdown.showPreview", readme);
   }
 }
 
@@ -158,7 +181,7 @@ function runInTerminal(kstar, args, cwd) {
 async function machines(document) {
   try {
     const symbols = await vscode.commands.executeCommand("vscode.executeDocumentSymbolProvider", document.uri);
-    return (symbols || []).filter((s) => s.kind === vscode.SymbolKind.Class).map((s) => s.name);
+    return traceable(symbols, vscode.SymbolKind.Class, vscode.SymbolKind.Variable);
   } catch {
     return [];
   }

@@ -1,6 +1,7 @@
 //! The `kstar` command-line tool.
 
 mod repl;
+mod sha256;
 mod update;
 
 use kstar::lang::codes;
@@ -107,15 +108,22 @@ Options:
   --color <when>     auto (default), always or never";
 
 const UPDATE_HELP: &str = "\
-Usage: kstar update [--check]
+Usage: kstar update [--check] [--no-vscode]
 
 Asks GitHub for the latest stable release and says whether it is newer than
 this kstar. Without --check it also prints the command that installs it; kstar
 does not replace itself while it is running. Pre-releases (such as 0.2.5-beta)
 are not offered: install one by name with KSTAR_VERSION (see docs/install.md).
 
+If VS Code is installed (the `code` command), it also makes sure the Kleene
+Star extension matches this kstar: when it is missing or from another
+release, it downloads kleene-star-<version>.vsix from this kstar's release,
+checks its SHA-256 checksum and installs it.
+
 Options:
-  --check   only say whether a newer release exists";
+  --check       only say whether a newer release exists, and whether the
+                VS Code extension matches, without installing anything
+  --no-vscode   leave VS Code alone (so does KSTAR_NO_VSCODE=1)";
 
 const VERSION_HELP: &str = "\
 Usage: kstar version

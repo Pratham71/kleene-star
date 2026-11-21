@@ -20,6 +20,13 @@
 #   KSTAR_INSTALL_FROM  a folder that already holds the release files; used
 #                       to test this script without downloading anything
 #   KSTAR_NO_PATH       set to 1 to leave your shell's startup files alone
+#   KSTAR_NO_VSCODE     set to 1 to leave VS Code alone
+#   KSTAR_CODE          VS Code's code command, if it is not code on the PATH
+#
+# If VS Code is installed (the `code` command), the script also installs (or
+# updates) the Kleene Star extension of the same release,
+# kleene-star-<version>.vsix, after checking its checksum too, so the editor
+# and the language server match.
 
 set -eu
 
@@ -31,6 +38,42 @@ bin=$dir/bin
 fail() {
     echo "kstar install: $*" >&2
     exit 1
+}
+
+# Downloads release file $2 of tag $1 into $3.
+fetch() {
+    if [ -n "${KSTAR_INSTALL_FROM:-}" ]; then
+        cp "$KSTAR_INSTALL_FROM/$2" "$3/"
+    elif command -v gh >/dev/null 2>&1; then
+        gh release download "$1" -R "$repo" -p "$2" -D "$3"
+    elif command -v curl >/dev/null 2>&1; then
+        curl -fsSL "https://github.com/$repo/releases/download/$1/$2" -o "$3/$2"
+    else
+        wget -q "https://github.com/$repo/releases/download/$1/$2" -O "$3/$2"
+    fi
+}
+
+sha256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | cut -d ' ' -f 1
+    else
+        shasum -a 256 "$1" | cut -d ' ' -f 1
+    fi
+}
+
+# Installs the extension of release $1 in VS Code, if VS Code is installed.
+# A problem here is a warning: kstar itself is installed already.
+install_extension() {
+    code=${KSTAR_CODE:-code}
+    command -v "$code" >/dev/null 2>&1 || return 0
+    vsix=kleene-star-$1.vsix
+    if fetch "v$1" "$vsix" "$work" >/dev/null 2>&1 && fetch "v$1" "$vsix.sha256" "$work" >/dev/null 2>&1 &&
+        [ "$(cut -d ' ' -f 1 "$work/$vsix.sha256" | tr 'A-F' 'a-f')" = "$(sha256 "$work/$vsix")" ] &&
+        "$code" --install-extension "$work/$vsix" --force >/dev/null 2>&1; then
+        echo "Installed the Kleene Star extension $1 in VS Code."
+    else
+        echo "kstar install: warning: the VS Code extension was not installed; run 'kstar update' later to try again" >&2
+    fi
 }
 
 case "$(uname -s)" in
@@ -78,11 +121,7 @@ else
 fi
 
 expected=$(cut -d ' ' -f 1 "$work/$asset.sha256" | tr 'A-F' 'a-f')
-if command -v sha256sum >/dev/null 2>&1; then
-    actual=$(sha256sum "$work/$asset" | cut -d ' ' -f 1)
-else
-    actual=$(shasum -a 256 "$work/$asset" | cut -d ' ' -f 1)
-fi
+actual=$(sha256 "$work/$asset")
 [ "$expected" = "$actual" ] ||
     fail "the checksum of $asset does not match (expected $expected, got $actual). Nothing was installed"
 echo "Checksum verified."
@@ -100,6 +139,10 @@ echo
 "$bin/kstar" version
 echo
 echo "Installed kstar and kstar-lsp in $bin"
+
+if [ "${KSTAR_NO_VSCODE:-}" != 1 ]; then
+    install_extension "$("$bin/kstar" version | head -n 1 | cut -d ' ' -f 2)"
+fi
 
 line="export PATH=\"$bin:\$PATH\""
 if [ "${KSTAR_NO_PATH:-}" != 1 ]; then

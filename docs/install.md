@@ -189,7 +189,27 @@ and prints the command to install it; it does not replace itself, since a
 running program cannot be overwritten on Windows. To update, install again
 the way you installed: run the new `kstar-setup-x64.exe`, run the install
 script again (it replaces the old programs), or run `cargo install` again
-in an updated clone. Install the matching `.vsix` too.
+in an updated clone.
+
+**The VS Code extension** comes with each release as
+`kleene-star-<version>.vsix`, and it should be the one of the same release
+as `kstar-lsp`: an older extension does not highlight newer keywords and
+modules. Everything that installs Kleene Star keeps the two together when
+VS Code (its `code` command) is installed:
+
+- the install scripts install or update the extension of the release they
+  install, after checking its checksum like the programs';
+- the Windows installer does the same when its *Install the Kleene Star
+  extension in VS Code* box is ticked;
+- `kstar update` checks the installed extension, and if it is missing or
+  from another release than this `kstar`, downloads the matching `.vsix`,
+  checks it and installs it. `kstar update --check` only says so.
+
+To leave VS Code alone, set `KSTAR_NO_VSCODE=1` (for the scripts and
+`kstar update`), pass `kstar update --no-vscode`, or untick the installer's
+box. If `code` is not on your PATH, set `KSTAR_CODE` to its full path. The
+extension itself warns when it finds a language server of another release,
+with a button that runs `kstar update`.
 
 `kstar version` shows what you have.
 

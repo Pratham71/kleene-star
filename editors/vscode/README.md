@@ -65,10 +65,23 @@ installed, it installs this extension too. Otherwise:
    code --install-extension kleene-star-0.5.0.vsix
    ```
 
+   (The install scripts and `kstar update` do this step for you when VS
+   Code is installed.)
+
    or, in VS Code, *Extensions* → `...` → *Install from VSIX...*.
 
 Open any `.kstar` file to start. If `kstar-lsp` cannot be found, a message
 says so, with buttons to open the setting or this page.
+
+## Keeping it up to date
+
+The extension and the language server come from the same release, and
+should stay that way: an extension older than the server does not highlight
+newer keywords and modules. The install scripts, the Windows installer and
+`kstar update` install the extension of their release whenever VS Code is
+installed (see [updating](../../docs/install.md#updating), which also says
+how to opt out). If the server and the extension still differ, the
+extension says so when it starts, with a button that runs `kstar update`.
 
 ## File icons
 
@@ -109,9 +122,10 @@ have one.)
 
 ## Developing
 
-`npm test` checks the highlighting with VS Code's own TextMate engine,
-checks that every snippet expands to a valid program, and talks to the
-language server over the protocol (the last two use the `kstar` and
-`kstar-lsp` from `cargo build`). To try changes, open this folder in VS Code
+`npm test` checks the highlighting with VS Code's own TextMate engine
+(including that every keyword and built-in of the language is
+highlighted), checks that every snippet expands to a valid program, and
+talks to the language server over the protocol for every feature listed
+above (the last two use the `kstar` and `kstar-lsp` from `cargo build`). To try changes, open this folder in VS Code
 and press F5, which starts a second VS Code window with the extension
 loaded.
