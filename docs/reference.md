@@ -649,6 +649,113 @@ print std.math.abs(-3), std.math.min(3, -2), std.math.max(3, -2)
 3 -2 3
 ```
 
+### `std.pda`
+
+Ready-made pushdown automata, the grammar of a PDA, whether a PDA is deterministic, and membership and word lists that never give up.
+
+| Function | What it does |
+|---|---|
+| `anbn(a: Str, b: Str) -> Pda` | A deterministic PDA for `n` copies of `a` then `n` copies of `b`. |
+| `balanced(open: Str, close: Str) -> Pda` | A deterministic PDA for balanced brackets, with `open` and `close` as the brackets. |
+| `palindromes(alphabet: Alphabet) -> Pda` | A PDA for the words over `alphabet` that read the same backwards; it guesses where the middle is. |
+| `equal_count(a: Str, b: Str) -> Pda` | A PDA for the words over `a` and `b` with as many of one as of the other. |
+| `to_grammar(p: Pda) -> Grammar` | A grammar with the same language as the PDA, by the triple construction. |
+| `is_deterministic(p: Pda) -> Bool` | Whether at most one move can be taken in every configuration. |
+| `stack_symbols(p: Pda) -> Set[Str]` | The symbols the PDA uses on its stack, the bottom symbol included. |
+| `member(p: Pda, w: Str) -> Bool` | Whether the PDA accepts `w`, decided through its grammar, so it never gives up as `accepts` can. |
+| `words_up_to(p: Pda, n: Int) -> Set[Str]` | The words the PDA accepts of length at most `n`, as a set. |
+
+`pda` is a keyword, so write `std.pda.member(P, w)`, `from std.pda import
+member`, or `import std.pda as pdas` (see `std.grammar`).
+
+**Ready-made PDAs.** They have the languages of the grammars with the same
+names in `std.grammar`, and states named after what they do:
+
+- `anbn("a", "b")`: `start` (accepting, for the empty word), `as` pushes an
+  `X` for each a, `bs` pops one for each b, and `done` (accepting) is
+  reached when only `Z` is left.
+- `balanced("l", "r")`: `even` (accepting) when every bracket so far is
+  closed, `open` while some are not; after a close bracket, `closed`
+  looks at the stack to choose between them.
+- `palindromes(B)`: `first` pushes each symbol read, then guesses the
+  middle (skipping one symbol there for odd lengths) and goes to `second`,
+  which pops a matching symbol for each one read; `done` accepts when the
+  stack is back to its bottom. No PDA for the palindromes can do without
+  guessing, so this one is not deterministic.
+- `equal_count("a", "b")`: one state, `count`, keeps the surplus on the
+  stack (`A`s while there have been more a's, `B`s while more b's), and
+  guesses the end with an eps move to `done` when only `Z` is left.
+
+The first two are deterministic. Symbols follow the rules of `std.grammar`
+(one letter or digit, E0614; two different ones, E0503).
+
+**The grammar of a PDA.** `to_grammar` is the converse of the built-in
+`to_pda` (which builds a PDA from a grammar), so between them every PDA and
+every grammar can be turned into the other. It uses the triple construction.
+A variable `[p X q]` derives the words that take the PDA from state `p` to
+state `q` while popping `X`. It first makes the PDA accept by emptying its
+stack: a new start state `begin` puts a new bottom `$` under the old one,
+and a new state `end`, reached from each accepting state, pops everything.
+A move that pushes k symbols gives a rule for every choice of k states, so
+the grammar has at most 100000 rules before the useless ones are dropped
+(a `LimitError`, E0612, past that). Only the variables that matter are kept.
+The built-in `to_grammar` takes a regular language instead, so this one is
+called by its full name or imported under another (`from std.pda import
+to_grammar as grammar_of`); `from std.pda import to_grammar` is E0203.
+
+**Questions that always answer.** The `accepts` operator searches through
+the PDA's runs, and a PDA whose eps moves push forever makes it give up
+(E0605). `member(p, w)` decides the same question through `to_grammar(p)`
+and the CYK algorithm, so it always answers. A symbol outside the alphabet
+is E0501. `words_up_to(p, n)` lists the accepted words the same way, with
+the limits of `std.grammar.words_up_to`.
+
+`is_deterministic` checks every two moves from the same state: they clash
+when their reads are the same or one is eps, and their pops are the same or
+one pops nothing. `to_pda(g)` chooses a rule with an eps move, so it is
+deterministic only when each variable has just one rule; `std.pda.anbn` is
+deterministic.
+
+```kstar
+alphabet AB = {a, b}
+let P = std.pda.anbn("a", "b")
+print P
+print std.pda.is_deterministic(P), std.pda.stack_symbols(P)
+print std.pda.to_grammar(P)
+print std.pda.words_up_to(std.pda.palindromes(AB), 3)
+pda Forever over AB {
+    start  q
+    accept f
+    q --eps, eps/A--> q
+    q --a, eps/eps--> f
+}
+print std.pda.member(Forever, "a"), std.pda.member(Forever, "b")
+```
+
+```text
+PDA with 4 states over {a, b}, stack starts as Z
+start start, accept start, done
+From  | Read | Pop | Push | To
+start | a    | Z   | XZ   | as
+as    | a    | X   | XX   | as
+as    | b    | X   | eps  | bs
+bs    | b    | X   | eps  | bs
+bs    | eps  | Z   | Z    | done
+true {"X", "Z"}
+Grammar with 9 variables over {a, b}, start S
+S             -> [begin $ end]
+[begin $ end] -> [start Z end] [end $ end]
+[start Z end] -> a [as X bs] [bs Z end] | [end Z end]
+[end $ end]   -> eps
+[as X bs]     -> a [as X bs] [bs X bs] | b
+[bs Z end]    -> [done Z end]
+[end Z end]   -> eps
+[bs X bs]     -> b
+[done Z end]  -> [end Z end]
+{"", "a", "aa", "aaa", "aba", "b", "bab", "bb", "bbb"}
+true false
+```
+
 ### `std.random`
 
 Random Ints, words, DFAs, NFAs and grammars from a seed: the same seed always gives the same result.

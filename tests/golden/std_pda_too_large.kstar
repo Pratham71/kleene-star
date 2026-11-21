@@ -1,0 +1,16 @@
+# Each move that pushes five symbols gives (states + 2)^5 rules.
+alphabet AB = {a, b}
+pda Wide over AB {
+    start  p0
+    accept p9
+    p0 --a, Z/ZZZZZ--> p1
+    p1 --a, Z/ZZZZZ--> p2
+    p2 --a, Z/ZZZZZ--> p3
+    p3 --a, Z/ZZZZZ--> p4
+    p4 --a, Z/ZZZZZ--> p5
+    p5 --a, Z/ZZZZZ--> p6
+    p6 --a, Z/ZZZZZ--> p7
+    p7 --a, Z/ZZZZZ--> p8
+    p8 --a, Z/ZZZZZ--> p9
+}
+print std.pda.to_grammar(Wide)

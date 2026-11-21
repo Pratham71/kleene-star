@@ -1,0 +1,54 @@
+PDA with 4 states over {a, b}, stack starts as Z
+start start, accept start, done
+From  | Read | Pop | Push | To
+start | a    | Z   | XZ   | as
+as    | a    | X   | XX   | as
+as    | b    | X   | eps  | bs
+bs    | b    | X   | eps  | bs
+bs    | eps  | Z   | Z    | done
+PDA with 3 states over {l, r}, stack starts as Z
+start even, accept even
+From   | Read | Pop | Push | To
+even   | l    | Z   | XZ   | open
+open   | l    | X   | XX   | open
+open   | r    | X   | eps  | closed
+closed | eps  | X   | X    | open
+closed | eps  | Z   | Z    | even
+PDA with 3 states over {0, 1}, stack starts as Z
+start first, accept done
+From   | Read | Pop | Push | To
+first  | 0    | eps | 0    | first
+first  | 0    | eps | eps  | second
+second | 0    | 0   | eps  | second
+first  | 1    | eps | 1    | first
+first  | 1    | eps | eps  | second
+second | 1    | 1   | eps  | second
+first  | eps  | eps | eps  | second
+second | eps  | Z   | Z    | done
+PDA with 2 states over {a, b}, stack starts as Z
+start count, accept done
+From  | Read | Pop | Push | To
+count | a    | Z   | AZ   | count
+count | a    | A   | AA   | count
+count | a    | B   | eps  | count
+count | b    | Z   | BZ   | count
+count | b    | B   | BB   | count
+count | b    | A   | eps  | count
+count | eps  | Z   | Z    | done
+Grammar with 8 variables over {l, r}, start S
+S                 -> [begin $ end]
+[begin $ end]     -> [even Z end] [end $ end]
+[even Z end]      -> l [open X closed] [closed Z end] | [end Z end]
+[end $ end]       -> eps
+[open X closed]   -> l [open X closed] [closed X closed] | r
+[closed Z end]    -> [even Z end]
+[end Z end]       -> eps
+[closed X closed] -> [open X closed]
+true false false
+{"0", "1", "Z"} {"A", "B", "Z"}
+true false true
+{"", "xxyy", "xy", "xyxy", "xyyx", "yx", "yxxy", "yxyx", "yyxx"}
+{""}
+{"Z", "Z'", "a"}
+true false false
+tests: 1 passed, 0 failed

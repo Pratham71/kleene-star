@@ -1,0 +1,21 @@
+Error in std_pda_checks.kstar, line 2:
+    print std.pda.member(std.grammar.anbn("a", "b"), "ab")
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0300]: argument 1 of `std.pda.member` must be a Pda, but this is a Grammar
+
+Error in std_pda_checks.kstar, line 3:
+    print std.pda.to_grammar(/ab/)
+                             ^^^^
+TypeError[E0300]: argument 1 of `std.pda.to_grammar` must be a Pda, but this is a Regex
+
+Error in std_pda_checks.kstar, line 4:
+    print std.pda.words_up_to(std.pda.anbn("a", "b"), "3")
+                                                      ^^^
+TypeError[E0300]: argument 2 of `std.pda.words_up_to` must be an Int, but this is a Str
+
+Error in std_pda_checks.kstar, line 5:
+    print std.pda.is_deterministic(std.pda.anbn("a", "b")) + 1
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError[E0302]: `+` needs two Ints or two Strs, but the left side is a Bool and the right side is an Int
+
+4 errors found
