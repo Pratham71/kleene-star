@@ -131,6 +131,8 @@ pub struct Interp {
     explanations: Vec<String>,
     /// The program's files, only needed to quote a failing `test` line.
     sources: SourceMap,
+    /// The folders `std.io` may use; `None` when the program is not a file.
+    pub files: Option<Rc<super::stdlib::io::Files>>,
 }
 
 type Run<T> = Result<T, Diag>;
@@ -157,6 +159,7 @@ impl Interp {
             drawings: 0,
             explanations: Vec::new(),
             sources: SourceMap::default(),
+            files: None,
         }
     }
 
@@ -836,7 +839,11 @@ impl Interp {
         let (module, f) = match self.callee(name)? {
             Callee::User { module, def } => (module, def),
             Callee::Std(module, function) => {
-                let result = (function.run)(&args);
+                let result = if module.name == "io" {
+                    super::stdlib::io::with_files(self.files.clone(), || (function.run)(&args))
+                } else {
+                    (function.run)(&args)
+                };
                 // A check that failed says why, for the `test` around it.
                 if let (Ok(Value::Bool(false)), Some(explain)) = (&result, module.explain) {
                     self.explanations.push(explain(function.name, &args));
@@ -850,7 +857,8 @@ impl Interp {
                     let kind = match failure.code {
                         codes::OVERFLOW | codes::MATH_DOMAIN => ErrorKind::Math,
                         codes::NOT_IN_ALPHABET | codes::FOREIGN_WORD | codes::ALPHABET_MISMATCH | codes::DUPLICATE_SYMBOL => ErrorKind::Alphabet,
-                        codes::RESULT_TOO_LARGE | codes::GAVE_UP | codes::STEP_LIMIT => ErrorKind::Limit,
+                        codes::RESULT_TOO_LARGE | codes::GAVE_UP | codes::STEP_LIMIT | codes::FILE_TOO_LARGE => ErrorKind::Limit,
+                        codes::IO | codes::PATH_NOT_ALLOWED => ErrorKind::Io,
                         _ => ErrorKind::Value,
                     };
                     self.error(kind, span, failure.message).code(failure.code).hint(failure.hint)

@@ -530,6 +530,13 @@ Say the new module is `std.string`.
    `Ty::Acceptor` is anything `accepts` takes, asked with
    `langs::accepts` (`std.testing` is the example).
 2. **Implement each function** as `fn name(args: &[Value]) -> Result<Value, Failure>`.
+   Library functions are pure functions of their arguments, with one
+   exception: `std.io` touches files. It needs the folders the run may
+   use (`io::Files`, owned by the interpreter and set up by `Session`
+   from the program's path and `--allow-path`), which the interpreter
+   lends it for each call with `io::with_files`. Every path goes through
+   `io::resolve`, which refuses anything outside those folders; a new
+   function that touches the disk must too.
    The checker has already made sure each argument has its declared type,
    so take them apart with `match` and `unreachable!` for the impossible
    case. Never panic and never return a wrong answer: an argument the

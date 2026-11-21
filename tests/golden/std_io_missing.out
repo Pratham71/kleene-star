@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_io_missing.kstar, line 1, in <main>
+    print std.io.read_text("data/io/none.txt")
+                           ^^^^^^^^^^^^^^^^^^
+IOError[E0607]: there is no file `data/io/none.txt`
+  hint: paths are relative to the program's folder; `std.io.exists` says whether a file is there

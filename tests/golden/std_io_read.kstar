@@ -1,0 +1,10 @@
+# Reading files next to the program with std.io.
+alphabet B = {0, 1}
+let words = std.io.read_words("data/io/words.txt")
+print words
+print std.io.read_lines("data/io/lines.txt")
+print len(std.io.read_text("data/io/lines.txt"))
+print std.io.exists("data/io/words.txt"), std.io.exists("data/io/none.txt")
+print std.io.files("data/io")
+print std.io.files("./data/io/")
+test std.testing.agree_on(/(0|1)*/, /(0|1)*/, words)

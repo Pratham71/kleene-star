@@ -606,6 +606,54 @@ false true
 {"", "ab", "ba"}
 ```
 
+### `std.io`
+
+Reading and writing text files in the program's folder, such as word lists and machines saved as JSON.
+
+| Function | What it does |
+|---|---|
+| `append_text(path: Str, text: Str) -> Int` | Adds `text` to the end of the file at `path`, creating it if needed, and gives the number of bytes written. |
+| `exists(path: Str) -> Bool` | Whether there is a file at `path`; a path outside the allowed folders is an error, not `false`. |
+| `files(folder: Str) -> Set[Str]` | The paths of the files directly in `folder` (`"."` for the program's own), leaving out hidden ones. |
+| `read_lines(path: Str) -> Set[Str]` | The lines of the file at `path` that are not empty, as a set. |
+| `read_text(path: Str) -> Str` | The whole file at `path`, which must be UTF-8 text of at most 1 MiB; line ends become `\n`. |
+| `read_words(path: Str) -> Set[Str]` | The words of the file at `path`, separated by spaces or new lines, as a set; a `#` starts a comment to the end of its line. |
+| `write_lines(path: Str, lines: Set[Str]) -> Int` | Writes the members of `lines` to the file at `path`, one per line in the set's order, and gives the number of bytes written. |
+| `write_text(path: Str, text: Str) -> Int` | Creates or replaces the file at `path` with `text`, and gives the number of bytes written. |
+
+A program may only use files in **its own folder** and the folders under
+it, so running a program someone sent you cannot read or change the rest
+of your files. Paths are relative to that folder, wherever you run the
+program from (in the REPL, to the current folder). To let a program use
+another folder too, run it with `kstar run --allow-path FOLDER`; the flag
+can be given several times. On every call:
+
+- the path is resolved on the disk, following `..` and symbolic links,
+  and must end up inside an allowed folder, or the call fails with E0618;
+- no part of it below that folder may be hidden (start with `.`), so
+  `.git` and `.env` are never read or written; names with `:` and Windows
+  device names such as `CON` are refused too;
+- writing creates or replaces only text files ending in `.txt`, `.json`,
+  `.csv`, `.tsv`, `.md`, `.log`, `.dot`, `.svg` or `.html`, never a
+  program or a script, and creates the folders on the way;
+- files are UTF-8 text (a leading byte order mark is dropped, and Windows
+  line ends become `\n`). A file read may be at most 1 MiB, one write at
+  most 1 MiB, and one run may write at most 16 MiB in at most 1000 calls;
+  past that is E0619.
+
+A code block in these docs is not a file, so it cannot use `std.io`; see
+`examples/22_io.kstar` for a program that reads a word list and saves a
+machine. A machine goes through a file as JSON, with the built-ins:
+
+```text
+let saved = std.io.write_text("out/m.json", to_json(M, "M"))
+let Again = from_json(Dfa, std.io.read_text("out/m.json"))
+```
+
+Every statement that is not a declaration needs a value, so the functions
+that write give the number of bytes written: use them with `let`, `print`
+or `test`.
+
 ### `std.math`
 
 Whole-number arithmetic: division, powers, roots, divisors and primes.
@@ -1585,6 +1633,7 @@ cannot be defined either (E0209).
 | `kstar run --out dir ...` | Writes drawings into `dir`. |
 | `kstar run --watch ...` | Runs again whenever a file changes; Ctrl-C stops. |
 | `kstar run --trace-calls ...` | Prints a line for every function call (with its arguments) and return (with its result). |
+| `kstar run --allow-path dir ...` | Lets `std.io` also read and write files in `dir`; without it a program may only use files in its own folder. |
 | `kstar run --eager-imports ...` | Runs each imported module at its `import` line, instead of when one of its names is first used. |
 | `kstar check <files>...` | Reports every error and warning without running. |
 | `kstar fmt <files>...` | Rewrites files (or every file in a folder) in the standard style. See [formatting](#formatting). |

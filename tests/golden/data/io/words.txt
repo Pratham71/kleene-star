@@ -1,0 +1,5 @@
+# Words for the std_io goldens.
+0 1 01
+10  # a comment
+
+0110

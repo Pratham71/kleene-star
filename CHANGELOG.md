@@ -12,6 +12,17 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Added
+
+- `std.io`: reading and writing text files next to the program, such as a
+  word list to test a machine on (`read_words`, `read_lines`, `read_text`)
+  or a machine saved with `to_json` (`write_text`, `write_lines`,
+  `append_text`), and `exists` and `files`. A program may only use files in
+  its own folder; `kstar run --allow-path FOLDER` allows another. Hidden
+  files are never touched, only text files can be written, and reads and
+  writes have size limits. New errors E0618 and E0619. Example:
+  `examples/22_io.kstar`.
+
 ## [0.5.1] - 2026-11-21
 
 A fix for the VS Code extension. Installing or updating Kleene Star now
