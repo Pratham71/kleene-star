@@ -849,7 +849,7 @@ impl Interp {
                     // value the function cannot use is a ValueError.
                     let kind = match failure.code {
                         codes::OVERFLOW | codes::MATH_DOMAIN => ErrorKind::Math,
-                        codes::NOT_IN_ALPHABET | codes::FOREIGN_WORD | codes::ALPHABET_MISMATCH => ErrorKind::Alphabet,
+                        codes::NOT_IN_ALPHABET | codes::FOREIGN_WORD | codes::ALPHABET_MISMATCH | codes::DUPLICATE_SYMBOL => ErrorKind::Alphabet,
                         codes::RESULT_TOO_LARGE | codes::GAVE_UP | codes::STEP_LIMIT => ErrorKind::Limit,
                         _ => ErrorKind::Value,
                     };

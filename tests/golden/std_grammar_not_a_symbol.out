@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_grammar_not_a_symbol.kstar, line 1, in <main>
+    print std.grammar.balanced("(", ")")
+                               ^^^
+ValueError[E0614]: `(` cannot be a symbol
+  hint: a symbol is one letter or digit, as in an alphabet

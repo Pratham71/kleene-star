@@ -5,6 +5,7 @@
 //! just one user of it.
 
 pub mod binary;
+pub mod cfg;
 pub mod codegen;
 pub mod convert;
 pub mod dfa;

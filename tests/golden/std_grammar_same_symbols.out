@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_grammar_same_symbols.kstar, line 1, in <main>
+    print std.grammar.anbn("a", "a")
+                                ^^^
+AlphabetError[E0503]: both symbols are `a`
+  hint: the two symbols must be different

@@ -1,0 +1,5 @@
+Error in std_grammar_import_keyword.kstar, line 1:
+    import std.grammar
+           ^^^^^^^^^^^
+SyntaxError[E0115]: this module needs a name: `grammar` cannot be used as one
+  hint: name it with `as`: `import std.grammar as grammars`

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_grammar_no_such_variable.kstar, line 2, in <main>
+    print std.grammar.follow(G, "s")
+                                ^^^
+ValueError[E0617]: the grammar has no variable "s"
+  hint: its variables are `S`

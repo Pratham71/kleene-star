@@ -12,6 +12,24 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Added
+
+- `std.grammar`: the steps of the Chomsky normal form construction one at a
+  time (`remove_useless`, `remove_eps`, `remove_units`, and the sets they use:
+  `nullable`, `generating`, `reachable`), `first` and `follow` sets, `is_ll1`
+  and `is_cnf`, `words_up_to` to list a grammar's short words, and four
+  ready-made grammars: `balanced`, `anbn`, `palindromes` and `equal_count`.
+  Example: `examples/18_grammar.kstar`.
+- Standard-library modules may be named by a keyword (`std.grammar`). Such a
+  module is used by its full name, with `from ... import`, or imported with
+  `as`; plain `import std.grammar` asks for a name.
+- Error code E0617, for a variable name a grammar does not have.
+
+### Changed
+
+- A standard-library error about two symbols that must differ is an
+  `AlphabetError` (E0503), like the same error in an alphabet.
+
 ## [0.4.0] - 2026-11-19
 
 Four new standard-library modules for the subject itself, and a way to move

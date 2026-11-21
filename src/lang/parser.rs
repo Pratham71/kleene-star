@@ -380,6 +380,10 @@ impl<'a> Parser<'a> {
                 if !suggestion.starts_with(char::is_alphabetic) {
                     suggestion = format!("m_{suggestion}");
                 }
+                if Tok::keyword(&suggestion).is_some() {
+                    // `import std.grammar`: `grammar` begins a grammar.
+                    suggestion.push('s');
+                }
                 return Err(Diag::new(
                     ErrorKind::Syntax,
                     lib.span,
@@ -462,7 +466,16 @@ impl<'a> Parser<'a> {
         while *self.peek() == Tok::Dot {
             let dot = self.span();
             let next = self.tokens[(self.pos + 1).min(self.tokens.len() - 1)].clone();
-            let Tok::Ident(part) = &next.tok else {
+            // The library has modules named after the things they work on,
+            // `std.grammar`, `std.pda` and `std.tm`, which are keywords. A
+            // keyword is a module name right after `std`, and nowhere else.
+            let keyword_module = name.text == "std" && Tok::keyword(self.text(next.span)).is_some();
+            let part = match &next.tok {
+                Tok::Ident(part) => part.clone(),
+                _ if keyword_module => self.text(next.span).to_string(),
+                _ => String::new(),
+            };
+            if part.is_empty() {
                 self.advance();
                 let mut err = self.error(format!("expected a name after `.`, found {}", next.tok.describe()));
                 if Tok::keyword(self.text(next.span)).is_some() {
@@ -472,7 +485,7 @@ impl<'a> Parser<'a> {
                     ));
                 }
                 return Err(err);
-            };
+            }
             if dot.start != name.span.end || next.span.start != dot.end {
                 return Err(Diag::new(ErrorKind::Syntax, dot, "a qualified name is written without spaces around `.`")
                     .hint(format!("write `{}.{part}`", name.text)));

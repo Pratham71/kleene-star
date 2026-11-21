@@ -1,0 +1,2 @@
+let G = std.grammar.anbn("a", "b")
+print std.grammar.follow(G, "s")

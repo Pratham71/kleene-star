@@ -1,0 +1,1 @@
+print std.grammar.anbn("a", "a")

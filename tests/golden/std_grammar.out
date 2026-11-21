@@ -1,0 +1,36 @@
+{"A", "B", "S"}
+{"A", "B", "S"}
+{"A", "B", "C", "S"}
+Grammar with 3 variables over {a, b}, start S
+S -> A B | a
+A -> B | eps
+B -> b | eps
+Grammar with 4 variables over {a, b}, start S
+S -> A B | B | A | eps | a C | a
+A -> B
+B -> b
+C -> a C
+Grammar with 4 variables over {a, b}, start S
+S -> A B | a C | a
+A -> eps | b
+B -> b | eps
+C -> a C
+false true
+Grammar with 2 variables over {a, b}, start S0
+S0 -> S | eps
+S  -> a S b S | a b S | a S b | a b
+{"i", "l"} {"", "p"} {"", "m"}
+{"", "r"} {"", "p", "r"} {"", "m", "p", "r"}
+true false
+{"i", "imi", "ipi", "lir"}
+{""} {""}
+Grammar with 1 variable over {l, r}, start S
+S -> l S r S | eps
+Grammar with 1 variable over {0, 1}, start S
+S -> 0 S 1 | eps
+Grammar with 1 variable over {0, 1}, start S
+S -> eps | 0 | 0 S 0 | 1 | 1 S 1
+Grammar with 1 variable over {a, b}, start S
+S -> a S b S | b S a S | eps
+351
+tests: 1 passed, 0 failed

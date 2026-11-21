@@ -1,0 +1,1 @@
+print std.grammar.words_up_to(std.grammar.anbn("a", "b"), 10001)

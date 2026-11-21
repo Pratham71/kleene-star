@@ -1486,6 +1486,26 @@ ValueError[E0616]: this JSON holds a Nfa, not a Dfa
   hint: read it as what it is, `from_json(Nfa, text)`, and convert it if needed
 ```
 
+## E0617: A name that is not a variable of the grammar
+
+`std.grammar.first` and `std.grammar.follow` take the name of a variable of
+the grammar, as a string. The name must be exactly one of the grammar's
+variables, with the same capital letters; the hint lists them.
+
+```kstar-error
+let G = std.grammar.anbn("a", "b")
+print std.grammar.first(G, "T")
+```
+
+```text
+Traceback (most recent call last):
+  demo.kstar, line 2, in <main>
+    print std.grammar.first(G, "T")
+                               ^^^
+ValueError[E0617]: the grammar has no variable "T"
+  hint: its variables are `S`
+```
+
 ## W0100: A state that can never be reached
 
 No sequence of moves from the start state leads to this state, so it does

@@ -1,0 +1,2 @@
+print std.grammar.balanced("(", ")")
+print std.grammar.anbn("ab", "c")
