@@ -20,7 +20,8 @@ foreach ($file in $Files) {
         CompanyName    = "Kleene Star"
     }
     foreach ($name in $expected.Keys) {
-        $actual = $info.$name
+        # Inno Setup pads the installer's strings with spaces.
+        $actual = "$($info.$name)".Trim()
         if ($actual -ne $expected[$name]) {
             $wrong += "${file}: $name is '$actual', not '$($expected[$name])'"
         }

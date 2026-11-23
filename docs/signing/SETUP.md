@@ -81,4 +81,10 @@ off again, delete the secret.
 
 If a request is refused because a file's product name or version does not
 match, compare `installer/check-version-info.ps1`'s line in the job's log
-with the artifact configuration.
+with the artifact configuration. Inno Setup pads the installer's version
+strings with trailing spaces (`Kleene Star   ...`). If SignPath compares
+them without trimming and refuses the installer for that, remove the
+`product-name` and `product-version` attributes from the `installer`
+configuration in SignPath (the installer is still bound to this
+repository's release workflow and to your approval), and note it in
+[installer.xml](installer.xml).
