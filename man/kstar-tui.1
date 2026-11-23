@@ -1,0 +1,36 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-TUI 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-tui \- a full-screen menu to run, trace, draw or export
+.SH SYNOPSIS
+.nf
+\fBkstar tui\fR [\-\-theme <name>] [<folder>]
+.fi
+.SH DESCRIPTION
+.PP
+A full-screen menu in the terminal. Pick a .kstar file in <folder> (the
+current one by default, three folders deep), then run the whole file, or
+pick a machine in it and trace it on a word step by step (Left and Right
+step through the run), draw it, draw a run of it, or export it as Rust,
+Python or JSON. Esc goes back, q leaves.
+.PP
+To list a file's machines it runs the file quietly, as \fBkstar trace\fR
+does. Everything here is also a command: \fBkstar run\fR, \fBkstar trace\fR,
+\fBdraw\fR in a program, and \fBkstar export\fR. It needs a terminal; it does not
+start when output is redirected, or with NO_COLOR or TERM=dumb.
+.SH OPTIONS
+.TP
+\fB\-\-theme\fR \fI<name>\fR
+the colours of the screen: auto (the default: the terminal's own colours), light, dark or high-contrast. KSTAR_THEME and the config file work as for \fBkstar run\fR.
+.SH EXAMPLES
+.TP
+\fBkstar tui\fR
+pick a program in this folder
+.TP
+\fBkstar tui examples\fR
+pick one of the examples
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

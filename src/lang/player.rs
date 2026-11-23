@@ -227,6 +227,27 @@ pub fn layout(diagram: &Diagram) -> Vec<(i64, i64)> {
     pos
 }
 
+/// A state's name as the page writes it in its circle: at most 9
+/// characters, a longer one cut to 8 and an ellipsis (the whole name is in
+/// its tooltip).
+pub fn state_label(name: &str) -> String {
+    if name.chars().count() > 9 {
+        format!("{}…", name.chars().take(8).collect::<String>())
+    } else {
+        name.to_string()
+    }
+}
+
+/// The smallest radius the default, 24, of a state's circle that holds its
+/// label with room to spare, also inside the inner ring of an accepting
+/// state (5 smaller). The label is 13px monospace, at most 8px a character.
+pub fn state_radius(label: &str) -> i64 {
+    const CHAR_WIDTH: i64 = 8;
+    // Half the label, 4px of room, and the 5px of an accepting state's ring.
+    let fits = label.chars().count() as i64 * CHAR_WIDTH / 2 + 4 + 5;
+    fits.max(24)
+}
+
 const MARGIN: i64 = 70;
 /// Room above the first row for self-loops and their labels.
 const MARGIN_TOP: i64 = 100;
@@ -243,8 +264,9 @@ fn data(play: &Play, title: &str) -> serde_json::Value {
         .iter()
         .enumerate()
         .map(|(s, name)| {
+            let label = state_label(name);
             json!({
-                "name": name, "x": pos[s].0, "y": pos[s].1,
+                "name": name, "label": label, "r": state_radius(&label), "x": pos[s].0, "y": pos[s].1,
                 "start": s == d.start, "accept": d.accept.contains(&s), "reject": d.reject.contains(&s),
             })
         })
@@ -323,6 +345,28 @@ mod tests {
         assert!(p.frames[1].active.len() >= 2, "{:?}", p.frames[1]);
         assert!(!p.frames[1].taken.is_empty());
         assert_eq!(p.result, "ACCEPTED");
+    }
+
+    #[test]
+    fn circles_grow_to_hold_their_labels() {
+        assert_eq!(state_radius("q0"), 24);
+        assert_eq!(state_label("q_accept"), "q_accept");
+        assert_eq!(state_label("a_very_long_name"), "a_very_l…");
+        for name in ["ready", "q_accept", "q_reject", "a_very_long_name"] {
+            let label = state_label(name);
+            let r = state_radius(&label);
+            let half_width = label.chars().count() as i64 * 8 / 2;
+            // Inside the inner ring of an accepting state, with room.
+            assert!(half_width + 4 <= r - 5, "{name}: label {half_width} wide by half, radius {r}");
+            // And two circles still fit between the rows.
+            // (GAP_Y is the smaller gap, so this holds for the columns too.)
+            assert!(2 * r < GAP_Y, "{name}: radius {r}");
+        }
+        // The page gets the label and the radius of each state.
+        let mut dfa = even_zeros();
+        dfa.states[1] = "q_accept".into();
+        let page = html(&play(&Value::dfa(dfa), "0").unwrap(), "M");
+        assert!(page.contains(r#""label":"q_accept","name":"q_accept","r":41"#), "{}", &page[page.find("\"states\"").unwrap_or(0)..][..200]);
     }
 
     #[test]

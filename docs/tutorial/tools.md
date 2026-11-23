@@ -58,6 +58,11 @@ factorial function called as `print fact(3)`:
 
 `kstar new name` writes `name.kstar`, a small working program to change.
 
+`kstar tui` opens a full-screen menu in the terminal: choose a program
+in the folder, then a machine in it, and trace it on a word one step at
+a time (Left and Right), draw it, or export it, without remembering the
+commands. Every choice there is also a command.
+
 `kstar help` lists every command, and `kstar help run` (or
 `kstar run --help`) shows one command's options with examples.
 `kstar help std` lists the standard library's modules, and

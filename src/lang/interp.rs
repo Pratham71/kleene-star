@@ -222,6 +222,11 @@ impl Interp {
         self.frames.last().unwrap().module
     }
 
+    /// The value of a name defined at the top level of the main file.
+    pub fn main_global(&self, name: &str) -> Option<Value> {
+        self.modules.get(&FileId::MAIN)?.globals.get(name).cloned()
+    }
+
     fn module(&mut self, file: FileId) -> &mut ModuleState {
         self.modules.get_mut(&file).expect("the loader registered every module")
     }

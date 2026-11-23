@@ -212,6 +212,31 @@ Every error message shows its code in brackets: NameError[E0200].",
         examples: &[("kstar explain E0200", "explain one code"), ("kstar explain --list", "list them all")],
     },
     Command {
+        name: "tui",
+        group: "Explore and learn",
+        synopsis: "tui [folder]",
+        summary: "a full-screen menu to run, trace, draw or export",
+        usage: &["kstar tui [--theme <name>] [<folder>]"],
+        description: "\
+A full-screen menu in the terminal. Pick a .kstar file in <folder> (the
+current one by default, three folders deep), then run the whole file, or
+pick a machine in it and trace it on a word step by step (Left and Right
+step through the run), draw it, draw a run of it, or export it as Rust,
+Python or JSON. Esc goes back, q leaves.
+
+To list a file's machines it runs the file quietly, as `kstar trace`
+does. Everything here is also a command: `kstar run`, `kstar trace`,
+`draw` in a program, and `kstar export`. It needs a terminal; it does not
+start when output is redirected, or with NO_COLOR or TERM=dumb.",
+        flags: &[
+            Flag {
+                names: "--theme <name>",
+                help: "the colours of the screen: auto (the default: the terminal's own colours), light, dark or high-contrast. KSTAR_THEME and the config file work as for `kstar run`.",
+            },
+        ],
+        examples: &[("kstar tui", "pick a program in this folder"), ("kstar tui examples", "pick one of the examples")],
+    },
+    Command {
         name: "help",
         group: "Explore and learn",
         synopsis: "help [topic]",
@@ -299,15 +324,22 @@ for .kstar files.",
         group: "Install and update",
         synopsis: "update",
         summary: "update kstar and its VS Code extension",
-        usage: &["kstar update [--check] [--yes] [--no-vscode]"],
+        usage: &["kstar update [options]"],
         description: "\
-Asks GitHub for the latest stable release (through the `gh` command, or
+On a terminal, when there is a newer release, shows a full-screen view:
+this kstar's version, the latest stable and beta releases, what is new in
+the chosen one, a question, then the install step by step with its output.
+Left and Right choose stable or beta, Enter updates, q leaves.
+
+Otherwise (with --no-tui, --check or --yes, when standard input or output
+is not a terminal, or with NO_COLOR or TERM=dumb) it works in plain text:
+it asks GitHub for the latest stable release (through the `gh` command, or
 `curl` with GITHUB_TOKEN). If it is newer than this kstar, it shows both
 versions and what the release is about, and asks \"Update to vX.Y.Z?
 [Y/n]\". On yes it installs the release with its install script into the
 folder kstar is in, which also updates the VS Code extension; on no it
-changes nothing. Pre-releases (such as 0.2.5-beta) are not offered: install
-one by name with KSTAR_VERSION (see docs/install.md).
+changes nothing. Betas (pre-releases such as 0.2.5-beta) are offered only
+with --beta, or on the beta channel of the full-screen view.
 
 When standard input is not a terminal (a script or CI), it does not ask and
 does not update: pass --yes.
@@ -321,13 +353,19 @@ from this kstar's release, checks its SHA-256 checksum and installs it.",
                 names: "--check",
                 help: "only say whether a newer release exists, and whether the VS Code extension matches, without installing anything",
             },
+            Flag { names: "--beta", help: "also offer betas: update to the latest pre-release when it is newer than the latest stable release" },
             Flag { names: "-y, --yes", help: "update without asking" },
             Flag { names: "--no-vscode", help: "leave VS Code alone (so does KSTAR_NO_VSCODE=1)" },
+            Flag { names: "--no-tui", help: "plain text and a [Y/n] question instead of the full-screen view" },
+            Flag {
+                names: "--theme <name>",
+                help: "the colours of the screen: auto (the default: the terminal's own colours), light, dark or high-contrast. KSTAR_THEME and the config file work as for `kstar run`.",
+            },
         ],
         examples: &[
             ("kstar update --check", "see whether there is a newer release"),
             ("kstar update", "update, after asking"),
-            ("kstar update --yes --no-vscode", "update without asking, leaving VS Code alone"),
+            ("kstar update --beta --yes", "update to the newest release, betas included, without asking"),
         ],
     },
     Command {

@@ -1,0 +1,24 @@
+╭ examples/01_dfa.kstar ───────────────────────────────────────────────────────╮
+│ Run the file, or choose a machine.                                           │
+│                                                                              │
+│ ▶ Run the whole file                                                         │
+│   EvenZeros           Dfa                                                    │
+│   G                   Grammar                                                │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ choose  ·  Enter open  ·  Esc back  ·  q quit

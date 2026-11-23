@@ -1,0 +1,24 @@
+╭ kstar export --format rust examples/01_dfa.kstar EvenZeros ──────────────────╮
+│Wrote /home/me/EvenZeros.rs (Rust, 40 lines)                                  │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ scroll  ·  Esc back  ·  q quit

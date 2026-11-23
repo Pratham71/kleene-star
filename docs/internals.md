@@ -411,6 +411,17 @@ checks every pair against WCAG AA. The theme of a run is set by
 `Session::theme` and kept in a thread-local while the program runs, the
 way `--fixed-clock` is, so `std.visual` functions see it too.
 
+**The terminal UI** is `src/tui/`, built with ratatui and its crossterm
+backend. Each screen (`update::UpdateScreen`, `home::HomeScreen`) is a
+plain value with `draw` and `key`; what it does to the world goes through
+a trait (`update::Installer`, `home::Backend`) that the `kstar` program
+implements, so the tests drive a screen with keys and compare what it
+draws on ratatui's `TestBackend` with the snapshots in
+`src/tui/snapshots/` (`UPDATE_TUI=1 cargo test --lib tui` writes them
+again). `tui::wanted` decides whether to use it: both ends a terminal, no
+`--no-tui`, no `NO_COLOR`, no `TERM=dumb`. Its colours are the theme
+tokens; `auto` keeps the terminal's own colours.
+
 The info manual is written directly, without `makeinfo`: a node per
 command and per standard-library module, separated by `\x1f`, with a tag
 table.

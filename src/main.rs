@@ -6,7 +6,7 @@ mod update;
 
 use kstar::lang::codes;
 use kstar::lang::error::Paint;
-use kstar::Session;
+use kstar::{Captured, Session};
 use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -49,6 +49,7 @@ fn main() -> ExitCode {
             _ => usage_error("`kstar new` needs one name", "new"),
         },
         "trace" => trace_command(rest),
+        "tui" => tui_command(rest),
         "export" => export_command(rest),
         "explain" => match rest {
             ["--list"] => {
@@ -481,20 +482,6 @@ fn trace_command(args: &[&str]) -> ExitCode {
     })
 }
 
-/// What a program prints, kept so that it can be read back.
-#[derive(Clone, Default)]
-struct Captured(std::rc::Rc<std::cell::RefCell<Vec<u8>>>);
-
-impl std::io::Write for Captured {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        self.0.borrow_mut().extend_from_slice(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
 /// What `kstar export` writes.
 #[derive(Clone, Copy, PartialEq)]
 enum ExportFormat {
@@ -695,6 +682,36 @@ fn export_command(args: &[&str]) -> ExitCode {
             }
         }
     })
+}
+
+/// `kstar tui`: the full-screen menu (`kstar::tui::home`).
+fn tui_command(args: &[&str]) -> ExitCode {
+    let options = match Options::parse(args, "tui") {
+        Ok(options) => options,
+        Err(message) => return usage_error(&message, "tui"),
+    };
+    let root = match &options.files[..] {
+        [] => PathBuf::from("."),
+        [folder] if Path::new(folder).is_dir() => PathBuf::from(folder),
+        [folder] => return usage_error(&format!("{folder} is not a folder"), "tui"),
+        _ => return usage_error("`kstar tui` takes one folder at most", "tui"),
+    };
+    if !kstar::tui::wanted(false) {
+        eprintln!(
+            "kstar: `kstar tui` needs a terminal (and no NO_COLOR or TERM=dumb); use `kstar run`, `kstar trace` and `kstar export` instead"
+        );
+        return ExitCode::from(2);
+    }
+    let program = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("kstar"));
+    let backend = kstar::tui::home::Local { program, root, theme: options.theme };
+    let mut screen = kstar::tui::home::HomeScreen::new(Box::new(backend));
+    match kstar::tui::run(&mut screen, &kstar::tui::Palette::of(options.theme)) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("kstar: the terminal UI failed: {e}");
+            ExitCode::FAILURE
+        }
+    }
 }
 
 /// `kstar fmt`: formats each file in place, or with `--check` only reports

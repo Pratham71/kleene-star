@@ -9,6 +9,7 @@ pub mod automata;
 pub mod help;
 pub mod manual;
 pub mod theme;
+pub mod tui;
 pub mod ide;
 pub mod lang;
 
@@ -217,6 +218,12 @@ impl Session {
         result.map(|ty| ty.to_string()).map_err(|diag| diag.render_styled(&sources, self.color))
     }
 
+    /// The value of a name defined at the top level of the main file, once
+    /// it has run.
+    pub fn value(&self, name: &str) -> Option<lang::value::Value> {
+        self.interp.main_global(name)
+    }
+
     /// Every name defined at the top level so far, for completion.
     pub fn names(&self) -> Vec<String> {
         self.checker.global_names()
@@ -225,6 +232,28 @@ impl Session {
     /// How many `test` statements passed and failed so far.
     pub fn tests(&self) -> (usize, usize) {
         (self.interp.passed, self.interp.failed)
+    }
+}
+
+/// Output kept in memory, for `Session::set_output`: clones share one
+/// buffer, so the caller can read what the program printed.
+#[derive(Clone, Default)]
+pub struct Captured(pub std::rc::Rc<std::cell::RefCell<Vec<u8>>>);
+
+impl Captured {
+    /// What was written so far, as text.
+    pub fn text(&self) -> String {
+        String::from_utf8_lossy(&self.0.borrow()).into_owned()
+    }
+}
+
+impl Write for Captured {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0.borrow_mut().extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
     }
 }
 
