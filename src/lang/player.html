@@ -1,24 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{THEME}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="Kleene Star">
 <title>{{TITLE}}</title>
 <style>
-  :root {
-    --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --line: #8c959f; --panel: #f6f8fa;
-    --active: #1f6feb; --active-fill: #cfe3ff; --taken: #1f6feb; --accept: #1a7f37; --reject: #cf222e; --border: #d0d7de;
+  /* The colours come from Kleene Star's themes (src/theme.rs). */
+{{THEME_CSS}}  /* Motion: colour changes only, 150ms, and none with reduced motion. */
+  :root { --duration-quick: 150ms; --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1); }
+  body, .stage, .box, .cell, button, select, .node circle, .node rect, .edge path, .edge text, .arrow, .arrow-taken {
+    transition-property: fill, stroke, color, background-color, border-color, box-shadow;
+    transition-duration: var(--duration-quick);
+    transition-timing-function: var(--ease-smooth-out);
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0d1117; --fg: #e6edf3; --muted: #8d96a0; --line: #6e7681; --panel: #161b22;
-      --active: #58a6ff; --active-fill: #1f3a5f; --taken: #58a6ff; --accept: #3fb950; --reject: #f85149; --border: #30363d;
-    }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  header { padding: 14px 20px 6px; }
+  header { padding: 14px 20px 6px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
   h1 { font-size: 18px; margin: 0; font-weight: 600; }
   h1 code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
   .sub { color: var(--muted); font-size: 13px; }
@@ -31,7 +32,7 @@
   .box h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
   .cells { display: flex; flex-wrap: wrap; gap: 3px; }
   .cell { min-width: 24px; height: 28px; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center;
-          border: 1px solid var(--border); border-radius: 4px; font-family: ui-monospace, Consolas, monospace; background: var(--bg); }
+          border: 1px solid var(--border); border-radius: 4px; font-family: ui-monospace, Consolas, monospace; background: var(--cell); color: var(--fg); }
   .cell.done { color: var(--muted); opacity: .55; }
   .cell.next, .cell.head { border-color: var(--active); box-shadow: 0 0 0 2px var(--active) inset; }
   .stack { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
@@ -39,14 +40,17 @@
   .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 20px 4px; }
   button, select { font: inherit; color: var(--fg); background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
                    padding: 4px 10px; cursor: pointer; min-width: 38px; }
-  button:hover { border-color: var(--active); }
-  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--active); outline-offset: 1px; }
-  input[type=range] { flex: 1; min-width: 160px; accent-color: var(--active); }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+  #theme { white-space: nowrap; font-size: 13px; }
   .step { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 110px; }
   .verdict { font-weight: 600; }
   .verdict.ACCEPTED { color: var(--accept); }
   .verdict.REJECTED { color: var(--reject); }
   .node circle, .node rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.6; }
+  .node.accepting circle { stroke: var(--accept); }
+  .node.rejecting rect { stroke: var(--reject); }
   .node.active circle, .node.active rect { fill: var(--active-fill); stroke: var(--active); stroke-width: 2.6; }
   .node text { fill: var(--fg); font: 13px ui-monospace, Consolas, monospace; text-anchor: middle; dominant-baseline: central; }
   .edge path { fill: none; stroke: var(--line); stroke-width: 1.4; }
@@ -60,8 +64,11 @@
 </head>
 <body>
 <header>
-  <h1 id="title"></h1>
-  <div class="sub" id="sub"></div>
+  <div>
+    <h1 id="title"></h1>
+    <div class="sub" id="sub"></div>
+  </div>
+  <button id="theme" type="button" title="Change the colours: auto (as the system), light, dark or high contrast">Theme: auto</button>
 </header>
 <div class="controls" role="toolbar" aria-label="Playback">
   <button id="first" title="First step (Home)" aria-label="First step">&#x23EE;</button>
@@ -89,7 +96,7 @@
     <div class="box"><h2>Result</h2><div id="result"></div></div>
   </div>
 </main>
-<footer>Made by Kleene Star with <code>draw M on "w"</code>. Space plays and pauses; the arrow keys step.</footer>
+<footer>Made by Kleene Star with <code>draw M on "w"</code>. Space plays and pauses; the arrow keys step; T changes the theme.</footer>
 <script type="application/json" id="kstar-run">{{DATA}}</script>
 <script>
 "use strict";
@@ -115,6 +122,26 @@
   $("title").textContent = run.title + " on “" + run.word + "”";
   $("sub").textContent = run.kind + " with " + run.states.length + " state" + (run.states.length === 1 ? "" : "s") +
     ", " + (run.frames.length - 1) + " step" + (run.frames.length === 2 ? "" : "s");
+
+  // ---- the theme ----
+  // Starts as the page was written (auto follows the system); the button
+  // goes through the four, and the choice is kept for the next page.
+  const THEMES = ["auto", "light", "dark", "high-contrast"];
+  const NAMES = { "auto": "auto", "light": "light", "dark": "dark", "high-contrast": "high contrast" };
+  const root = document.documentElement;
+  function setTheme(name) {
+    root.setAttribute("data-theme", name);
+    $("theme").textContent = "Theme: " + NAMES[name];
+    $("theme").setAttribute("aria-label", "Theme: " + NAMES[name] + ". Change the colours");
+  }
+  let saved = null;
+  try { saved = localStorage.getItem("kstar-theme"); } catch (e) { /* storage may be off for files */ }
+  setTheme(THEMES.includes(saved) ? saved : (THEMES.includes(root.getAttribute("data-theme")) ? root.getAttribute("data-theme") : "auto"));
+  $("theme").addEventListener("click", () => {
+    const next = THEMES[(THEMES.indexOf(root.getAttribute("data-theme")) + 1) % THEMES.length];
+    setTheme(next);
+    try { localStorage.setItem("kstar-theme", next); } catch (e) { /* not kept */ }
+  });
 
   // ---- the diagram ----
   const svg = $("graph");
@@ -161,7 +188,7 @@
   const start = run.states.find((s) => s.start);
   if (start) el("path", { d: "M" + (start.x - R - 34) + "," + start.y + " L" + (start.x - R - 2) + "," + start.y, class: "edge", stroke: "currentColor", "marker-end": "url(#arrow)", style: "stroke: var(--line); stroke-width: 1.4" }, svg);
   const nodes = run.states.map((s) => {
-    const g = el("g", { class: "node" }, svg);
+    const g = el("g", { class: "node" + (s.accept ? " accepting" : "") + (s.reject ? " rejecting" : "") }, svg);
     if (s.reject) {
       el("rect", { x: s.x - R, y: s.y - R, width: 2 * R, height: 2 * R, rx: 4 }, g);
     } else {
@@ -257,6 +284,7 @@
     else if (e.key === "ArrowLeft") { stop(); show(at - 1); }
     else if (e.key === "Home") { stop(); show(0); }
     else if (e.key === "End") { stop(); show(run.frames.length - 1); }
+    else if (e.key === "t" || e.key === "T") { $("theme").click(); }
   });
   show(0);
 })();

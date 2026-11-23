@@ -14,6 +14,12 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Changed
 
+- Drawings (`draw`, `std.visual.dot`, `dot_run`) now name their colours:
+  accepting states are outlined in green, and the DOT text sets the
+  background, node and edge colours of the theme.
+- An option may be written `--name=value` as well as `--name value`
+  everywhere, not only `--color`.
+
 - `kstar help` is rewritten. With no topic it lists every command, one
   line each, grouped by task (run and check, explore and learn, export,
   editor, install and update). `kstar help <command>` and
@@ -37,6 +43,14 @@ its GitHub release, so write it for people who use Kleene Star.
   The Linux and macOS archives carry them in `man/`, and `install.sh`
   installs them under `~/.kstar/share`, where `man` finds them with no
   setup.
+- Themes: `light`, `dark` and `high-contrast`, defined once and used by
+  `draw`, `std.visual` and the page `draw M on "w"` writes. Choose one
+  with `kstar run --theme <name>`, the `KSTAR_THEME` environment variable,
+  or `theme = "<name>"` in `~/.config/kstar/config.toml`
+  (`%APPDATA%\kstar\config.toml` on Windows). The page has a Theme
+  button (or T), follows the system's dark and more-contrast settings in
+  `auto`, and keeps still with reduced motion. Every theme meets WCAG AA,
+  and drawings stay light by default, which prints well.
 - `install.sh --uninstall` removes what `install.sh` installed, the PATH
   line in your shell's startup files included.
 

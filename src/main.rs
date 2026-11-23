@@ -67,7 +67,7 @@ fn main() -> ExitCode {
                 Ok(_) => return usage_error("`kstar repl` takes no files; use `:load <file>` inside it", "repl"),
                 Err(message) => return usage_error(&message, "repl"),
             };
-            kstar::with_big_stack(move || repl::repl(options.color, options.trace_calls))
+            kstar::with_big_stack(move || repl::repl(options.color, options.trace_calls, options.theme))
         }
         file if file.ends_with(".kstar") => run_command(&args, false),
         other => {
@@ -130,6 +130,9 @@ struct Options {
     trace_calls: bool,
     eager_imports: bool,
     color: bool,
+    /// The colours of drawings and players (`--theme`, `KSTAR_THEME` or
+    /// the config file).
+    theme: kstar::theme::Choice,
 }
 
 impl Options {
@@ -145,9 +148,27 @@ impl Options {
             trace_calls: false,
             eager_imports: false,
             color: false,
+            theme: kstar::theme::Choice::Auto,
         };
         let mut color = "auto";
-        let mut args = args.iter();
+        let mut theme = None;
+        // `--name=value` is the same as `--name value`.
+        let mut split = Vec::new();
+        for &arg in args {
+            match arg.split_once('=') {
+                Some((name, value)) if name.starts_with("--") => {
+                    let takes_value = kstar::help::command(command)
+                        .and_then(|c| c.flags.iter().find(|f| f.spellings().contains(&name)))
+                        .is_some_and(|f| f.takes_value());
+                    if kstar::help::accepts(command, name) && !takes_value {
+                        return Err(format!("`{name}` takes no value"));
+                    }
+                    split.extend([name, value]);
+                }
+                _ => split.push(arg),
+            }
+        }
+        let mut args = split.iter();
         while let Some(&arg) = args.next() {
             let is_option = arg.starts_with('-') && arg != "-";
             if is_option && !kstar::help::accepts(command, arg) {
@@ -163,10 +184,15 @@ impl Options {
                 "--eager-imports" => options.eager_imports = true,
                 "--trace-calls" => options.trace_calls = true,
                 "--color" => color = args.next().ok_or("`--color` needs auto, always or never")?,
-                _ if arg.starts_with("--color=") => color = &arg["--color=".len()..],
+                "--theme" => theme = Some(*args.next().ok_or("`--theme` needs auto, light, dark or high-contrast")?),
                 _ if is_option => unreachable!("`{arg}` is in the help of `kstar {command}` but not handled"),
                 file => options.files.push(file.to_string()),
             }
+        }
+        // Only commands that draw read the theme, so a mistake in
+        // KSTAR_THEME or the config file does not stop `kstar check`.
+        if kstar::help::accepts(command, "--theme") {
+            options.theme = kstar::theme::resolve(theme)?;
         }
         options.color = match color {
             "auto" => color_wanted(),
@@ -330,9 +356,11 @@ fn run_file(file: &Path, options: &Options, check_only: bool) -> bool {
     let (color, trace_calls, eager) = (options.color, options.trace_calls, options.eager_imports);
     let allow_paths = options.allow_paths.clone();
     let fixed_clock = options.fixed_clock;
+    let theme = options.theme;
     kstar::with_big_stack(move || {
         let paint = Paint(color);
         let mut session = Session::new(&name, Box::new(std::io::stdout()), out_dir, false);
+        session.theme(theme);
         session.eager_imports(eager);
         session.render_svg(true);
         session.ascii_only(console_needs_ascii());

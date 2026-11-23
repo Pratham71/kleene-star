@@ -402,6 +402,15 @@ and `tests/manual.rs` fails when they are out of date
 every page with `groff -ww` and `man --warnings` and fails on any warning
 (`.github/scripts/check-man.sh`), installs a release archive with
 `install.sh` and checks that `man kstar` finds the page, then uninstalls.
+The colours are in `src/theme.rs`: one `Theme` of tokens per theme
+(background, surface, text, muted, border, line, accent, accepting,
+current, current fill, edge taken, error, cell). `dot.rs` writes them into
+DOT, `player.rs` puts them into the page as CSS custom properties (with
+`prefers-color-scheme` and `prefers-contrast` for `auto`), and a test
+checks every pair against WCAG AA. The theme of a run is set by
+`Session::theme` and kept in a thread-local while the program runs, the
+way `--fixed-clock` is, so `std.visual` functions see it too.
+
 The info manual is written directly, without `makeinfo`: a node per
 command and per standard-library module, separated by `\x1f`, with a tag
 table.

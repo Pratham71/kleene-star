@@ -96,6 +96,12 @@ Options:
                       return with its result
   --eager-imports     run each imported module at its import line, not when one
                       of its names is first used
+  --theme <name>      the colours of drawings and of the page `draw M on "w"`
+                      writes: auto (the default: the page follows the system,
+                      drawings are light), light, dark or high-contrast. Without
+                      it, the KSTAR_THEME environment variable or `theme =
+                      "<name>"` in the config file (~/.config/kstar/config.toml,
+                      or %APPDATA%\kstar\config.toml on Windows) decides.
   --color <when>      auto (the default), always or never. With auto, output is
                       coloured only on a terminal and never when the NO_COLOR
                       environment variable is set.
@@ -105,8 +111,8 @@ Examples:
       run one program
   kstar run labs/ --out drawings
       run every program in labs/, writing drawings into drawings/
-  kstar run --watch lab1.kstar
-      run lab1.kstar again on every save
+  kstar run --theme dark lab1.kstar
+      run lab1.kstar, drawing in the dark theme
 
 
 File: kstar.info,  Node: check,  Next: fmt,  Prev: run,  Up: Top
@@ -192,6 +198,12 @@ A bare expression is printed, and names can be defined again. Inside it,
 Options:
   --trace-calls       print every function call with its arguments, and every
                       return with its result
+  --theme <name>      the colours of drawings and of the page `draw M on "w"`
+                      writes: auto (the default: the page follows the system,
+                      drawings are light), light, dark or high-contrast. Without
+                      it, the KSTAR_THEME environment variable or `theme =
+                      "<name>"` in the config file (~/.config/kstar/config.toml,
+                      or %APPDATA%\kstar\config.toml on Windows) decides.
   --color <when>      auto (the default), always or never. With auto, output is
                       coloured only on a terminal and never when the NO_COLOR
                       environment variable is set.
@@ -1243,33 +1255,33 @@ Call them as std.visual.<name>(...), or import them with `from std.visual import
 Tag Table:
 Node: Top231
 Node: run2557
-Node: check4471
-Node: fmt5179
-Node: new5903
-Node: repl6208
-Node: trace7114
-Node: explain7890
-Node: help8354
-Node: export9029
-Node: kstar-lsp11074
-Node: update11860
-Node: version13387
-Node: Standard library13752
-Node: std automata19797
-Node: std benchmark22284
-Node: std binary23453
-Node: std collections24869
-Node: std grammar27429
-Node: std io30179
-Node: std math31693
-Node: std pda33025
-Node: std random35001
-Node: std regex36462
-Node: std steps38877
-Node: std string40180
-Node: std testing42561
-Node: std tm44304
-Node: std visual46035
+Node: check4950
+Node: fmt5658
+Node: new6382
+Node: repl6687
+Node: trace8060
+Node: explain8836
+Node: help9300
+Node: export9975
+Node: kstar-lsp12020
+Node: update12806
+Node: version14333
+Node: Standard library14698
+Node: std automata20743
+Node: std benchmark23230
+Node: std binary24399
+Node: std collections25815
+Node: std grammar28375
+Node: std io31125
+Node: std math32639
+Node: std pda33971
+Node: std random35947
+Node: std regex37408
+Node: std steps39823
+Node: std string41126
+Node: std testing43507
+Node: std tm45250
+Node: std visual46981
 
 End Tag Table
 

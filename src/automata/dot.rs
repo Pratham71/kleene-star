@@ -6,6 +6,7 @@
 use super::pda::Pda;
 use super::tm::Tm;
 use super::{Dfa, Nfa, State};
+use crate::theme::{self, Theme};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// A machine as a graph: its states, which are the start, accepting and
@@ -79,41 +80,64 @@ pub fn tm_diagram(m: &Tm) -> Diagram {
     Diagram { states: m.states.clone(), start: m.start, accept: m.accept.clone(), reject: m.reject.clone(), edges, separator: "\\n" }
 }
 
+/// The drawings take the colours of the theme of the run in progress
+/// (`kstar run --theme`): light unless another was chosen.
 pub fn dfa_to_dot(dfa: &Dfa) -> String {
-    render(&dfa_diagram(dfa), None)
+    render(&dfa_diagram(dfa), None, theme::current().theme())
 }
 
 pub fn nfa_to_dot(nfa: &Nfa) -> String {
-    render(&nfa_diagram(nfa), None)
+    render(&nfa_diagram(nfa), None, theme::current().theme())
 }
 
 pub fn pda_to_dot(pda: &Pda) -> String {
-    render(&pda_diagram(pda), None)
+    render(&pda_diagram(pda), None, theme::current().theme())
 }
 
 pub fn tm_to_dot(m: &Tm) -> String {
-    render(&tm_diagram(m), None)
+    render(&tm_diagram(m), None, theme::current().theme())
 }
 
-/// The DOT text of a diagram. With a highlight, the states and edges a run
+/// The graph, node and edge defaults of a drawing in a theme's colours.
+pub fn palette(t: &Theme) -> String {
+    format!(
+        "    bgcolor=\"{}\";\n    node [color=\"{}\", fontcolor=\"{}\", style=filled, fillcolor=\"{}\"];\n    edge [color=\"{}\", fontcolor=\"{}\"];\n",
+        t.background, t.line, t.text, t.background, t.line, t.muted
+    )
+}
+
+/// The DOT text of a diagram, in the colours of `t`. Accepting states are
+/// double circles outlined in the accepting colour, and rejecting states
+/// boxes in the error colour. With a highlight, the states and edges a run
 /// used are drawn bold and coloured, and the states it ended in filled.
-pub fn render(diagram: &Diagram, highlight: Option<&Highlight>) -> String {
+pub fn render(diagram: &Diagram, highlight: Option<&Highlight>, t: &Theme) -> String {
     let quote = |name: &str| format!("\"{}\"", name.replace('\\', "\\\\").replace('"', "\\\""));
-    let mut out = String::from("digraph machine {\n    rankdir=LR;\n    node [shape=circle];\n");
-    out.push_str("    __start [shape=point];\n");
+    let mut out = String::from("digraph machine {\n    rankdir=LR;\n");
+    out.push_str(&palette(t));
+    out.push_str("    node [shape=circle];\n");
+    out.push_str(&format!("    __start [shape=point, fillcolor=\"{}\"];\n", t.line));
     for (s, name) in diagram.states.iter().enumerate() {
         let mut attrs = Vec::new();
+        let used = highlight.map_or((false, false), |h| (h.last.contains(&s), h.visited.contains(&s)));
+        // A state the run used is outlined in the current colour; others
+        // in the accepting or error colour, if they are such states.
+        let mut color = None;
         if diagram.accept.contains(&s) {
             attrs.push("shape=doublecircle".to_string());
+            color = Some(t.accepting);
         } else if diagram.reject.contains(&s) {
             attrs.push("shape=box".to_string());
+            color = Some(t.error);
         }
-        if let Some(h) = highlight {
-            if h.last.contains(&s) {
-                attrs.push("style=\"bold,filled\", color=\"#1f6feb\", fillcolor=\"#cfe3ff\"".to_string());
-            } else if h.visited.contains(&s) {
-                attrs.push("style=bold, color=\"#1f6feb\"".to_string());
-            }
+        if used.0 || used.1 {
+            attrs.push("style=\"bold,filled\"".to_string());
+            color = Some(t.current);
+        }
+        if let Some(color) = color {
+            attrs.push(format!("color=\"{color}\""));
+        }
+        if used.0 {
+            attrs.push(format!("fillcolor=\"{}\"", t.current_fill));
         }
         if attrs.is_empty() {
             out.push_str(&format!("    {};\n", quote(name)));
@@ -122,13 +146,13 @@ pub fn render(diagram: &Diagram, highlight: Option<&Highlight>) -> String {
         }
     }
     out.push_str(&format!("    __start -> {};\n", quote(&diagram.states[diagram.start])));
-    for (&(s, t), labels) in &diagram.edges {
-        let used = highlight.is_some_and(|h| h.edges.contains(&(s, t)));
-        let style = if used { ", style=bold, color=\"#1f6feb\", fontcolor=\"#1f6feb\"" } else { "" };
+    for (&(s, to), labels) in &diagram.edges {
+        let used = highlight.is_some_and(|h| h.edges.contains(&(s, to)));
+        let style = if used { format!(", style=bold, color=\"{0}\", fontcolor=\"{0}\"", t.edge_taken) } else { String::new() };
         out.push_str(&format!(
             "    {} -> {} [label=\"{}\"{style}];\n",
             quote(&diagram.states[s]),
-            quote(&diagram.states[t]),
+            quote(&diagram.states[to]),
             labels.join(diagram.separator).replace('"', "\\\"")
         ));
     }
@@ -145,21 +169,33 @@ mod tests {
     #[test]
     fn draws_a_dfa() {
         let dot = dfa_to_dot(&even_zeros());
-        assert!(dot.contains("\"q0\" [shape=doublecircle];"));
+        assert!(dot.contains("\"q0\" [shape=doublecircle, color=\"#1a7f37\"];"), "{dot}");
         assert!(dot.contains("__start -> \"q0\";"));
         assert!(dot.contains("\"q0\" -> \"q1\" [label=\"0\"];"));
+        // Light by default: dark text and lines on white, which prints well.
+        assert!(dot.contains("bgcolor=\"#ffffff\""), "{dot}");
+    }
+
+    #[test]
+    fn every_theme_colours_the_drawing() {
+        for t in theme::THEMES {
+            let dot = theme::with_choice(theme::Choice::parse(t.name).unwrap(), || dfa_to_dot(&even_zeros()));
+            assert!(dot.starts_with(&format!("digraph machine {{\n    rankdir=LR;\n{}", palette(t))), "{}", t.name);
+            assert!(dot.contains(&format!("color=\"{}\"", t.accepting)), "{}", t.name);
+        }
     }
 
     #[test]
     fn highlights_a_run() {
         let diagram = dfa_diagram(&even_zeros());
         let h = Highlight { visited: BTreeSet::from([0, 1]), edges: BTreeSet::from([(0, 1)]), last: BTreeSet::from([1]) };
-        let dot = render(&diagram, Some(&h));
-        assert!(dot.contains("\"q0\" [shape=doublecircle, style=bold, color=\"#1f6feb\"];"), "{dot}");
-        assert!(dot.contains("\"q1\" [style=\"bold,filled\""), "{dot}");
-        assert!(dot.contains("\"q0\" -> \"q1\" [label=\"0\", style=bold"), "{dot}");
+        let t = &theme::DARK;
+        let dot = render(&diagram, Some(&h), t);
+        assert!(dot.contains(&format!("\"q0\" [shape=doublecircle, style=\"bold,filled\", color=\"{}\"];", t.current)), "{dot}");
+        assert!(dot.contains(&format!("\"q1\" [style=\"bold,filled\", color=\"{}\", fillcolor=\"{}\"];", t.current, t.current_fill)), "{dot}");
+        assert!(dot.contains(&format!("\"q0\" -> \"q1\" [label=\"0\", style=bold, color=\"{0}\", fontcolor=\"{0}\"];", t.edge_taken)), "{dot}");
         assert!(dot.contains("\"q1\" -> \"q1\" [label=\"1\"];"), "{dot}");
-        assert_eq!(render(&diagram, None), dfa_to_dot(&even_zeros()));
+        assert_eq!(render(&diagram, None, &theme::LIGHT), dfa_to_dot(&even_zeros()));
     }
 
     #[test]

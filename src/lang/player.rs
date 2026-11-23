@@ -281,7 +281,10 @@ pub fn html(play: &Play, title: &str) -> String {
     // script element it sits in.
     let json = data(play, title).to_string().replace('<', "\\u003c");
     let page_title = escape_html(&format!("{title} on \"{}\" - Kleene Star", play.word));
-    PAGE.replace("{{TITLE}}", &page_title).replace("{{DATA}}", &json)
+    PAGE.replace("{{THEME_CSS}}", &crate::theme::player_css())
+        .replace("{{THEME}}", crate::theme::current().name())
+        .replace("{{TITLE}}", &page_title)
+        .replace("{{DATA}}", &json)
 }
 
 fn escape_html(text: &str) -> String {
