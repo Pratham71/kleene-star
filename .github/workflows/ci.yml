@@ -44,6 +44,13 @@ jobs:
       - name: examples are formatted
         shell: bash
         run: cargo run --quiet -- fmt --check examples
+      # The Windows programs carry the version details code signing checks.
+      - name: Windows version details
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.*)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          installer\check-version-info.ps1 -Version $version -Files target\debug\kstar.exe, target\debug\kstar-lsp.exe
       # A release's notes come from CHANGELOG.md, so the version in
       # Cargo.toml must always have a section there.
       - name: CHANGELOG.md has a section for this version

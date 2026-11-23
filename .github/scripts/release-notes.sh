@@ -67,3 +67,5 @@ echo
 echo "- **Linux:** \`sha256sum -c SHA256SUMS --ignore-missing\`"
 echo "- **macOS:** \`shasum -a 256 -c <file>.sha256\`"
 echo "- **Windows (PowerShell):** \`(Get-FileHash <file>).Hash -eq (Get-Content <file>.sha256).Split(\" \")[0]\`"
+echo
+echo "Which Windows files are signed and how: [Code signing policy]($blob/CODE_SIGNING_POLICY.md)."

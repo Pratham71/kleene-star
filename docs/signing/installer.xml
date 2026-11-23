@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "installer": kstar-setup-x64.exe.
+
+  The release workflow (installer job) builds the installer from the
+  already signed programs, uploads it as a GitHub artifact (a zip file with
+  the installer at its root) and passes the release's version as the
+  "version" parameter. installer/kstar.iss sets the installer's product name
+  and version; installer/check-version-info.ps1 checks them before the
+  request.
+
+  Paste this into SignPath as an artifact configuration with the slug
+  "installer" (see docs/signing/SETUP.md).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="kstar-setup-x64.exe" product-name="Kleene Star" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "programs": kstar.exe and kstar-lsp.exe.
+
+  The release workflow (windows-programs job) uploads the two programs as a
+  GitHub artifact, which reaches SignPath as a zip file with them at its
+  root, and passes the release's version (from Cargo.toml) as the
+  "version" parameter. SignPath signs only files whose version details say
+  product "Kleene Star" and exactly that version; build.rs puts them there
+  and installer/check-version-info.ps1 checks them before the request.
+
+  Paste this into SignPath as an artifact configuration with the slug
+  "programs" (see docs/signing/SETUP.md).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file-set product-name="Kleene Star" product-version="${version}" file-version="${version}">
+      <include path="kstar.exe" />
+      <include path="kstar-lsp.exe" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>

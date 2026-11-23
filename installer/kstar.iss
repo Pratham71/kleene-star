@@ -16,6 +16,14 @@
 #ifndef SourceDir
   #define SourceDir "..\target\release"
 #endif
+; Windows wants plain numbers (0.2.5) in the numeric version fields, so a
+; suffix such as -beta is left out there; the text fields keep it.
+#define Dash Pos("-", AppVersion)
+#if Dash > 0
+  #define NumericVersion Copy(AppVersion, 1, Dash - 1)
+#else
+  #define NumericVersion AppVersion
+#endif
 
 [Setup]
 AppId={{6A0C3E57-2B0D-4C11-9E55-4B1D2A7F0C21}
@@ -23,6 +31,18 @@ AppName=Kleene Star
 AppVersion={#AppVersion}
 AppVerName=Kleene Star {#AppVersion}
 AppPublisher=Kleene Star
+AppCopyright=Copyright (c) 2026 Pratham. MIT License.
+; The version details of kstar-setup-x64.exe (Properties > Details), the same
+; as kstar.exe's (see build.rs). Code signing checks the product name and
+; version; installer\check-version-info.ps1 checks them in CI.
+VersionInfoProductName=Kleene Star
+VersionInfoCompany=Kleene Star
+VersionInfoCopyright=Copyright (c) 2026 Pratham. MIT License.
+VersionInfoDescription=Kleene Star setup
+VersionInfoVersion={#NumericVersion}
+VersionInfoTextVersion={#AppVersion}
+VersionInfoProductVersion={#NumericVersion}
+VersionInfoProductTextVersion={#AppVersion}
 DefaultDirName={autopf}\Kleene Star
 DefaultGroupName=Kleene Star
 DisableProgramGroupPage=yes

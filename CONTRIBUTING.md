@@ -172,6 +172,12 @@ changelog as its notes.
    git tag vX.Y.Z && git push origin vX.Y.Z
    ```
 
+When code signing is set up (the `SIGNPATH_API_TOKEN` secret exists; see
+[docs/signing/SETUP.md](docs/signing/SETUP.md)), the workflow then asks
+SignPath to sign the Windows programs and, later, the installer: approve
+each request in SignPath as it comes, after checking that it comes from the
+tag. Without the secret the release is unsigned.
+
 The tag must match `Cargo.toml`. A plain tag such as `v0.3.0` publishes a
 release that GitHub marks as the latest, which is what the install scripts
 and `kstar update` offer. A tag with a suffix such as `v0.3.0-beta`

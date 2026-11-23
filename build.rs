@@ -21,11 +21,16 @@ fn main() {
 
     #[cfg(windows)]
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+        // FileVersion and ProductVersion default to the crate's version. Code
+        // signing (see CODE_SIGNING_POLICY.md) checks the product name and
+        // version, so keep them in step with installer/kstar.iss.
         let mut resource = winresource::WindowsResource::new();
         resource
             .set_icon("assets/kstar.ico")
             .set("ProductName", "Kleene Star")
-            .set("FileDescription", "Kleene Star: a language for Theory of Computation");
+            .set("FileDescription", "Kleene Star: a language for Theory of Computation")
+            .set("CompanyName", "Kleene Star")
+            .set("LegalCopyright", "Copyright (c) 2026 Pratham. MIT License.");
         // A missing resource compiler only costs the icon, not the build.
         if let Err(error) = resource.compile() {
             println!("cargo:warning=the Windows icon was not embedded: {error}");

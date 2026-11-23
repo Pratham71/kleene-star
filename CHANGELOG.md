@@ -12,6 +12,18 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Added
+
+- Ready for code signing on Windows, through SignPath Foundation's free
+  programme: [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md) says what is
+  signed, by whom, and what the programs do on your computer, and the
+  release workflow signs `kstar.exe`, `kstar-lsp.exe` and
+  `kstar-setup-x64.exe` once the project's SignPath settings are in place
+  (until then releases are unsigned, as before).
+- `kstar.exe`, `kstar-lsp.exe` and `kstar-setup-x64.exe` carry full version
+  details (product name, version, company and copyright) in *Properties >
+  Details*.
+
 ## [0.8.1] - 2026-11-23
 
 A fix for `kstar update` on Windows. In 0.8.0 it installed by running the

@@ -7,6 +7,12 @@
 # SHA-256 checksum, the Windows installer (tested by installing and
 # uninstalling it), the VS Code extension and a SHA256SUMS file.
 #
+# On Windows, kstar.exe, kstar-lsp.exe and kstar-setup-x64.exe are signed
+# through SignPath (see CODE_SIGNING_POLICY.md and docs/signing/SETUP.md)
+# when the repository has a SIGNPATH_API_TOKEN secret; each signing request
+# waits for a person to approve it. Without the secret, signing is skipped
+# and the release is unsigned, as before.
+#
 # The tag must match the version in Cargo.toml, and CHANGELOG.md must have
 # a section for that version, which becomes the release notes (see
 # .github/scripts/release-notes.sh and "Making a release" in
@@ -64,20 +70,110 @@ jobs:
       - name: build
         run: cargo build --release --locked --target ${{ matrix.target }}
       - name: package
+        # The Windows programs are packaged by windows-programs, after signing.
+        if: matrix.exe != '.exe'
         shell: bash
         run: .github/scripts/package.sh "${{ matrix.target }}" "${{ matrix.exe }}" "${{ matrix.cross }}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.exe != '.exe'
         with:
           name: build-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.exe == '.exe'
+        with:
+          name: programs-${{ matrix.target }}
+          path: |
+            target/${{ matrix.target }}/release/kstar.exe
+            target/${{ matrix.target }}/release/kstar-lsp.exe
+          if-no-files-found: error
+
+  # Signs kstar.exe and kstar-lsp.exe (when SIGNPATH_API_TOKEN is set), checks
+  # their version details, and packages them as the other platforms are.
+  windows-programs:
+    name: Windows programs (signed when set up)
+    needs: build
+    runs-on: windows-latest
+    # A signing request waits for a person to approve it; GitHub stops a job
+    # after six hours.
+    timeout-minutes: 360
+    permissions:
+      contents: read
+      actions: read # the signing action downloads the artifact it signs
+    env:
+      TARGET: x86_64-pc-windows-msvc
+      # Only whether the secret exists: `if:` cannot read secrets.
+      SIGNING: ${{ secrets.SIGNPATH_API_TOKEN != '' && 'yes' || 'no' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: programs-x86_64-pc-windows-msvc
+          path: target/x86_64-pc-windows-msvc/release
+      - name: version
+        id: version
+        shell: bash
+        run: echo "version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)" >> "$GITHUB_OUTPUT"
+      - name: signing is off
+        if: env.SIGNING != 'yes'
+        run: echo "Code signing is off (no SIGNPATH_API_TOKEN secret); the Windows programs are released unsigned."
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: unsigned
+        if: env.SIGNING == 'yes'
+        with:
+          name: unsigned-programs
+          path: |
+            target/x86_64-pc-windows-msvc/release/kstar.exe
+            target/x86_64-pc-windows-msvc/release/kstar-lsp.exe
+          if-no-files-found: error
+      - name: sign kstar.exe and kstar-lsp.exe
+        if: env.SIGNING == 'yes'
+        uses: signpath/github-action-submit-signing-request@a2c5b60d9c75f073142b653c354b632eedce097b # v3.2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: programs
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          parameters: |
+            version: "${{ steps.version.outputs.version }}"
+          wait-for-completion-timeout-in-seconds: 20700
+          output-artifact-directory: signed
+      - name: use the signed programs
+        if: env.SIGNING == 'yes'
+        shell: pwsh
+        run: |
+          foreach ($exe in "kstar.exe", "kstar-lsp.exe") {
+            $signed = Get-ChildItem signed -Recurse -Filter $exe | Select-Object -First 1
+            if (-not $signed) { throw "the signed artifact has no $exe" }
+            $status = (Get-AuthenticodeSignature $signed.FullName).Status
+            if ($status -ne "Valid") { throw "$exe is not validly signed: $status" }
+            Copy-Item $signed.FullName "target\$env:TARGET\release\$exe" -Force
+          }
+      - name: check the version details
+        shell: pwsh
+        run: installer\check-version-info.ps1 -Version "${{ steps.version.outputs.version }}" -Files "target\$env:TARGET\release\kstar.exe", "target\$env:TARGET\release\kstar-lsp.exe"
+      - name: package
+        shell: bash
+        run: .github/scripts/package.sh "$TARGET" .exe
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: build-x86_64-pc-windows-msvc
           path: dist/*
           if-no-files-found: error
 
   installer:
     name: Windows installer
-    needs: [build, vscode]
+    needs: [windows-programs, vscode]
     runs-on: windows-latest
+    timeout-minutes: 360
     permissions:
       contents: read
+      actions: read # the signing action downloads the artifact it signs
+    env:
+      SIGNING: ${{ secrets.SIGNPATH_API_TOKEN != '' && 'yes' || 'no' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -109,6 +205,43 @@ jobs:
           $vsix = (Get-ChildItem vsix\*.vsix | Select-Object -First 1).FullName
           & $env:ISCC "/DAppVersion=$version" "/DSourceDir=$PWD\programs" "/DVsixFile=$vsix" "/O$PWD\dist" installer\kstar.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+      - name: signing is off
+        if: env.SIGNING != 'yes'
+        run: echo "Code signing is off (no SIGNPATH_API_TOKEN secret); kstar-setup-x64.exe is released unsigned."
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        id: unsigned
+        if: env.SIGNING == 'yes'
+        with:
+          name: unsigned-installer
+          path: dist/kstar-setup-x64.exe
+          if-no-files-found: error
+      - name: sign kstar-setup-x64.exe
+        if: env.SIGNING == 'yes'
+        uses: signpath/github-action-submit-signing-request@a2c5b60d9c75f073142b653c354b632eedce097b # v3.2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          parameters: |
+            version: "${{ env.VERSION }}"
+          wait-for-completion-timeout-in-seconds: 20700
+          output-artifact-directory: signed
+      - name: use the signed installer
+        if: env.SIGNING == 'yes'
+        shell: pwsh
+        run: |
+          $signed = Get-ChildItem signed -Recurse -Filter kstar-setup-x64.exe | Select-Object -First 1
+          if (-not $signed) { throw "the signed artifact has no kstar-setup-x64.exe" }
+          $status = (Get-AuthenticodeSignature $signed.FullName).Status
+          if ($status -ne "Valid") { throw "kstar-setup-x64.exe is not validly signed: $status" }
+          Copy-Item $signed.FullName dist\kstar-setup-x64.exe -Force
+      - name: check the version details
+        shell: pwsh
+        run: installer\check-version-info.ps1 -Version $env:VERSION -Files dist\kstar-setup-x64.exe
       # So the test can check that the installer adds the extension to VS
       # Code and that the uninstaller removes it.
       - name: install VS Code
@@ -117,6 +250,7 @@ jobs:
       - name: install, check and uninstall
         shell: pwsh
         run: installer\test-installer.ps1 -Setup dist\kstar-setup-x64.exe -ExpectVSCode
+      # After signing: the checksum is of the file that is published.
       - name: checksum
         shell: bash
         run: cd dist && sha256sum kstar-setup-x64.exe > kstar-setup-x64.exe.sha256
@@ -128,7 +262,7 @@ jobs:
 
   install-scripts:
     name: install script (${{ matrix.os }})
-    needs: build
+    needs: [build, windows-programs]
     strategy:
       fail-fast: false
       matrix:
@@ -246,7 +380,7 @@ jobs:
 
   release:
     name: publish
-    needs: [build, installer, install-scripts, vscode]
+    needs: [build, windows-programs, installer, install-scripts, vscode]
     runs-on: ubuntu-22.04
     permissions:
       contents: write

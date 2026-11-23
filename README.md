@@ -213,7 +213,8 @@ Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) explains how
 to build and test, where things are, the house rules, how to propose a
 change and how releases are made. Everyone taking part follows the
 [code of conduct](CODE_OF_CONDUCT.md). To report a security problem, see
-[SECURITY.md](SECURITY.md).
+[SECURITY.md](SECURITY.md). Which Windows files are signed, by whom, and
+what they do on your computer: [Code signing policy](CODE_SIGNING_POLICY.md).
 
 ## Licence
 
