@@ -1,0 +1,14 @@
+# Sets of sets, one level deep, and the power set.
+let s = {{1, 2}, {}, {3}}
+print s, len(s)
+print std.collections.contains(s, {}), std.collections.contains(s, {2})
+print {{}} == {{}}, {{1}} == {{2}}
+fn sizes(sets: Set[Set[Int]]) -> Int {
+    for x in sets {
+        print x, len(x)
+    }
+    return len(sets)
+}
+print sizes(std.collections.power_set({1, 2, 3}))
+print std.collections.power_set({})
+print std.collections.union({{"a"}}, {{}, {"b"}})

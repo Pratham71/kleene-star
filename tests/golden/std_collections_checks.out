@@ -50,7 +50,7 @@ Error in std_collections_checks.kstar, line 11:
     print std.collections.powerset({1, 2})
                           ^^^^^^^^
 NameError[E0208]: `std.collections` has no `powerset`
-  hint: it defines `contains`, `difference`, `intersect`, `is_subset`, `max`, `min` and 4 more
+  hint: did you mean `power_set`?
 
 Error in std_collections_checks.kstar, line 12:
     print std.collections.min({}) + "a"

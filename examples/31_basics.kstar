@@ -1,0 +1,35 @@
+# Chapter 25: the basics. Strings over an alphabet, the sets Σ^n, Σ* and
+# Σ+ (cut off at a length, since Σ* is infinite), operations on languages
+# written as sets of strings, and the power set.
+
+alphabet B = {0, 1}
+
+# Σ^2, and Σ* and Σ+ up to length 2.
+print std.collections.words(B, 2)
+print std.collections.sigma_star(B, 2)
+print std.collections.sigma_plus(B, 2)
+print len(std.collections.sigma_star(B, 4))
+
+# Operations on one string.
+let w = "0110"
+print len(w), std.string.reverse(w), std.string.repeat("01", 3)
+print std.string.prefixes("011")
+print std.string.count(w, "1")
+
+# Operations on languages given as sets of strings.
+let L = {"0", "01"}
+let M = {"", "1"}
+print std.collections.concat(L, M)
+print std.collections.power(L, 2)
+print std.collections.power(L, 0)
+print std.collections.star_up_to(L, 3)
+
+# Sets of sets: the power set of {a, b, c} has 2^3 = 8 members.
+let P = std.collections.power_set({"a", "b", "c"})
+print P
+print len(P)
+for subset in P {
+    if len(subset) == 2 {
+        print subset
+    }
+}

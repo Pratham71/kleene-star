@@ -708,8 +708,9 @@ TypeError[E0304]: function `sign` can reach its end without returning a value
 
 ## E0305: A set that cannot be built
 
-A set holds Ints, Strs or Bools, all of one type. Machines and regexes
-cannot go in a set; to combine languages, use `union`.
+A set holds Ints, Strs or Bools, or sets of those (one level deep), all of
+one type. Machines and regexes cannot go in a set; to combine languages,
+use `union`.
 
 ```kstar-error
 print {1, "two"}

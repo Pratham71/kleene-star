@@ -1,9 +1,14 @@
 //! `std.collections`: helpers for sets, and `words`, which lists every string
 //! of one length over an alphabet.
 //!
-//! Sets are the only collection in the language, and they hold `Int`, `Str`
-//! or `Bool` values, never other sets. That is why there is no power set
-//! and no set of pairs here: both would be sets of sets.
+//! Sets are the only collection in the language. They hold `Int`, `Str` or
+//! `Bool` values, or sets of those, one level deep: enough for a power set
+//! (`power_set`), though not for a set of sets of sets.
+//!
+//! The basics of strings over an alphabet are here too: `words` is Σ^n,
+//! `sigma_star` and `sigma_plus` are Σ* and Σ+ up to a length, and
+//! `concat`, `power` and `star_up_to` are the operations on languages given
+//! as sets of strings.
 //!
 //! Most functions are *generic*: `contains(s: Set[T], x: T)` works for a set
 //! of Ints and a set of Strs alike, as long as the arguments agree on `T`.
@@ -11,7 +16,7 @@
 //! the table only has to write `Ty::Elem`. `min`, `max` and `sum` are not
 //! generic: they need numbers.
 //!
-//! The names `union`, `intersect` and `difference` also belong to the
+//! The names `union`, `intersect`, `difference` and `concat` also belong to the
 //! language's built-ins, which combine *languages* into a machine. These are
 //! different functions that happen to share a name; you reach them as
 //! `std.collections.union(...)`, and `from std.collections import union` is
@@ -29,6 +34,10 @@ pub const MAX_WORDS: u128 = 100_000;
 
 const SET_T: Ty = Ty::Set(&Ty::Elem);
 const SET_INT: Ty = Ty::Set(&Ty::Int);
+const STR_SET: Ty = Ty::Set(&Ty::Str);
+const SET_OF_SETS: Ty = Ty::Set(&SET_T);
+/// The most members `power_set` takes: 2^16 = 65536 subsets.
+pub const MAX_POWER_SET: usize = 16;
 
 pub const MODULE: Module = Module {
     name: "collections",
@@ -44,6 +53,12 @@ pub const MODULE: Module = Module {
         Function { name: "sum", params: &[("s", SET_INT)], ret: Ty::Int, doc: "The members of a set of Ints added up; the sum of the empty set is 0.", run: sum },
         Function { name: "union", params: &[("a", SET_T), ("b", SET_T)], ret: SET_T, doc: "The members that are in the set `a`, in `b`, or in both.", run: union },
         Function { name: "words", params: &[("alphabet", Ty::Alphabet), ("n", Ty::Int)], ret: Ty::Set(&Ty::Str), doc: "Every string of length `n` over `alphabet`, as a set; `n` must not be negative, and there may be at most 100000 of them.", run: words },
+        Function { name: "sigma_star", params: &[("alphabet", Ty::Alphabet), ("n", Ty::Int)], ret: STR_SET, doc: "Σ* up to length `n`: every string over `alphabet` of length 0 to `n`, the empty string included.", run: sigma_star },
+        Function { name: "sigma_plus", params: &[("alphabet", Ty::Alphabet), ("n", Ty::Int)], ret: STR_SET, doc: "Σ+ up to length `n`: every string over `alphabet` of length 1 to `n`; Σ* without the empty string.", run: sigma_plus },
+        Function { name: "concat", params: &[("a", STR_SET), ("b", STR_SET)], ret: STR_SET, doc: "The concatenation of two sets of strings: every `xy` with `x` in `a` and `y` in `b`.", run: concat },
+        Function { name: "power", params: &[("a", STR_SET), ("n", Ty::Int)], ret: STR_SET, doc: "`a` to the power `n`: every string made of `n` strings of `a` one after another; the power 0 is the set holding the empty string.", run: power },
+        Function { name: "star_up_to", params: &[("a", STR_SET), ("n", Ty::Int)], ret: STR_SET, doc: "The Kleene star of a set of strings, up to length `n`: every string of length at most `n` made of strings of `a` one after another.", run: star_up_to },
+        Function { name: "power_set", params: &[("s", SET_T)], ret: SET_OF_SETS, doc: "Every subset of `s`, the empty set and `s` included: 2^n of them for `n` members, with `s` of at most 16 members.", run: power_set },
     ],
     explain: None,
 };
@@ -180,9 +195,204 @@ fn words(args: &[Value]) -> Result<Value, Failure> {
     Ok(new_set(level.iter().map(|w| Value::str(w)).collect()))
 }
 
+fn strings(args: &[Value], i: usize) -> Vec<&str> {
+    set(args, i)
+        .iter()
+        .map(|v| match v {
+            Value::Str(s) => &**s,
+            other => unreachable!("the checker allowed {other:?} in a Set[Str]"),
+        })
+        .collect()
+}
+
+fn too_many(what: &str) -> Failure {
+    Failure {
+        code: codes::RESULT_TOO_LARGE,
+        arg: None,
+        message: format!("{what} would have more than {MAX_WORDS} strings, which is the limit"),
+        hint: "ask for shorter strings, or reason about the language without listing it".into(),
+    }
+}
+
+fn length(args: &[Value], i: usize) -> Result<usize, Failure> {
+    match &args[i] {
+        Value::Int(n) if *n < 0 => Err(Failure {
+            code: codes::STRING_RANGE,
+            arg: Some(i),
+            message: format!("{n} is negative"),
+            hint: "a length or a power must be 0 or more".into(),
+        }),
+        Value::Int(n) if *n as u128 > super::string::MAX_RESULT_CHARS => Err(Failure {
+            code: codes::RESULT_TOO_LARGE,
+            arg: Some(i),
+            message: format!("{n} is more than the limit of {} characters for a string", super::string::MAX_RESULT_CHARS),
+            hint: "ask for shorter strings".into(),
+        }),
+        Value::Int(n) => Ok(*n as usize),
+        other => unreachable!("the checker allowed {other:?} as an Int"),
+    }
+}
+
+/// The strings made of pieces from `pieces`, of length at most `max`
+/// (every length when `max` is `None`), joined `from..=to` at a time.
+fn joined(pieces: &[&str], from: usize, to: usize, max: Option<usize>, what: &str) -> Result<Value, Failure> {
+    let mut all: BTreeSet<String> = BTreeSet::new();
+    let mut level: BTreeSet<String> = BTreeSet::from([String::new()]);
+    for k in 0..=to {
+        if k >= from {
+            all.extend(level.iter().cloned());
+            if all.len() as u128 > MAX_WORDS {
+                return Err(too_many(what));
+            }
+        }
+        if k == to {
+            break;
+        }
+        let mut next = BTreeSet::new();
+        for w in &level {
+            for p in pieces {
+                let joined = format!("{w}{p}");
+                if max.is_some_and(|m| joined.chars().count() > m) {
+                    continue;
+                }
+                next.insert(joined);
+                if next.len() as u128 > MAX_WORDS {
+                    return Err(too_many(what));
+                }
+            }
+        }
+        // Nothing longer can come once no string grows.
+        if next.is_empty() || next == level {
+            break;
+        }
+        level = next;
+    }
+    Ok(new_set(all.iter().map(|w| Value::str(w)).collect()))
+}
+
+fn symbols_of(args: &[Value]) -> Vec<String> {
+    match &args[0] {
+        Value::Alphabet(symbols) => symbols.iter().map(char::to_string).collect(),
+        other => unreachable!("the checker allowed {other:?} as an Alphabet"),
+    }
+}
+
+fn sigma_star(args: &[Value]) -> Result<Value, Failure> {
+    let n = length(args, 1)?;
+    let symbols = symbols_of(args);
+    let pieces: Vec<&str> = symbols.iter().map(String::as_str).collect();
+    joined(&pieces, 0, n, None, &format!("Σ* up to length {n}"))
+}
+
+fn sigma_plus(args: &[Value]) -> Result<Value, Failure> {
+    let n = length(args, 1)?;
+    let symbols = symbols_of(args);
+    let pieces: Vec<&str> = symbols.iter().map(String::as_str).collect();
+    joined(&pieces, 1, n, None, &format!("Σ+ up to length {n}"))
+}
+
+fn concat(args: &[Value]) -> Result<Value, Failure> {
+    let (a, b) = (strings(args, 0), strings(args, 1));
+    if (a.len() as u128) * (b.len() as u128) > MAX_WORDS {
+        return Err(too_many("the concatenation"));
+    }
+    let mut out = BTreeSet::new();
+    for x in &a {
+        for y in &b {
+            let w = format!("{x}{y}");
+            if w.chars().count() as u128 > super::string::MAX_RESULT_CHARS {
+                return Err(too_many("the concatenation"));
+            }
+            out.insert(Value::str(&w));
+        }
+    }
+    Ok(new_set(out))
+}
+
+fn power(args: &[Value]) -> Result<Value, Failure> {
+    let n = length(args, 1)?;
+    let a = strings(args, 0);
+    if a.is_empty() {
+        // The empty language to the power 0 is {""}; to any other, empty.
+        return Ok(new_set(if n == 0 { BTreeSet::from([Value::str("")]) } else { BTreeSet::new() }));
+    }
+    let longest = a.iter().map(|w| w.chars().count()).max().unwrap_or(0);
+    if (longest as u128) * (n as u128) > super::string::MAX_RESULT_CHARS {
+        return Err(too_many(&format!("the power {n}")));
+    }
+    // Lⁿ alone: the strings of exactly n pieces.
+    let mut level: BTreeSet<String> = BTreeSet::from([String::new()]);
+    for _ in 0..n {
+        let mut next = BTreeSet::new();
+        for w in &level {
+            for p in &a {
+                next.insert(format!("{w}{p}"));
+                if next.len() as u128 > MAX_WORDS {
+                    return Err(too_many(&format!("the power {n}")));
+                }
+            }
+        }
+        level = next;
+    }
+    Ok(new_set(level.iter().map(|w| Value::str(w)).collect()))
+}
+
+fn star_up_to(args: &[Value]) -> Result<Value, Failure> {
+    let n = length(args, 1)?;
+    // The empty string adds nothing to a star but the empty string itself.
+    let pieces: Vec<&str> = strings(args, 0).into_iter().filter(|p| !p.is_empty()).collect();
+    joined(&pieces, 0, n, Some(n), &format!("the star up to length {n}"))
+}
+
+fn power_set(args: &[Value]) -> Result<Value, Failure> {
+    let members: Vec<&Value> = set(args, 0).iter().collect();
+    if members.len() > MAX_POWER_SET {
+        return Err(Failure {
+            code: codes::RESULT_TOO_LARGE,
+            arg: Some(0),
+            message: format!("a set of {} members has 2^{} subsets; the limit is a set of {MAX_POWER_SET} members", members.len(), members.len()),
+            hint: "take a smaller set".into(),
+        });
+    }
+    let mut out = BTreeSet::new();
+    for mask in 0u32..(1 << members.len()) {
+        let subset: BTreeSet<Value> = members.iter().enumerate().filter(|(i, _)| mask & (1 << i) != 0).map(|(_, v)| (*v).clone()).collect();
+        out.insert(new_set(subset));
+    }
+    Ok(new_set(out))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sigma_and_operations_on_sets_of_strings() {
+        let b = alphabet("01");
+        assert_eq!(ok("sigma_star", &[b.clone(), Value::Int(2)]), strs(&["", "0", "1", "00", "01", "10", "11"]));
+        assert_eq!(ok("sigma_plus", &[b.clone(), Value::Int(1)]), strs(&["0", "1"]));
+        assert_eq!(ok("sigma_star", &[alphabet(""), Value::Int(3)]), strs(&[""]));
+        assert_eq!(code("sigma_star", &[b, Value::Int(-1)]), codes::STRING_RANGE);
+        let (x, y) = (strs(&["a", "ab"]), strs(&["", "b"]));
+        assert_eq!(ok("concat", &[x.clone(), y.clone()]), strs(&["a", "ab", "abb"]));
+        assert_eq!(ok("power", &[x.clone(), Value::Int(0)]), strs(&[""]));
+        assert_eq!(ok("power", &[x.clone(), Value::Int(2)]), strs(&["aa", "aab", "aba", "abab"]));
+        assert_eq!(ok("power", &[strs(&[]), Value::Int(0)]), strs(&[""]));
+        assert_eq!(ok("power", &[strs(&[]), Value::Int(3)]), strs(&[]));
+        assert_eq!(ok("star_up_to", &[x, Value::Int(3)]), strs(&["", "a", "aa", "aaa", "aab", "ab", "aba"]));
+        assert_eq!(ok("star_up_to", &[strs(&[""]), Value::Int(5)]), strs(&[""]));
+        assert_eq!(code("power", &[strs(&["0", "1"]), Value::Int(20)]), codes::RESULT_TOO_LARGE);
+    }
+
+    #[test]
+    fn power_sets() {
+        let p = ok("power_set", &[ints_set(&[1, 2])]);
+        let expected = new_set([ints_set(&[]), ints_set(&[1]), ints_set(&[2]), ints_set(&[1, 2])].into_iter().collect());
+        assert_eq!(p, expected);
+        assert_eq!(ok("power_set", &[ints_set(&[])]), new_set([ints_set(&[])].into_iter().collect()));
+        let big: Vec<i64> = (0..17).collect();
+        assert_eq!(code("power_set", &[ints_set(&big)]), codes::RESULT_TOO_LARGE);
+    }
 
     fn call(name: &str, args: &[Value]) -> Result<Value, Failure> {
         let f = MODULE.functions.iter().find(|f| f.name == name).unwrap_or_else(|| panic!("no std.collections.{name}"));
