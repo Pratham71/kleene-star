@@ -1,0 +1,17 @@
+wrote Even.html
+wrote machine1.html
+wrote machine2.html
+true
+digraph machine {
+    rankdir=LR;
+    node [shape=circle];
+    __start [shape=point];
+    "e" [shape=doublecircle, style=bold, color="#1f6feb"];
+    "o" [style="bold,filled", color="#1f6feb", fillcolor="#cfe3ff"];
+    __start -> "e";
+    "e" -> "e" [label="1"];
+    "e" -> "o" [label="0", style=bold, color="#1f6feb", fontcolor="#1f6feb"];
+    "o" -> "e" [label="0"];
+    "o" -> "o" [label="1", style=bold, color="#1f6feb", fontcolor="#1f6feb"];
+}
+

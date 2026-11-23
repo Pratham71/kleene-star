@@ -34,8 +34,9 @@ pub enum StmtKind {
     Print(Vec<Expr>),
     /// `test condition`
     Test(Expr),
-    /// `draw machine`
-    Draw(Expr),
+    /// `draw machine`, or `draw machine on word`, which writes a page that
+    /// plays the run step by step.
+    Draw { machine: Expr, word: Option<Expr> },
     /// `trace machine on word`: run the machine step by step, printing each step.
     Trace { machine: Expr, word: Expr },
     /// `import "utils.kstar" as u`, or `import std.math`: binds a module

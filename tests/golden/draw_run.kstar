@@ -1,0 +1,15 @@
+# `draw M on "w"` writes a page that plays the run.
+alphabet B = {0, 1}
+dfa Even over B {
+    start  e
+    accept e
+    e --0--> o
+    e --1--> e
+    o --0--> e
+    o --1--> o
+}
+draw Even on "0110"
+draw to_dfa(/(0|1)*1/) on ""
+draw std.tm.increment() on "11"
+print std.string.starts_with(std.visual.player(Even, "0"), "<!DOCTYPE html>")
+print std.visual.dot_run(Even, "01")

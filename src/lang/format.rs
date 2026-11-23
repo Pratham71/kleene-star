@@ -277,9 +277,13 @@ impl Formatter<'_> {
                 self.push("test ");
                 self.expr(cond);
             }
-            StmtKind::Draw(value) => {
+            StmtKind::Draw { machine, word } => {
                 self.push("draw ");
-                self.expr(value);
+                self.expr(machine);
+                if let Some(word) = word {
+                    self.push(" on ");
+                    self.expr(word);
+                }
             }
             StmtKind::Trace { machine, word } => {
                 self.push("trace ");

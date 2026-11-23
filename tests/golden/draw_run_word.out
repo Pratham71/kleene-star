@@ -1,0 +1,5 @@
+Error in draw_run_word.kstar, line 7:
+    draw D on 5
+              ^
+TypeError[E0300]: the word to play must be a Str, but this is an Int
+  hint: write the word in quotes: `draw M on "0101"`

@@ -1,0 +1,7 @@
+alphabet B = {0, 1}
+dfa D over B {
+    start  a
+    accept a
+    a --0,1--> a
+}
+draw D on 5

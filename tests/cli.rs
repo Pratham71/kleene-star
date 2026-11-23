@@ -495,3 +495,31 @@ fn update_yes_replaces_the_programs_or_leaves_them() {
     assert_eq!(std::fs::read_to_string(&kstar).unwrap().trim(), "new v99.0.0");
     assert_eq!(std::fs::read_to_string(&lsp).unwrap().trim(), "new lsp");
 }
+
+#[test]
+fn draw_on_writes_a_page_whose_script_parses() {
+    let dir = scratch("draw-on");
+    std::fs::write(
+        dir.join("m.kstar"),
+        "alphabet B = {0, 1}\ndfa D over B { start a  accept b  a --0--> a  a --1--> b  b --0,1--> b }\ndraw D on \"001\"\n",
+    )
+    .unwrap();
+    let out = kstar(&dir, &["run", "m.kstar"]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    assert_eq!(stdout(&out), "wrote D.html\n");
+    let page = std::fs::read_to_string(dir.join("D.html")).unwrap();
+    // The run is embedded as JSON that parses, with a frame per step.
+    let start = page.find("id=\"kstar-run\">").unwrap() + "id=\"kstar-run\">".len();
+    let json = &page[start..start + page[start..].find("</script>").unwrap()];
+    let data: serde_json::Value = serde_json::from_str(json).unwrap();
+    assert_eq!(data["frames"].as_array().unwrap().len(), 4);
+    assert_eq!(data["result"], "ACCEPTED");
+    // The player's script is valid JavaScript, if Node is here to say so.
+    let script_start = page.rfind("<script>").unwrap() + "<script>".len();
+    let script = &page[script_start..script_start + page[script_start..].find("</script>").unwrap()];
+    std::fs::write(dir.join("player.js"), script).unwrap();
+    match Command::new("node").arg("--check").arg("player.js").current_dir(&dir).output() {
+        Ok(check) => assert!(check.status.success(), "{}", String::from_utf8_lossy(&check.stderr)),
+        Err(_) => println!("SKIPPED: no Node on the PATH to check the player's script"),
+    }
+}

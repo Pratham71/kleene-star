@@ -385,7 +385,7 @@ impl Interp {
                     self.module(file).taken.insert(local.text.clone(), (target.clone(), name.text.clone()));
                 }
             }
-            StmtKind::Print(_) | StmtKind::Test(_) | StmtKind::Draw(_) | StmtKind::Trace { .. } if self.quiet() => {}
+            StmtKind::Print(_) | StmtKind::Test(_) | StmtKind::Draw { .. } | StmtKind::Trace { .. } if self.quiet() => {}
             StmtKind::Return(value) => return Ok(Flow::Return(self.eval(value)?)),
             StmtKind::If { cond, then, otherwise } => {
                 if self.eval_bool(cond)? {
@@ -435,7 +435,8 @@ impl Interp {
                     }
                 }
             }
-            StmtKind::Draw(value) => self.draw(value)?,
+            StmtKind::Draw { machine, word: None } => self.draw(machine)?,
+            StmtKind::Draw { machine, word: Some(word) } => self.draw_run(machine, word)?,
             StmtKind::Trace { machine, word } => self.trace(machine, word)?,
         }
         Ok(Flow::Normal)
@@ -461,15 +462,7 @@ impl Interp {
             Value::Tm(m) => dot::tm_to_dot(&m),
             other => dot::nfa_to_dot(&to_nfa(&other, &symbols_of(&other))),
         };
-        // `draw d` writes d.dot (and `draw utils.d` too); anything more
-        // complex gets a numbered name.
-        let base = match &expr.kind {
-            ExprKind::Name(name) => name.rsplit('.').next().unwrap_or(name).to_string(),
-            _ => {
-                self.drawings += 1;
-                format!("machine{}", self.drawings)
-            }
-        };
+        let base = self.drawing_name(expr);
         let path = self.out_dir.join(format!("{base}.dot"));
         std::fs::write(&path, dot).map_err(|e| {
             self.error(ErrorKind::Io, expr.span, format!("cannot write {}: {e}", path.display()))
@@ -488,6 +481,47 @@ impl Interp {
                 let _ = writeln!(self.out, "wrote {base}.svg");
             }
         }
+        Ok(())
+    }
+
+    /// The file name `draw` gives a machine: `draw d` writes d.dot (and
+    /// `draw utils.d` too); anything more complex gets a numbered name.
+    fn drawing_name(&mut self, expr: &Expr) -> String {
+        match &expr.kind {
+            ExprKind::Name(name) => name.rsplit('.').next().unwrap_or(name).to_string(),
+            _ => {
+                self.drawings += 1;
+                format!("machine{}", self.drawings)
+            }
+        }
+    }
+
+    /// `draw machine on word`: writes a page that plays the run step by
+    /// step (see `lang::player`).
+    fn draw_run(&mut self, machine: &Expr, word: &Expr) -> Run<()> {
+        let value = self.eval(machine)?;
+        let Value::Str(w) = self.eval(word)? else { unreachable!("checker ensures the word is a Str") };
+        let play = super::player::play(&value, &w).expect("checker ensures a machine with states");
+        if play.diagram.states.len() > super::player::MAX_STATES {
+            return Err(self
+                .error(
+                    ErrorKind::Limit,
+                    machine.span,
+                    format!("this machine has {} states; the player lays out at most {}", play.diagram.states.len(), super::player::MAX_STATES),
+                )
+                .code(codes::RESULT_TOO_LARGE)
+                .hint("`minimize` it first, or use `trace` to see the run as a table"));
+        }
+        let base = self.drawing_name(machine);
+        let title = match &machine.kind {
+            ExprKind::Name(name) => name.clone(),
+            _ => self.sources.text(machine.span.file).get(machine.span.start..machine.span.end).unwrap_or("machine").to_string(),
+        };
+        let path = self.out_dir.join(format!("{base}.html"));
+        std::fs::write(&path, super::player::html(&play, &title)).map_err(|e| {
+            self.error(ErrorKind::Io, machine.span, format!("cannot write {}: {e}", path.display()))
+        })?;
+        let _ = writeln!(self.out, "wrote {base}.html");
         Ok(())
     }
 

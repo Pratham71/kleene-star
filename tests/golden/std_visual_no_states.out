@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_visual_no_states.kstar, line 5, in <main>
+    print std.visual.dot_run(G, "01")
+                             ^
+ValueError[E0620]: this is a grammar, which has no states to show a run on
+  hint: use its PDA, `to_pda(g)`

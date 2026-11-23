@@ -707,7 +707,8 @@ impl Checker {
             }
             StmtKind::Print(values) => values.iter().try_for_each(|v| self.expr(v).map(drop)),
             StmtKind::Test(cond) => self.expect(cond, &Type::Bool, "a `test`"),
-            StmtKind::Draw(value) => {
+            StmtKind::Draw { machine, word: Some(word) } => self.machine_and_word(machine, word, "draw"),
+            StmtKind::Draw { machine: value, word: None } => {
                 let ty = self.expr(value)?;
                 if !is_lang(&ty) && !matches!(ty, Type::Pda | Type::Tm) {
                     let mut err = type_error(
@@ -726,31 +727,36 @@ impl Checker {
                 self.import_names(lib, names, target.as_ref(), stmt.span.end);
                 Ok(())
             }
-            StmtKind::Trace { machine, word } => {
-                let ty = self.expr(machine)?;
-                if !matches!(ty, Type::Dfa | Type::Nfa | Type::Pda | Type::Tm) {
-                    let mut err = type_error(
-                        machine.span,
-                        format!("`trace` needs a machine (Dfa, Nfa, Pda or Tm), but this is {}", article(&ty)),
-                    );
-                    if is_lang(&ty) {
-                        err = err.hint("a regex or set has no states to show; convert it first, for example `trace to_dfa(r) on \"01\"`");
-                    } else if ty == Type::Grammar {
-                        err = err.hint("to see how a grammar makes a word, use `print derive(g, \"...\")`; or trace its PDA: `trace to_pda(g) on \"...\"`");
-                    }
-                    return Err(err);
-                }
-                let word_ty = self.expr(word)?;
-                if word_ty != Type::Str {
-                    return Err(type_error(
-                        word.span,
-                        format!("the word to trace must be a Str, but this is {}", article(&word_ty)),
-                    )
-                    .hint("write the word in quotes: `trace M on \"0101\"`"));
-                }
-                Ok(())
-            }
+            StmtKind::Trace { machine, word } => self.machine_and_word(machine, word, "trace"),
         }
+    }
+
+    /// `trace M on w` and `draw M on w`: `M` must be a machine with states
+    /// to show, and `w` a Str.
+    fn machine_and_word(&mut self, machine: &Expr, word: &Expr, statement: &str) -> Check<()> {
+        let ty = self.expr(machine)?;
+        if !matches!(ty, Type::Dfa | Type::Nfa | Type::Pda | Type::Tm) {
+            let mut err = type_error(
+                machine.span,
+                format!("`{statement}` needs a machine (Dfa, Nfa, Pda or Tm), but this is {}", article(&ty)),
+            );
+            if is_lang(&ty) {
+                err = err.hint(format!("a regex or set has no states to show; convert it first, for example `{statement} to_dfa(r) on \"01\"`"));
+            } else if ty == Type::Grammar {
+                err = err.hint(format!("to see how a grammar makes a word, use `print derive(g, \"...\")`; or use its PDA: `{statement} to_pda(g) on \"...\"`"));
+            }
+            return Err(err);
+        }
+        let word_ty = self.expr(word)?;
+        if word_ty != Type::Str {
+            let what = if statement == "trace" { "trace" } else { "play" };
+            return Err(type_error(
+                word.span,
+                format!("the word to {what} must be a Str, but this is {}", article(&word_ty)),
+            )
+            .hint(format!("write the word in quotes: `{statement} M on \"0101\"`")));
+        }
+        Ok(())
     }
 
     fn function(&mut self, f: &FnDef, end: usize) -> Check<()> {

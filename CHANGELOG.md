@@ -14,6 +14,17 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Added
 
+- `draw M on "w"` writes `M.html`, a page that plays the run of a DFA, NFA,
+  PDA or Turing machine on a word step by step: the diagram with the
+  current states and the move just taken highlighted, the input read so
+  far, a PDA's stack or a Turing machine's tape, and the result. Play,
+  pause, step, a slider and speeds; one file, no network, no Graphviz.
+- `std.visual`: the same things as strings. `dot` (what `draw` writes),
+  `dot_run` (the diagram with a run drawn on it), `trace_text` (what
+  `trace` prints) and `player` (the page). New error E0620 for a regex,
+  set or grammar where a machine with states is needed. Example:
+  `examples/23_visual.kstar`.
+
 - `std.io`: reading and writing text files next to the program, such as a
   word list to test a machine on (`read_words`, `read_lines`, `read_text`)
   or a machine saved with `to_json` (`write_text`, `write_lines`,
