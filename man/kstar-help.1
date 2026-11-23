@@ -1,0 +1,30 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-HELP 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-help \- help for a command, or for the standard library
+.SH SYNOPSIS
+.nf
+\fBkstar help\fR [<command>]
+\fBkstar help std\fR
+\fBkstar help std.<module>[.<function>]\fR
+.fi
+.SH DESCRIPTION
+.PP
+Shows the overview of every command, or the full help for one command (the
+same as \fBkstar <command> \-\-help\fR). \fBkstar help std\fR lists the modules of
+the standard library, \fBkstar help std.<module>\fR lists a module's functions
+with their types, and \fBkstar help std.<module>.<function>\fR shows one.
+.SH EXAMPLES
+.TP
+\fBkstar help export\fR
+every option of kstar export
+.TP
+\fBkstar help std\fR
+the modules of the standard library
+.TP
+\fBkstar help std.automata\fR
+the functions of std.automata
+.SH SEE ALSO
+\fBkstar\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

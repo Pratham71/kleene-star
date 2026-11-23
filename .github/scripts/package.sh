@@ -6,6 +6,8 @@
 # puts kstar, kstar-lsp, the README and the LICENSE into dist/kstar-<target>.zip (on
 # Windows) or .tar.gz, with a .sha256 file beside it, after checking that
 # the built kstar runs (unless it was cross-compiled for another machine).
+# The .tar.gz (Linux and macOS) also holds man/: the man pages and the info
+# manual.
 set -euo pipefail
 
 target=$1
@@ -22,6 +24,9 @@ fi
 rm -rf stage dist
 mkdir -p stage dist
 cp "$release/kstar$exe" "$release/kstar-lsp$exe" README.md LICENSE stage/
+if [ "$exe" != .exe ]; then
+    cp -R man stage/man
+fi
 
 if [ "$exe" = .exe ]; then
     archive=$name.zip

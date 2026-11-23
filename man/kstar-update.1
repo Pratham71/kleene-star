@@ -1,0 +1,50 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-UPDATE 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-update \- update kstar and its VS Code extension
+.SH SYNOPSIS
+.nf
+\fBkstar update\fR [\-\-check] [\-\-yes] [\-\-no-vscode]
+.fi
+.SH DESCRIPTION
+.PP
+Asks GitHub for the latest stable release (through the \fBgh\fR command, or
+\fBcurl\fR with GITHUB_TOKEN). If it is newer than this kstar, it shows both
+versions and what the release is about, and asks "Update to vX.Y.Z?
+[Y/n]". On yes it installs the release with its install script into the
+folder kstar is in, which also updates the VS Code extension; on no it
+changes nothing. Pre-releases (such as 0.2.5-beta) are not offered: install
+one by name with KSTAR_VERSION (see docs/install.md).
+.PP
+When standard input is not a terminal (a script or CI), it does not ask and
+does not update: pass \-\-yes.
+.PP
+If VS Code is installed (the \fBcode\fR command) and kstar is up to date, it
+also makes sure the Kleene Star extension matches this kstar: when it is
+missing or from another release, it downloads kleene-star-<version>.vsix
+from this kstar's release, checks its SHA-256 checksum and installs it.
+.SH OPTIONS
+.TP
+\fB\-\-check\fR
+only say whether a newer release exists, and whether the VS Code extension matches, without installing anything
+.TP
+\fB\-y\fR, \fB\-\-yes\fR
+update without asking
+.TP
+\fB\-\-no-vscode\fR
+leave VS Code alone (so does KSTAR_NO_VSCODE=1)
+.SH EXAMPLES
+.TP
+\fBkstar update \-\-check\fR
+see whether there is a newer release
+.TP
+\fBkstar update\fR
+update, after asking
+.TP
+\fBkstar update \-\-yes \-\-no-vscode\fR
+update without asking, leaving VS Code alone
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

@@ -77,6 +77,13 @@ macOS Apple Silicon), checks its SHA-256 checksum, puts `kstar` and
 one line to `~/.profile`, and to `~/.bashrc` and `~/.zshrc` if you have
 them. Running it again does not add the line twice.
 
+It also installs the man pages, in `~/.kstar/share/man`, so `man kstar`
+(and `man kstar-run`, `man kstar-export`, one per command) works in a new
+terminal, and the info manual, `~/.kstar/share/info/kstar.info`
+(`info -f ~/.kstar/share/info/kstar.info`, or add that folder to
+`INFOPATH` for `info kstar`). `man` finds the pages through the PATH entry
+for `~/.kstar/bin`, so nothing else needs setting.
+
 It takes the same settings as `install.ps1`, given to `sh`:
 
 ```bash
@@ -130,7 +137,8 @@ PowerShell, compare the file's hash with the one in its `.sha256` file:
 That prints `True` when they match.
 
 **Unpack it.** Each archive holds `kstar`, `kstar-lsp`, `LICENSE` and
-`README.md` (`kstar.exe` and `kstar-lsp.exe` on Windows). Put the two
+`README.md`, and on Linux and macOS a `man` folder with the man pages and
+the info manual (`kstar.exe` and `kstar-lsp.exe` on Windows). Put the two
 programs in a folder on your PATH, such as `~/.local/bin`. On macOS, see
 [Gatekeeper](#macos-cannot-be-opened-because-the-developer-cannot-be-verified)
 below.
@@ -265,15 +273,17 @@ extension.
 `%LOCALAPPDATA%\Programs\Kleene Star\bin` from your user PATH (*Settings*,
 *System*, *About*, *Advanced system settings*, *Environment Variables*).
 
-**Linux and macOS, installed with `install.sh`:**
+**Linux and macOS, installed with `install.sh`:** run it with
+`--uninstall`:
 
 ```bash
-rm -rf ~/.kstar
+curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | sh -s -- --uninstall
 ```
 
-Then delete the line `export PATH="$HOME/.kstar/bin:$PATH"` (written with
-your home folder spelled out) and the comment `# Added by the Kleene Star
-installer` above it from `~/.profile`, `~/.bashrc` and `~/.zshrc`.
+That removes `kstar`, `kstar-lsp`, the man pages and the info manual,
+the folders they were in once they are empty (`~/.kstar`, or
+`KSTAR_INSTALL_DIR` if you set it then), and the PATH line and its comment
+from `~/.profile`, `~/.bashrc` and `~/.zshrc`. It removes nothing else.
 
 **Built from source:**
 

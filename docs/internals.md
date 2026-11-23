@@ -394,6 +394,18 @@ reads `main.rs` and `update.rs` for option strings and dispatched commands,
 and tries every option on every command, so the table and the parsers
 cannot drift apart.
 
+`src/manual.rs` makes the man pages (`kstar.1`, one `kstar-<command>.1`
+per command, `kstar-lsp.1`) and the info manual (`kstar.info`) from the
+same table, so they say what `kstar help` says. They are kept in `man/`,
+and `tests/manual.rs` fails when they are out of date
+(`UPDATE_MAN=1 cargo test --test manual` writes them again). CI renders
+every page with `groff -ww` and `man --warnings` and fails on any warning
+(`.github/scripts/check-man.sh`), installs a release archive with
+`install.sh` and checks that `man kstar` finds the page, then uninstalls.
+The info manual is written directly, without `makeinfo`: a node per
+command and per standard-library module, separated by `\x1f`, with a tag
+table.
+
 ## 13. Modules
 
 `src/lang/module.rs`, `src/lang/check.rs`, `src/lang/interp.rs`

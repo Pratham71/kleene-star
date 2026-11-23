@@ -187,6 +187,10 @@ jobs:
           KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
           "$HOME/.kstar/bin/kstar" version
           grep -F '.kstar/bin' "$HOME/.profile"
+          # `man kstar` works through the PATH entry, with no MANPATH.
+          PATH="$HOME/.kstar/bin:$PATH" man -w kstar | grep -F "$HOME/.kstar/share/man/man1/kstar.1"
+          PATH="$HOME/.kstar/bin:$PATH" man -w kstar-export
+          test -f "$HOME/.kstar/share/info/kstar.info"
           # Running it again must not add the PATH line twice.
           KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
           test "$(grep -cF '.kstar/bin' "$HOME/.profile")" = 1
@@ -202,6 +206,10 @@ jobs:
           printf '#!/bin/sh\necho "$@" >> "%s/code-log.txt"\n' "$PWD" > fake-code && chmod +x fake-code
           KSTAR_CODE="$PWD/fake-code" KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
           grep -E -- "--install-extension .*kleene-star-$version\.vsix --force" code-log.txt
+          # --uninstall removes the programs, the pages and the PATH line.
+          sh install.sh --uninstall
+          test ! -e "$HOME/.kstar"
+          if grep -F '.kstar/bin' "$HOME/.profile"; then echo "the PATH line is still there"; exit 1; fi
 
   vscode:
     name: VS Code extension

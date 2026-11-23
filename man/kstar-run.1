@@ -1,0 +1,59 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-RUN 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-run \- run programs (files or folders of .kstar files)
+.SH SYNOPSIS
+.nf
+\fBkstar run\fR [options] <files>...
+\fBkstar\fR <file.kstar>
+.fi
+.SH DESCRIPTION
+.PP
+Runs each program. A folder means every .kstar file inside it, and
+\fBkstar file.kstar\fR is short for \fBkstar run file.kstar\fR. With several files,
+each file's output starts with its name, and a count of the files that
+passed and failed comes at the end.
+.PP
+Imported files are checked before anything runs. A module's top level runs
+the first time one of its names is used, without its print, test, draw and
+trace statements.
+.PP
+The exit code is 0 when every program ran without errors and no test
+failed, 1 otherwise, and 2 when the command itself was wrong.
+.SH OPTIONS
+.TP
+\fB\-\-out\fR \fI<dir>\fR
+where \fBdraw\fR writes its files (default: the current folder)
+.TP
+\fB\-\-allow-path\fR \fI<dir>\fR
+let std.io also read and write files in <dir>; give it more than once for more folders. Without it a program may only use files in its own folder.
+.TP
+\fB\-\-fixed-clock\fR
+std.benchmark reports every time as 0, so the output is the same on every run
+.TP
+\fB\-\-watch\fR
+run again whenever a file changes; stop with Ctrl-C
+.TP
+\fB\-\-trace-calls\fR
+print every function call with its arguments, and every return with its result
+.TP
+\fB\-\-eager-imports\fR
+run each imported module at its import line, not when one of its names is first used
+.TP
+\fB\-\-color\fR \fI<when>\fR
+auto (the default), always or never. With auto, output is coloured only on a terminal and never when the NO_COLOR environment variable is set.
+.SH EXAMPLES
+.TP
+\fBkstar run examples/tour.kstar\fR
+run one program
+.TP
+\fBkstar run labs/ \-\-out drawings\fR
+run every program in labs/, writing drawings into drawings/
+.TP
+\fBkstar run \-\-watch lab1.kstar\fR
+run lab1.kstar again on every save
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star
