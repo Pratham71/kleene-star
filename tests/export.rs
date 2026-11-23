@@ -151,3 +151,64 @@ fn generated_rust_compiles_and_agrees_with_the_interpreter() {
         assert!(run.status.success(), "{machine}: generated tests failed:\n{}", String::from_utf8_lossy(&run.stdout));
     }
 }
+
+fn python() -> Option<&'static str> {
+    ["python3", "python"].into_iter().find(|p| Command::new(p).arg("--version").output().is_ok_and(|o| o.status.success()))
+}
+
+/// `kstar export --format python` writes the machine's DFA (got here the way
+/// the command gets it, as JSON) with `codegen::dfa_to_python`. The function
+/// must agree with the interpreter, and the file's own checks must pass.
+#[test]
+fn generated_python_agrees_with_the_interpreter() {
+    let Some(python) = python() else {
+        println!("SKIPPED: no Python on the PATH, so the generated Python cannot be run");
+        return;
+    };
+    // Its own folder: the Rust test empties `scratch()` while this one runs.
+    let dir = std::env::temp_dir().join("kstar-export-python-tests");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let mut rng = Rng::new(seed());
+    for (i, (machine, symbols)) in CASES.iter().enumerate() {
+        let name = format!("machine_{i}");
+        let json = kstar_print(&format!("print to_json(to_dfa({machine}))"));
+        let Ok((kstar::automata::json::Machine::Dfa(dfa), _)) = kstar::automata::json::from_json(&json) else {
+            panic!("{machine}: not a DFA: {json}");
+        };
+        let code = kstar::automata::codegen::dfa_to_python(&dfa, &name, &format!("`{machine}`"));
+        let source = dir.join(format!("{name}.py"));
+        std::fs::write(&source, &code).unwrap();
+        let checked = Command::new(python).arg(&source).output().unwrap();
+        assert!(checked.status.success(), "{machine}: the file's own checks failed:\n{}", String::from_utf8_lossy(&checked.stderr));
+
+        let alphabet: Vec<char> = symbols.chars().collect();
+        let mut words: Vec<String> = vec![String::new()];
+        for _ in 0..300 {
+            let len = rng.below(12);
+            let mut word: String = (0..len).map(|_| *rng.pick(&alphabet)).collect();
+            if rng.chance(5) {
+                word.push('z');
+            }
+            words.push(word);
+        }
+        words.sort();
+        words.dedup();
+        // A driver that prints 1 or 0 for each word on its command line.
+        let driver = dir.join(format!("{name}_driver.py"));
+        std::fs::write(&driver, format!("import sys\nfrom {name} import {name}\nprint(''.join('1' if {name}(w) else '0' for w in sys.argv[1:]), end='')\n")).unwrap();
+        let output = Command::new(python).arg(&driver).args(&words).current_dir(&dir).output().unwrap();
+        assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+        let ran = String::from_utf8(output.stdout).unwrap();
+
+        let (foreign, own): (Vec<&String>, Vec<&String>) =
+            words.iter().partition(|w| w.chars().any(|c| !alphabet.contains(&c)));
+        let quoted: Vec<String> = own.iter().map(|w| format!("{w:?}")).collect();
+        let printed = kstar_print(&format!("for w in {{{}}} {{ print {machine} accepts w }}", quoted.join(", ")));
+        let mut by_word: std::collections::HashMap<&str, char> =
+            own.iter().zip(printed.lines()).map(|(w, line)| (w.as_str(), if line == "true" { '1' } else { '0' })).collect();
+        by_word.extend(foreign.iter().map(|w| (w.as_str(), '0')));
+        let expected: String = words.iter().map(|w| by_word[w.as_str()]).collect();
+        assert_eq!(ran, expected, "{machine}: the Python function disagrees with the interpreter on {words:?}");
+    }
+}

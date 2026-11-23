@@ -90,39 +90,57 @@ the empty word.";
 const EXPORT_HELP: &str = "\
 Usage: kstar export [options] <file> <machine>
 
-Runs the file without showing its output, then writes <machine> as Rust: one
-dependency-free function `pub fn name(input: &str) -> bool` that accepts
-exactly the machine's words, with a `#[cfg(test)]` module of sample words.
-<machine> may be any regular language (Dfa, Nfa, Regex or Set[Str]), such as
-`EvenZeros` or `to_dfa(r)`; it is turned into a DFA first.
+Runs the file without showing its output, then writes <machine> to a file
+next to <file>, named after the machine (HasDouble1.rs, HasDouble1.py or
+HasDouble1.json), and says where:
 
-With --format json it writes <machine> in Kleene Star's JSON format instead,
-which `from_json` reads back: any Dfa, Nfa, Regex, Grammar, Pda or Tm, kept as
-it is, with its state names.
+  Wrote C:\\Users\\me\\HasDouble1.rs (Rust, 42 lines)
+
+It never replaces a file that is already there unless you pass --force.
+
+As Rust (the default), the file is one dependency-free function
+`pub fn name(input: &str) -> bool` that accepts exactly the machine's words,
+with a `#[cfg(test)]` module of sample words. As Python, it is one
+dependency-free file with `def name(word: str) -> bool` that checks itself on
+sample words when run as a script. For both, <machine> may be any regular
+language (Dfa, Nfa, Regex or Set[Str]), such as `EvenZeros` or `to_dfa(r)`;
+it is turned into a DFA first.
+
+As JSON it writes <machine> in Kleene Star's JSON format, which `from_json`
+reads back: any Dfa, Nfa, Regex, Grammar, Pda or Tm, kept as it is, with its
+state names.
 
 Options:
-  --format <format>  rust (default) or json
-  --fn <name>        the Rust function's name (default: <machine> in snake_case)
-  -o, --out <file>   write to <file> instead of standard output
+  --format <format>  rust (default), python or json
+  --fn <name>        the function's name (default: <machine> in snake_case)
+  -o, --out <path>   write to this file, or into this folder; `-o -` prints
+                     to standard output instead of writing a file
+  --force            replace the file if it is already there
   --minimize         minimize the DFA first, for the smallest table
   --color <when>     auto (default), always or never";
 
 const UPDATE_HELP: &str = "\
-Usage: kstar update [--check] [--no-vscode]
+Usage: kstar update [--check] [--yes] [--no-vscode]
 
-Asks GitHub for the latest stable release and says whether it is newer than
-this kstar. Without --check it also prints the command that installs it; kstar
-does not replace itself while it is running. Pre-releases (such as 0.2.5-beta)
-are not offered: install one by name with KSTAR_VERSION (see docs/install.md).
+Asks GitHub for the latest stable release. If it is newer than this kstar, it
+shows both versions and what the release is about, and asks
+\"Update to vX.Y.Z? [Y/n]\". On yes it installs the release with its install
+script into the folder kstar is in, which also updates the VS Code extension;
+on no it changes nothing. Pre-releases (such as 0.2.5-beta) are not offered:
+install one by name with KSTAR_VERSION (see docs/install.md).
 
-If VS Code is installed (the `code` command), it also makes sure the Kleene
-Star extension matches this kstar: when it is missing or from another
-release, it downloads kleene-star-<version>.vsix from this kstar's release,
-checks its SHA-256 checksum and installs it.
+When standard input is not a terminal (a script or CI), it does not ask and
+does not update: pass --yes.
+
+If VS Code is installed (the `code` command) and kstar is up to date, it
+also makes sure the Kleene Star extension matches this kstar: when it is
+missing or from another release, it downloads kleene-star-<version>.vsix from
+this kstar's release, checks its SHA-256 checksum and installs it.
 
 Options:
   --check       only say whether a newer release exists, and whether the
                 VS Code extension matches, without installing anything
+  -y, --yes     update without asking
   --no-vscode   leave VS Code alone (so does KSTAR_NO_VSCODE=1)";
 
 const VERSION_HELP: &str = "\
@@ -147,6 +165,7 @@ Type :help inside it for its commands.";
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
+    update::remove_old_programs();
     let Some((&command, rest)) = args.split_first() else {
         println!("{USAGE}");
         return ExitCode::SUCCESS;
@@ -555,13 +574,64 @@ impl std::io::Write for Captured {
     }
 }
 
+/// What `kstar export` writes.
+#[derive(Clone, Copy, PartialEq)]
+enum ExportFormat {
+    Rust,
+    Python,
+    Json,
+}
+
+impl ExportFormat {
+    fn extension(self) -> &'static str {
+        match self {
+            ExportFormat::Rust => "rs",
+            ExportFormat::Python => "py",
+            ExportFormat::Json => "json",
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            ExportFormat::Rust => "Rust",
+            ExportFormat::Python => "Python",
+            ExportFormat::Json => "JSON",
+        }
+    }
+}
+
+/// Where `kstar export` puts what it makes.
+#[derive(Debug, PartialEq)]
+enum ExportTarget {
+    Stdout,
+    File(PathBuf),
+}
+
+/// The file to write for `-o` (or none given): `-` is standard output; a
+/// folder (one that exists, or a path ending in a slash) gets
+/// `<base>.<extension>` inside it; anything else is the file itself.
+/// Without `-o` the file goes next to the source file.
+fn export_target(out: Option<&str>, source: &Path, base: &str, extension: &str) -> ExportTarget {
+    let file_name = format!("{base}.{extension}");
+    match out {
+        Some("-") => ExportTarget::Stdout,
+        Some(out) if out.ends_with('/') || out.ends_with('\\') || Path::new(out).is_dir() => {
+            ExportTarget::File(Path::new(out).join(file_name))
+        }
+        Some(out) => ExportTarget::File(PathBuf::from(out)),
+        None => ExportTarget::File(source.parent().unwrap_or(Path::new("")).join(file_name)),
+    }
+}
+
 /// `kstar export`: runs a file quietly, then writes one machine as Rust,
-/// by evaluating `to_rust(machine, "name")` at the end of the file.
+/// Python or JSON to a file, by evaluating `to_rust` or `to_json` at the
+/// end of the file.
 fn export_command(args: &[&str]) -> ExitCode {
     let mut fn_name = None;
-    let mut out_file = None;
+    let mut out = None;
     let mut minimize = false;
-    let mut json = false;
+    let mut force = false;
+    let mut format = ExportFormat::Rust;
     let mut rest = Vec::new();
     let mut iter = args.iter();
     while let Some(&arg) = iter.next() {
@@ -571,15 +641,17 @@ fn export_command(args: &[&str]) -> ExitCode {
                 None => return usage_error("`--fn` needs a function name", EXPORT_HELP),
             },
             "-o" | "--out" => match iter.next() {
-                Some(file) => out_file = Some(file.to_string()),
-                None => return usage_error("`-o` needs a file name", EXPORT_HELP),
+                Some(file) => out = Some(file.to_string()),
+                None => return usage_error("`-o` needs a file or folder, or `-` for standard output", EXPORT_HELP),
             },
             "--minimize" => minimize = true,
+            "--force" => force = true,
             "--format" => match iter.next() {
-                Some(&"rust") => json = false,
-                Some(&"json") => json = true,
-                Some(other) => return usage_error(&format!("unknown format `{other}`: use `rust` or `json`"), EXPORT_HELP),
-                None => return usage_error("`--format` needs `rust` or `json`", EXPORT_HELP),
+                Some(&"rust") => format = ExportFormat::Rust,
+                Some(&"python") => format = ExportFormat::Python,
+                Some(&"json") => format = ExportFormat::Json,
+                Some(other) => return usage_error(&format!("unknown format `{other}`: use `rust`, `python` or `json`"), EXPORT_HELP),
+                None => return usage_error("`--format` needs `rust`, `python` or `json`", EXPORT_HELP),
             },
             other => rest.push(other),
         }
@@ -598,33 +670,44 @@ fn export_command(args: &[&str]) -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    // The default name is the machine's, in Rust's style: EvenZeros -> even_zeros.
+    // The machine's own name, when <machine> is a name: `lib.EvenZeros` -> `EvenZeros`.
     let is_name = machine.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '.');
+    let own_name = if is_name { machine.rsplit('.').next().unwrap_or(machine).to_string() } else { String::new() };
+    // The default function name is the machine's, in snake_case: EvenZeros -> even_zeros.
     let fn_name_given = fn_name.is_some();
     let fn_name = fn_name.unwrap_or_else(|| {
-        let base = if is_name { machine.rsplit('.').next().unwrap_or(machine) } else { "accepts" };
-        kstar::automata::codegen::snake_case(base)
+        kstar::automata::codegen::snake_case(if own_name.is_empty() { "accepts" } else { &own_name })
     });
-    if json && fn_name_given {
-        return usage_error("`--fn` names a Rust function; it does not go with `--format json`", EXPORT_HELP);
+    if format == ExportFormat::Json && fn_name_given {
+        return usage_error("`--fn` names a function; it does not go with `--format json`", EXPORT_HELP);
     }
-    let target = if minimize { format!("minimize({machine})") } else { machine.clone() };
-    let quote = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
-    let entry = if json {
-        // The machine's name goes into the file when <machine> is a name.
-        let name = if is_name { machine.rsplit('.').next().unwrap_or(machine).to_string() } else { String::new() };
-        if name.is_empty() {
-            format!("print to_json({target})")
-        } else {
-            format!("print to_json({target}, \"{}\")", quote(&name))
+    // (For Rust, `to_rust` checks the name and reports it like any error.)
+    if format == ExportFormat::Python {
+        if let Err(message) = kstar::automata::codegen::check_fn_name(&fn_name) {
+            return usage_error(&message, EXPORT_HELP);
         }
-    } else {
-        format!("print to_rust({target}, \"{}\")", quote(&fn_name))
+    }
+    let base = if own_name.is_empty() { fn_name.clone() } else { own_name.clone() };
+    let target = export_target(out.as_deref(), Path::new(file), &base, format.extension());
+    if let ExportTarget::File(path) = &target {
+        if path.exists() && !force {
+            eprintln!("kstar: {} is already there; pass --force to replace it, or -o to write elsewhere", shown(path));
+            return ExitCode::FAILURE;
+        }
+    }
+    let machine_expr = if minimize { format!("minimize({machine})") } else { machine.clone() };
+    let quote = |text: &str| text.replace('\\', "\\\\").replace('"', "\\\"");
+    let entry = match format {
+        ExportFormat::Json if own_name.is_empty() => format!("print to_json({machine_expr})"),
+        ExportFormat::Json => format!("print to_json({machine_expr}, \"{}\")", quote(&own_name)),
+        ExportFormat::Rust => format!("print to_rust({machine_expr}, \"{}\")", quote(&fn_name)),
+        // The DFA as JSON, which is turned into Python below.
+        ExportFormat::Python => format!("print to_json(to_dfa({machine_expr}))"),
     };
-    // What `-o` reports once the file is written.
-    let wrote = if json { format!("{machine} as JSON") } else { format!("`pub fn {fn_name}(input: &str) -> bool`") };
     let name = shown(Path::new(file));
     let color = options.color;
+    let title = format!("`{machine}`");
+    let machine = machine.clone();
     kstar::with_big_stack(move || {
         let mut session = Session::new(&name, Box::new(std::io::sink()), PathBuf::from("."), true);
         session.set_path(Path::new(&name));
@@ -639,26 +722,56 @@ fn export_command(args: &[&str]) -> ExitCode {
             return ExitCode::FAILURE;
         }
         let mut code = String::from_utf8_lossy(&code.0.borrow()).to_string();
-        // Rust code already ends in a newline; drop the one `print` adds.
-        // JSON does not, so it keeps it, like any text file.
-        if !json {
-            code.pop();
-        }
-        match out_file {
-            None => {
-                print!("{code}");
-                ExitCode::SUCCESS
+        match format {
+            // Rust code already ends in a newline; drop the one `print` adds.
+            // JSON does not, so it keeps it, like any text file.
+            ExportFormat::Rust => {
+                code.pop();
             }
-            Some(out) => match std::fs::write(&out, code) {
-                Ok(()) => {
-                    eprintln!("wrote {out}: {wrote}");
-                    ExitCode::SUCCESS
+            ExportFormat::Json => {}
+            ExportFormat::Python => match kstar::automata::json::from_json(&code) {
+                Ok((kstar::automata::json::Machine::Dfa(dfa), _)) => {
+                    let fn_name = kstar::automata::codegen::python_name(&fn_name);
+                    code = kstar::automata::codegen::dfa_to_python(&dfa, &fn_name, &title);
                 }
-                Err(e) => {
-                    eprintln!("kstar: cannot write {out}: {e}");
-                    ExitCode::FAILURE
+                _ => {
+                    eprintln!("kstar: could not turn {machine} into a DFA for Python");
+                    return ExitCode::FAILURE;
                 }
             },
+        }
+        let path = match target {
+            ExportTarget::Stdout => {
+                print!("{code}");
+                return ExitCode::SUCCESS;
+            }
+            ExportTarget::File(path) => path,
+        };
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                eprintln!("kstar: cannot make the folder {}: {e}", parent.display());
+                return ExitCode::FAILURE;
+            }
+        }
+        // `create_new` unless --force, so a file that appeared meanwhile is not replaced either.
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true);
+        if force {
+            options.create(true).truncate(true);
+        } else {
+            options.create_new(true);
+        }
+        let written = options.open(&path).and_then(|mut f| std::io::Write::write_all(&mut f, code.as_bytes()));
+        match written {
+            Ok(()) => {
+                let full = std::path::absolute(&path).unwrap_or(path);
+                println!("Wrote {} ({}, {} lines)", full.display(), format.label(), code.lines().count());
+                ExitCode::SUCCESS
+            }
+            Err(e) => {
+                eprintln!("kstar: cannot write {}: {e}", shown(&path));
+                ExitCode::FAILURE
+            }
         }
     })
 }

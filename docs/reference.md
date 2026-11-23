@@ -1592,14 +1592,17 @@ cannot be defined either (E0209).
 | `kstar fmt -` | Formats standard input to standard output, for editors and scripts. |
 | `kstar new <name>` | Writes `<name>.kstar`, a small working program to start from. Never overwrites. |
 | `kstar trace <file> <M> <word>` | Runs the file without showing its output, then traces machine `M` (any expression) on `word`. |
-| `kstar export <file> <M> [--fn name] [-o out.rs] [--minimize]` | Runs the file without showing its output, then writes the regular language `M` as a standalone Rust function (see [`to_rust`](#generating-rust)). |
-| `kstar export --format json <file> <M> [-o out.json]` | The same, but writes `M` (any `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`) in [the JSON format](#the-json-format), with its name. |
+| `kstar export <file> <M> [--fn name] [--minimize]` | Runs the file without showing its output, then writes the regular language `M` as a standalone Rust function (see [`to_rust`](#generating-rust)) to `M.rs` next to the file, and prints `Wrote <full path> (Rust, N lines)`. It never replaces a file unless given `--force`. |
+| `kstar export ... -o <path>` | Writes to that file, or into that folder. `-o -` prints the code to standard output instead. |
+| `kstar export --format python <file> <M>` | The same, as `M.py`: a dependency-free `def m(word: str) -> bool` that checks itself on sample words when run as a script. |
+| `kstar export --format json <file> <M>` | The same, as `M.json`: `M` (any `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`) in [the JSON format](#the-json-format), with its name. |
 | `kstar explain <code>` | Explains an error or warning code; `--list` lists them all. |
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
 | `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |
 | `kstar version` | The version, the commit it was built from, the build date and the target platform. |
 | `kstar update --check` | Asks GitHub whether a newer release exists (through the `gh` command, or `curl` with `GITHUB_TOKEN`), and whether the VS Code extension matches this `kstar`. |
-| `kstar update` | The same, and if there is a newer release, prints the command that installs it (it does not replace itself). If VS Code is installed and its Kleene Star extension is missing or from another release, installs the matching `.vsix`. `--no-vscode` or `KSTAR_NO_VSCODE=1` leaves VS Code alone. |
+| `kstar update` | The same, and if there is a newer release, shows both versions and what the release is about, then asks `Update to vX.Y.Z? [Y/n]`. On yes it installs the release into the folder `kstar` is in, VS Code extension included; on no it changes nothing. If `kstar` is up to date but the VS Code extension is missing or from another release, it installs the matching `.vsix`. `--no-vscode` or `KSTAR_NO_VSCODE=1` leaves VS Code alone. |
+| `kstar update --yes` | Updates without asking. Without a terminal to ask on (a script or CI), `kstar update` refuses unless given `--yes`. |
 
 `--color auto|always|never` works with `run`, `check` and `repl`. By default
 errors, warnings and test results are coloured only when the output is a

@@ -684,10 +684,8 @@ UPDATE_GOLDEN=1 cargo test --test golden --test format
 
 Ideas that fit the current design, roughly in order of size:
 
-- `kstar update` that replaces the installed program itself. Today it only
-  says whether a newer release exists and prints the install command; doing
-  the replacement safely means renaming the running `.exe` on Windows and
-  knowing how this copy was installed (installer, script or `cargo install`).
+- A terminal UI around `kstar update` and other commands. `kstar update`
+  asks a plain `[Y/n]` question today, so a TUI can wrap it.
 - Publishing the VS Code extension on the marketplace and the crate on
   crates.io.
 
