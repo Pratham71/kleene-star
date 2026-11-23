@@ -500,7 +500,7 @@ fn windows_programs_need_no_vc_runtime() {
 /// its own zero.
 #[cfg(windows)]
 fn version_string(bytes: &[u8], key: &str) -> Option<String> {
-    let units: Vec<u16> = bytes.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+    let units: Vec<u16> = bytes.as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes(*c)).collect();
     let mut wanted: Vec<u16> = key.encode_utf16().collect();
     wanted.push(0);
     // The resource is 16-bit aligned, so searching whole units finds it.
