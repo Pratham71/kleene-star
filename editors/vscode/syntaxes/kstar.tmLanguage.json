@@ -40,6 +40,21 @@
       "patterns": [
         { "include": "#comment" },
         {
+          "comment": "PDAs: `accept by empty stack`",
+          "match": "\\b(accept)\\s+(by)\\s+(empty)\\s+(stack)\\b",
+          "name": "keyword.control.state-role.kstar"
+        },
+        {
+          "comment": "PDAs: `stack starts Z0`, or `stack starts empty`",
+          "match": "\\b(stack)\\s+(starts)\\s+(?:(empty)\\b|([\\w$]+))",
+          "captures": {
+            "1": { "name": "keyword.control.state-role.kstar" },
+            "2": { "name": "keyword.control.state-role.kstar" },
+            "3": { "name": "constant.language.empty.kstar" },
+            "4": { "name": "constant.character.symbol.kstar" }
+          }
+        },
+        {
           "comment": "`start q0`, `accept q1, q2`, `reject r`",
           "match": "\\b(start|accept|reject)\\b",
           "name": "keyword.control.state-role.kstar"
@@ -210,8 +225,8 @@
       "patterns": [{ "match": "\\\\[\"\\\\]", "name": "constant.character.escape.kstar" }]
     },
     "regex": {
-      "comment": "A `/` after a name, number, `eps` or closing bracket is a PDA slash, not a regex.",
-      "begin": "(?<![\\w)\\]])/",
+      "comment": "A `/` after a name, number, `eps`, `$` or closing bracket is a PDA slash, not a regex.",
+      "begin": "(?<![\\w)\\]$])/",
       "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.kstar" } },
       "endCaptures": { "0": { "name": "punctuation.definition.string.end.kstar" } },
       "end": "/|$",

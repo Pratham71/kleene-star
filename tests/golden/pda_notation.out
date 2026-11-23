@@ -1,0 +1,63 @@
+PDA with 2 states over {a, b}, stack starts as Z0
+start p, accept by empty stack
+From | Read | Pop | Push | To
+p    | a    | Z0  | AZ0  | p
+p    | a    | A   | AA   | p
+p    | b    | A   | eps  | q
+q    | b    | A   | eps  | q
+q    | eps  | Z0  | eps  | q
+(p, aabb, Z0)
+⊢ (p, abb, AZ0)
+⊢ (p, bb, AAZ0)
+⊢ (q, b, AZ0)
+⊢ (q, eps, Z0)
+⊢ (q, eps, eps)
+Accepted: the run reads all of the input and empties the stack.
+(p, aab, Z0)
+⊢ (p, ab, AZ0)
+⊢ (p, b, AAZ0)
+⊢ (q, eps, AZ0)
+Rejected: no run reads all of the input and empties the stack; this one reads the most.
+{"A", "Z0"}
+{
+  "format": "kleene-star",
+  "version": 1,
+  "kind": "pda",
+  "name": "P",
+  "alphabet": ["a", "b"],
+  "states": ["p", "q"],
+  "start": "p",
+  "accept": [],
+  "bottom": "Z0",
+  "accept_by": "empty stack",
+  "moves": [
+    {"from": "p", "read": "a", "pop": "Z0", "push": ["A", "Z0"], "to": "p"},
+    {"from": "p", "read": "a", "pop": "A", "push": ["A", "A"], "to": "p"},
+    {"from": "p", "read": "b", "pop": "A", "push": [], "to": "q"},
+    {"from": "q", "read": "b", "pop": "A", "push": [], "to": "q"},
+    {"from": "q", "read": null, "pop": "Z0", "push": [], "to": "q"}
+  ]
+}
+true
+PDA with 3 states over {a, b}, stack starts empty
+start s, accept f
+From | Read | Pop | Push | To
+s    | eps  | eps | $    | p
+p    | a    | eps | eps  | p
+p    | eps  | $   | eps  | f
+(s, a, eps)
+⊢ (p, a, $)
+⊢ (p, eps, $)
+⊢ (f, eps, eps)
+Accepted: the run reads all of the input and ends in an accepting state.
+PDA with 5 states over {a, b}, stack starts as X0
+start begin, accept by empty stack
+From  | Read | Pop | Push | To
+s     | eps  | eps | $    | p
+p     | a    | eps | eps  | p
+p     | eps  | $   | eps  | f
+begin | eps  | X0  | X0   | s
+f     | eps  | eps | eps  | drain
+drain | eps  | $   | eps  | drain
+drain | eps  | X0  | eps  | drain
+tests: 3 passed, 0 failed

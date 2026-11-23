@@ -104,10 +104,49 @@ pda Name over Alphabet {
 - `read` is an input symbol or `eps`; `pop` is one stack symbol or `eps`;
   `push` is a string of stack symbols written together, top first (`AZ`
   leaves `A` on top), or `eps`.
-- Stack symbols are letters and digits; they need not be declared. The stack
-  starts holding one `Z`.
+- Stack symbols are letters, digits and `$`; they need not be declared.
+- The stack starts holding one `Z`, unless the PDA says otherwise:
+  - `stack starts Z0` names the symbol it starts with. It may be longer
+    than one character, and is then read as one symbol wherever it is
+    written: `a, Z0/aZ0` pops `Z0` and pushes `a` on top of it. (So with
+    `stack starts Z0`, `Z0` in a push is always that symbol, never `Z` then
+    `0`.) Every other stack symbol is one character.
+  - `stack starts empty` starts with nothing on the stack. A common way to
+    begin is a move that pushes `$` to mark the bottom:
+    `s --eps, eps/$--> p`.
 - Acceptance is **by final state**: a word is accepted if some run reads all
   of it and ends in an accepting state, whatever is left on the stack.
+- With `accept by empty stack` instead of `accept` states, acceptance is
+  **by empty stack**: a word is accepted if some run reads all of it and
+  leaves the stack empty, in any state. `std.pda.to_empty_stack` and
+  `std.pda.to_final_state` convert between the two ways of accepting.
+- `print` shows how the stack starts and how the PDA accepts;
+  `std.pda.ids(P, "w")` shows a run as instantaneous descriptions
+  `(q, w, γ) ⊢ (q', w', γ')`, with the stack top first.
+
+```kstar
+alphabet AB = {a, b}
+pda P over AB {
+    stack starts Z0
+    start  p
+    accept by empty stack
+    p --a, Z0/AZ0--> p
+    p --a, A/AA  --> p
+    p --b, A/eps --> q
+    q --b, A/eps --> q
+    q --eps, Z0/eps--> q
+}
+print std.pda.ids(P, "ab")
+```
+
+```text
+(p, ab, Z0)
+⊢ (p, b, AZ0)
+⊢ (q, eps, Z0)
+⊢ (q, eps, eps)
+Accepted: the run reads all of the input and empties the stack.
+```
+
 - A PDA may be nondeterministic. Runs are searched breadth first; the search
   gives up after 50 000 configurations, or when the stack would pass 1 000
   symbols, with a `LimitError` (an unknown answer is never reported as
@@ -833,6 +872,9 @@ Ready-made pushdown automata, the grammar of a PDA, whether a PDA is determinist
 | `stack_symbols(p: Pda) -> Set[Str]` | The symbols the PDA uses on its stack, the bottom symbol included. |
 | `member(p: Pda, w: Str) -> Bool` | Whether the PDA accepts `w`, decided through its grammar, so it never gives up as `accepts` can. |
 | `words_up_to(p: Pda, n: Int) -> Set[Str]` | The words the PDA accepts of length at most `n`, as a set. |
+| `to_empty_stack(p: Pda) -> Pda` | A PDA that accepts by empty stack the words `p` accepts, by the usual construction; `p` itself if it already accepts by empty stack. |
+| `to_final_state(p: Pda) -> Pda` | A PDA that accepts by final state the words `p` accepts, by the usual construction; `p` itself if it already accepts by final state. |
+| `ids(p: Pda, w: Str) -> Str` | The run of `p` on `w` as instantaneous descriptions, `(q, w, stack) ⊢ (q', w', stack')`, one per line, then the result. |
 
 `pda` is a keyword, so write `std.pda.member(P, w)`, `from std.pda import
 member`, or `import std.pda as pdas` (see `std.grammar`).
@@ -1627,7 +1669,7 @@ so the names survive a round trip):
 | `nfa` | the same, with any number of transitions; `"symbol": null` is an eps move |
 | `regex` | `regex`: the regex in the language's syntax, without the slashes |
 | `grammar` | `alphabet`; `variables`: names; `start`: a variable; `rules`: `{"head", "body"}`, where `body` is a list of `{"terminal": "0"}` and `{"variable": "S"}` (an empty list is eps) |
-| `pda` | `alphabet`; `states`; `start`; `accept`; `bottom`: the stack symbol the stack starts with; `moves`: `{"from", "read", "pop", "push", "to"}`, where `read` and `pop` may be `null` (eps) and `push` lists stack symbols, top first |
+| `pda` | `alphabet`; `states`; `start`; `accept`; `bottom`: the stack symbol the stack starts with, or `null` if it starts empty; `accept_by` (optional): `"final state"` (the default) or `"empty stack"`; `moves`: `{"from", "read", "pop", "push", "to"}`, where `read` and `pop` may be `null` (eps) and `push` lists stack symbols, top first |
 | `tm` | `alphabet`; `states`; `start`; `accept`; `reject`; `moves`: `{"from", "read", "write", "move", "to"}`, where `move` is `"L"`, `"R"` or `"S"` and `"_"` is the blank |
 
 A symbol is a string of one letter or digit. A grammar body says which items
@@ -1806,14 +1848,18 @@ machine     := 'over' qualified '{' item* '}'
 item        := 'start' state
              | 'accept' state (',' state)*
              | 'reject' state (',' state)*                  (tm)
+             | 'accept' 'by' 'empty' 'stack'                (pda)
+             | 'stack' 'starts' (stack-symbol | 'empty')    (pda)
              | state '--' action '-->' state
              | 'for' NAME 'in' expr '{' item* '}'
 state       := NAME ('[' expr ']')?
 action      := label (',' label)*                  (dfa, nfa)
-             | label ',' label '/' push             (pda)
+             | label ',' pop '/' push               (pda)
              | tape '/' tape ',' ('L' | 'R' | 'S')  (tm)
 tape        := symbol | '_'
-push        := 'eps' | letters and digits written together, top first
+pop         := stack-symbol | 'eps'
+push        := 'eps' | stack symbols written together, top first
+stack-symbol := one letter, digit or `$`, or the symbol after `stack starts`
 label       := symbol | 'eps'
 symbol      := one letter or digit
 

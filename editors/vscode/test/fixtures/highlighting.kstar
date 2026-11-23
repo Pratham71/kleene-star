@@ -66,3 +66,13 @@ test len(twice("a", 1)) >= 1
 draw D
 trace D on "0110"
 print tms.steps(tms.increment(), "11"), std.grammar.first(G, "S")
+
+# PDA notation: a named starting symbol, `$`, and acceptance by empty stack.
+pda Notation over AB {
+    stack starts Z0
+    start  p
+    accept by empty stack
+    p --a, Z0/aZ0--> p
+    p --eps, eps/$ --> p
+    p --eps, $/eps --> p
+}

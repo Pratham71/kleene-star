@@ -808,6 +808,8 @@ impl Checker {
                 starts: Vec::new(),
                 accepts: Vec::new(),
                 rejects: Vec::new(),
+                stack_starts: Vec::new(),
+                empty_stack: None,
                 transitions: Vec::new(),
             };
             for item in &m.items {
@@ -819,6 +821,8 @@ impl Checker {
                     MachineItem::Reject(states) => {
                         spec.rejects.extend(states.iter().map(|s| (s.name.clone(), s.span)))
                     }
+                    MachineItem::StackStarts { symbol, span } => spec.stack_starts.push((symbol.clone(), *span)),
+                    MachineItem::AcceptByEmptyStack { span } => spec.empty_stack = Some(*span),
                     MachineItem::Transition { from, action, to, span } => {
                         spec.transitions.push(Transition {
                             from: from.name.clone(),
@@ -849,6 +853,7 @@ impl Checker {
                     MachineItem::Start(s) => out.push((s, "start")),
                     MachineItem::Accept(states) => out.extend(states.iter().map(|s| (s, "accepting"))),
                     MachineItem::Reject(states) => out.extend(states.iter().map(|s| (s, "rejecting"))),
+                    MachineItem::StackStarts { .. } | MachineItem::AcceptByEmptyStack { .. } => {}
                     MachineItem::Transition { from, to, .. } => out.extend([(from, ""), (to, "")]),
                     MachineItem::For { body, .. } => mentions(body, out),
                 }
@@ -972,6 +977,7 @@ impl Checker {
                     literal &= self.state(from)?;
                     literal &= self.state(to)?;
                 }
+                MachineItem::StackStarts { .. } | MachineItem::AcceptByEmptyStack { .. } => {}
                 MachineItem::For { var, items, body } => {
                     let element = self.element_type(items)?;
                     let end = self.block_end;

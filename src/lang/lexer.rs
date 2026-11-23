@@ -159,10 +159,10 @@ fn lex_into(
             continue;
         }
 
-        // A `/` right after a name, number, `eps` or closing bracket is the
+        // A `/` right after a name, number, `eps`, `$` or closing bracket is the
         // slash of a PDA move (`a, Z/AZ`): a regex can never follow those.
         let after_operand = tokens.last().is_some_and(|t: &Token| {
-            matches!(t.tok, Tok::Ident(_) | Tok::Int(_) | Tok::Eps | Tok::RParen | Tok::RBracket)
+            matches!(t.tok, Tok::Ident(_) | Tok::Int(_) | Tok::Eps | Tok::Dollar | Tok::RParen | Tok::RBracket)
         });
         if c == '/' && after_operand {
             i += 1;
@@ -228,6 +228,7 @@ fn lex_into(
                     '*' => (Tok::Star, 1),
                     '%' => (Tok::Percent, 1),
                     '|' => (Tok::Bar, 1),
+                    '$' => (Tok::Dollar, 1),
                     '.' => (Tok::Dot, 1),
                     ';' => {
                         errors.push(

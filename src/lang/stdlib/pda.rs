@@ -17,7 +17,7 @@
 use super::grammar::two_symbols;
 use super::{alphabet_arg, int_arg as int, str_arg as text, Failure, Function, Module, Ty};
 use crate::automata::grammar::Grammar;
-use crate::automata::pda::Pda;
+use crate::automata::pda::{self as pda_run, Outcome, Pda};
 use crate::automata::{fmt_alphabet, pdas};
 use crate::lang::codes;
 use crate::lang::value::Value;
@@ -37,6 +37,9 @@ pub const MODULE: Module = Module {
         Function { name: "stack_symbols", params: &[("p", Ty::Pda)], ret: Ty::Set(&Ty::Str), doc: "The symbols the PDA uses on its stack, the bottom symbol included.", run: stack_symbols },
         Function { name: "member", params: &[("p", Ty::Pda), ("w", Ty::Str)], ret: Ty::Bool, doc: "Whether the PDA accepts `w`, decided through its grammar, so it never gives up as `accepts` can.", run: member },
         Function { name: "words_up_to", params: &[("p", Ty::Pda), ("n", Ty::Int)], ret: Ty::Set(&Ty::Str), doc: "The words the PDA accepts of length at most `n`, as a set.", run: words_up_to },
+        Function { name: "to_empty_stack", params: &[("p", Ty::Pda)], ret: Ty::Pda, doc: "A PDA that accepts by empty stack the words `p` accepts, by the usual construction; `p` itself if it already accepts by empty stack.", run: to_empty_stack },
+        Function { name: "to_final_state", params: &[("p", Ty::Pda)], ret: Ty::Pda, doc: "A PDA that accepts by final state the words `p` accepts, by the usual construction; `p` itself if it already accepts by final state.", run: to_final_state },
+        Function { name: "ids", params: &[("p", Ty::Pda), ("w", Ty::Str)], ret: Ty::Str, doc: "The run of `p` on `w` as instantaneous descriptions, `(q, w, stack) ⊢ (q', w', stack')`, one per line, then the result.", run: ids },
     ],
     explain: None,
 };
@@ -116,4 +119,47 @@ fn words_up_to(args: &[Value]) -> Result<Value, Failure> {
     let n = int(args, 1);
     super::grammar::check_length(n, 1)?;
     super::grammar::list_words(&grammar(args)?, n as usize)
+}
+
+fn to_empty_stack(args: &[Value]) -> Result<Value, Failure> {
+    Ok(value(pdas::to_empty_stack(pda(args))))
+}
+
+fn to_final_state(args: &[Value]) -> Result<Value, Failure> {
+    Ok(value(pdas::to_final_state(pda(args))))
+}
+
+/// The run as instantaneous descriptions: the first alone, each next one
+/// after `⊢` ("yields"), then a line with the result.
+fn ids(args: &[Value]) -> Result<Value, Failure> {
+    let (p, word) = (pda(args), text(args, 1));
+    let search = p.search(word, pda_run::STEP_LIMIT);
+    let mut lines: Vec<String> = Vec::new();
+    for (i, config) in search.path.iter().enumerate() {
+        let id = p.id(word, config);
+        lines.push(if i == 0 { id } else { format!("⊢ {id}") });
+    }
+    let way = if p.empty_stack { "empties the stack" } else { "ends in an accepting state" };
+    lines.push(match search.outcome {
+        Outcome::Accepted => format!("Accepted: the run reads all of the input and {way}."),
+        Outcome::Rejected => format!("Rejected: no run reads all of the input and {way}; this one reads the most."),
+        Outcome::GaveUp => {
+            return Err(Failure {
+                code: codes::GAVE_UP,
+                arg: Some(0),
+                message: format!("gave up after {} configurations without finding an accepting run", pda_run::STEP_LIMIT),
+                hint: "eps moves may let this PDA run forever; `std.pda.member` decides through its grammar".into(),
+            })
+        }
+        Outcome::Foreign { position, symbol } => {
+            return Err(Failure {
+                code: codes::FOREIGN_WORD,
+                arg: Some(1),
+                message: format!("the word has `{symbol}` at position {position}, which is not in the PDA's alphabet"),
+                hint: format!("the alphabet is {}", fmt_alphabet(&p.alphabet)),
+            })
+        }
+    });
+    Ok(Value::str(&lines.join("
+")))
 }

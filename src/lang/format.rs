@@ -418,6 +418,10 @@ impl Formatter<'_> {
                         let states: Vec<String> = states.iter().map(|s| f.state(s)).collect();
                         f.push(&format!("reject {}", states.join(", ")));
                     }
+                    MachineItem::StackStarts { symbol, .. } => {
+                        f.push(&format!("stack starts {}", symbol.as_deref().unwrap_or("empty")));
+                    }
+                    MachineItem::AcceptByEmptyStack { .. } => f.push("accept by empty stack"),
                     MachineItem::Transition { from, action, to, .. } => {
                         let (from, to) = (f.state(from), f.state(to));
                         f.push(&format!(
@@ -463,6 +467,7 @@ impl Formatter<'_> {
         match item {
             MachineItem::Start(state) => state.span.end,
             MachineItem::Accept(states) | MachineItem::Reject(states) => states.last().map_or(after, |s| s.span.end),
+            MachineItem::StackStarts { span, .. } | MachineItem::AcceptByEmptyStack { span } => span.end,
             MachineItem::Transition { span, .. } => span.end,
             MachineItem::For { items, body, .. } => {
                 let open = self.find(Tok::LBrace, items.span.end);
@@ -561,6 +566,7 @@ fn item_start(item: &MachineItem) -> usize {
     match item {
         MachineItem::Start(state) => state.span.start,
         MachineItem::Accept(states) | MachineItem::Reject(states) => states.first().map_or(0, |s| s.span.start),
+        MachineItem::StackStarts { span, .. } | MachineItem::AcceptByEmptyStack { span } => span.start,
         MachineItem::Transition { span, .. } => span.start,
         MachineItem::For { var, .. } => var.span.start,
     }
@@ -572,8 +578,8 @@ fn action_text(action: &Action) -> String {
     match action {
         Action::Symbols(labels) => labels.iter().map(label).collect::<Vec<_>>().join(","),
         Action::Stack { read, pop, push, .. } => {
-            let push: String = if push.is_empty() { "eps".into() } else { push.iter().collect() };
-            format!("{}, {}/{push}", label(read), label(pop))
+            let push: &str = if push.is_empty() { "eps" } else { push };
+            format!("{}, {}/{push}", label(read), pop.symbol.as_deref().unwrap_or("eps"))
         }
         Action::Tape { read, write, dir, .. } => format!("{}/{},{}", label(read), label(write), dir.letter()),
     }

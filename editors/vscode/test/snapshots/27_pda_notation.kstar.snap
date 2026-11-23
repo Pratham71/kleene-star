@@ -1,0 +1,313 @@
+> # Chapter 21: writing a PDA the usual textbook way. The stack can start
+    0 "# Chapter 21: writing a PDA the usual textbook way. The stack can start" comment.line.number-sign.kstar
+> # with a named symbol (`stack starts Z0`) or empty, a move pushes a string
+    0 "# with a named symbol (`stack starts Z0`) or empty, a move pushes a string" comment.line.number-sign.kstar
+> # written top first (`a, Z0/aZ0`), and a PDA can accept by emptying its
+    0 "# written top first (`a, Z0/aZ0`), and a PDA can accept by emptying its" comment.line.number-sign.kstar
+> # stack instead of by final state.
+    0 "# stack instead of by final state." comment.line.number-sign.kstar
+> 
+> alphabet AB = {a, b}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "AB" entity.name.type.alphabet.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+   15 "a" constant.character.symbol.kstar
+   16 "," punctuation.separator.kstar
+   18 "b" constant.character.symbol.kstar
+   19 "}" punctuation.section.braces.end.kstar
+> 
+> # a^n b^n, accepting by empty stack: the stack starts as Z0, each a pushes
+    0 "# a^n b^n, accepting by empty stack: the stack starts as Z0, each a pushes" comment.line.number-sign.kstar
+> # an a, each b pops one, and Z0 is popped at the end.
+    0 "# an a, each b pops one, and Z0 is popped at the end." comment.line.number-sign.kstar
+> pda Equal over AB {
+    0 "pda" meta.machine.kstar storage.type.machine.kstar
+    4 "Equal" meta.machine.kstar entity.name.type.machine.kstar
+   10 "over" meta.machine.kstar keyword.other.over.kstar
+   15 "AB" meta.machine.kstar entity.name.type.alphabet.kstar
+   18 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     stack starts Z0
+    4 "stack" meta.machine.kstar keyword.control.state-role.kstar
+   10 "starts" meta.machine.kstar keyword.control.state-role.kstar
+   17 "Z0" meta.machine.kstar constant.character.symbol.kstar
+>     start  q0
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "q0" meta.machine.kstar variable.other.state.kstar
+>     accept by empty stack
+    4 "accept by empty stack" meta.machine.kstar keyword.control.state-role.kstar
+>     q0 --a, Z0/aZ0  --> q0
+    4 "q0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   12 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   17 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q0" meta.machine.kstar variable.other.state.kstar
+>     q0 --a, a/aa    --> q0
+    4 "q0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   12 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q0" meta.machine.kstar variable.other.state.kstar
+>     q0 --b, a/eps   --> q1
+    4 "q0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   12 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q1" meta.machine.kstar variable.other.state.kstar
+>     q1 --b, a/eps   --> q1
+    4 "q1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   12 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   13 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   14 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q1" meta.machine.kstar variable.other.state.kstar
+>     q1 --eps, Z0/eps--> q1
+    4 "q1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   14 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   17 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q1" meta.machine.kstar variable.other.state.kstar
+>     q0 --eps, Z0/eps--> q0
+    4 "q0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   14 "Z" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   15 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   17 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "q0" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> print Equal
+    0 "print" keyword.control.kstar
+    6 "Equal" variable.other.kstar
+> for w in {"", "ab", "aabb", "aab", "ba"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   12 "," punctuation.separator.comma.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "ab" string.quoted.double.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "aabb" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   29 "aab" string.quoted.double.kstar
+   32 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   36 "ba" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 "}" punctuation.section.braces.end.kstar
+   41 "{" punctuation.section.braces.begin.kstar
+>     print w, Equal accepts w
+    4 "print" keyword.control.kstar
+   10 "w" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "Equal" variable.other.kstar
+   19 "accepts" keyword.operator.word.kstar
+   27 "w" variable.other.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # The run as instantaneous descriptions (state, input left, stack).
+    0 "# The run as instantaneous descriptions (state, input left, stack)." comment.line.number-sign.kstar
+> print std.pda.ids(Equal, "aabb")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "pda" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "ids" entity.name.function.call.kstar
+   17 "(" punctuation.section.parens.begin.kstar
+   18 "Equal" variable.other.kstar
+   23 "," punctuation.separator.comma.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   26 "aabb" string.quoted.double.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> 
+> # The same language with a stack that starts empty: the first move pushes
+    0 "# The same language with a stack that starts empty: the first move pushes" comment.line.number-sign.kstar
+> # `$` to mark the bottom, and the PDA accepts by final state.
+    0 "# `$` to mark the bottom, and the PDA accepts by final state." comment.line.number-sign.kstar
+> pda Marked over AB {
+    0 "pda" meta.machine.kstar storage.type.machine.kstar
+    4 "Marked" meta.machine.kstar entity.name.type.machine.kstar
+   11 "over" meta.machine.kstar keyword.other.over.kstar
+   16 "AB" meta.machine.kstar entity.name.type.alphabet.kstar
+   19 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     stack starts empty
+    4 "stack" meta.machine.kstar keyword.control.state-role.kstar
+   10 "starts" meta.machine.kstar keyword.control.state-role.kstar
+   17 "empty" meta.machine.kstar constant.language.empty.kstar
+>     start  s
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "s" meta.machine.kstar variable.other.state.kstar
+>     accept f
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "f" meta.machine.kstar variable.other.state.kstar
+>     s --eps, eps/$  --> p
+    4 "s" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   11 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   16 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   17 "$" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "p" meta.machine.kstar variable.other.state.kstar
+>     p --a, eps/a    --> p
+    4 "p" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   11 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "p" meta.machine.kstar variable.other.state.kstar
+>     p --eps, eps/eps--> r
+    4 "p" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   11 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   16 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   17 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "r" meta.machine.kstar variable.other.state.kstar
+>     r --b, a/eps    --> r
+    4 "r" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "b" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   11 "a" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   13 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "r" meta.machine.kstar variable.other.state.kstar
+>     r --eps, $/eps  --> f
+    4 "r" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   11 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "$" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   14 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   15 "eps" meta.machine.kstar meta.transition.label.kstar constant.language.eps.kstar
+   20 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   24 "f" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> test std.testing.agree_up_to(Equal, Marked, 8)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "testing" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "agree_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Equal" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "Marked" variable.other.kstar
+   42 "," punctuation.separator.comma.kstar
+   44 "8" constant.numeric.integer.kstar
+   45 ")" punctuation.section.parens.end.kstar
+> 
+> # Converting between the two ways of accepting keeps the language.
+    0 "# Converting between the two ways of accepting keeps the language." comment.line.number-sign.kstar
+> let ByFinal = std.pda.to_final_state(Equal)
+    0 "let" keyword.control.kstar
+    4 "ByFinal" variable.other.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "std" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "pda" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "to_final_state" entity.name.function.call.kstar
+   36 "(" punctuation.section.parens.begin.kstar
+   37 "Equal" variable.other.kstar
+   42 ")" punctuation.section.parens.end.kstar
+> let ByEmpty = std.pda.to_empty_stack(Marked)
+    0 "let" keyword.control.kstar
+    4 "ByEmpty" variable.other.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "std" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "pda" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "to_empty_stack" entity.name.function.call.kstar
+   36 "(" punctuation.section.parens.begin.kstar
+   37 "Marked" variable.other.kstar
+   43 ")" punctuation.section.parens.end.kstar
+> print ByFinal
+    0 "print" keyword.control.kstar
+    6 "ByFinal" variable.other.kstar
+> for w in {"", "ab", "aabb", "aab"} {
+    0 "for" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "{" punctuation.section.braces.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   11 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   12 "," punctuation.separator.comma.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "ab" string.quoted.double.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   18 "," punctuation.separator.comma.kstar
+   20 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   21 "aabb" string.quoted.double.kstar
+   25 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   26 "," punctuation.separator.comma.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   29 "aab" string.quoted.double.kstar
+   32 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   33 "}" punctuation.section.braces.end.kstar
+   35 "{" punctuation.section.braces.begin.kstar
+>     print w, ByFinal accepts w, ByEmpty accepts w
+    4 "print" keyword.control.kstar
+   10 "w" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "ByFinal" variable.other.kstar
+   21 "accepts" keyword.operator.word.kstar
+   29 "w" variable.other.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "ByEmpty" variable.other.kstar
+   40 "accepts" keyword.operator.word.kstar
+   48 "w" variable.other.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 

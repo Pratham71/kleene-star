@@ -688,6 +688,8 @@ impl<'a> Parser<'a> {
 
     // item := 'start' state
     //       | 'accept' state (',' state)*
+    //       | 'accept' 'by' 'empty' 'stack'                (pda only)
+    //       | 'stack' 'starts' (stack-symbol | 'empty')    (pda only)
     //       | 'reject' state (',' state)*                  (tm only)
     //       | 'for' NAME 'in' expr '{' item* '}'
     //       | state '--' action '-->' state
@@ -696,6 +698,37 @@ impl<'a> Parser<'a> {
             Tok::Start => {
                 self.advance();
                 Ok(MachineItem::Start(self.state()?))
+            }
+            Tok::Accept if matches!(self.peek_next(), Tok::Ident(w) if w == "by") => {
+                let span = self.advance().span;
+                self.advance();
+                for word in ["empty", "stack"] {
+                    if !matches!(self.peek(), Tok::Ident(w) if w == word) {
+                        return Err(self
+                            .error(format!("expected `{word}`, found {}", self.peek().describe()))
+                            .hint("a PDA that accepts by emptying its stack says `accept by empty stack`"));
+                    }
+                    self.advance();
+                }
+                let span = span.to(self.tokens[self.pos - 1].span);
+                self.only_in_a_pda(kind, span, "`accept by empty stack`")?;
+                Ok(MachineItem::AcceptByEmptyStack { span })
+            }
+            Tok::Ident(w) if w == "stack" && matches!(self.peek_next(), Tok::Ident(s) if s == "starts") => {
+                let first = self.advance().span;
+                self.advance();
+                let symbol = match self.peek().clone() {
+                    Tok::Ident(name) if name == "empty" => None,
+                    Tok::Ident(_) | Tok::Int(_) | Tok::Dollar => Some(self.text(self.span()).to_string()),
+                    other => {
+                        return Err(self
+                            .error(format!("expected the symbol the stack starts with, or `empty`, found {}", other.describe()))
+                            .hint("write `stack starts Z0`, or `stack starts empty`"))
+                    }
+                };
+                let span = first.to(self.advance().span);
+                self.only_in_a_pda(kind, span, "`stack starts`")?;
+                Ok(MachineItem::StackStarts { symbol, span })
             }
             Tok::Accept => {
                 self.advance();
@@ -778,7 +811,7 @@ impl<'a> Parser<'a> {
                 .error(format!("expected `,` and the symbol to pop, found {}", self.peek().describe()))
                 .hint(hint));
         }
-        let pop = self.label().map_err(|e| e.hint(hint))?;
+        let pop = self.stack_label().map_err(|e| e.hint(hint))?;
         if !self.eat(Tok::Slash) {
             return Err(self
                 .error(format!("expected `/` and the symbols to push, found {}", self.peek().describe()))
@@ -788,29 +821,57 @@ impl<'a> Parser<'a> {
         match self.peek() {
             Tok::Eps => {
                 self.advance();
-                Ok(Action::Stack { read, pop, push: Vec::new(), push_span })
+                Ok(Action::Stack { read, pop, push: String::new(), push_span })
             }
-            Tok::Ident(_) | Tok::Int(_) => {
-                // `AZ` is one token; `0A` is two tokens that touch. Either
-                // way the symbols are the characters written, top first.
-                let mut push = Vec::new();
+            Tok::Ident(_) | Tok::Int(_) | Tok::Dollar => {
+                // `AZ` is one token; `0A` and `a$` are tokens that touch.
+                // Either way the symbols are what is written, top first.
+                let mut push = String::new();
                 let mut end = push_span;
-                while matches!(self.peek(), Tok::Ident(_) | Tok::Int(_))
+                while matches!(self.peek(), Tok::Ident(_) | Tok::Int(_) | Tok::Dollar)
                     && (push.is_empty() || self.span().start == end.end)
                 {
                     end = self.advance().span;
-                    push.extend(self.text(end).chars());
+                    push.push_str(self.text(end));
                 }
                 let push_span = push_span.to(end);
-                if push.contains(&'_') {
+                if push.contains('_') {
                     return Err(Diag::new(ErrorKind::Syntax, push_span, "`_` cannot be a stack symbol")
                         .code(codes::BAD_SYMBOL)
-                        .hint("stack symbols are letters and digits"));
+                        .hint("stack symbols are letters, digits and `$`"));
                 }
                 Ok(Action::Stack { read, pop, push, push_span })
             }
             other => Err(self.error(format!("expected the symbols to push, found {}", other.describe())).hint(hint)),
         }
+    }
+
+    /// Refuses a PDA-only item in another kind of machine.
+    fn only_in_a_pda(&self, kind: MachineKind, span: Span, what: &str) -> Parse<()> {
+        if kind == MachineKind::Pda {
+            return Ok(());
+        }
+        Err(Diag::new(ErrorKind::Syntax, span, format!("only a PDA has a stack, so {what} cannot be in {} `{}`", if kind == MachineKind::Nfa { "an" } else { "a" }, kind.keyword()))
+            .code(codes::WRONG_MACHINE_KIND)
+            .hint("declare the machine with `pda` to give it a stack"))
+    }
+
+    /// The symbol a PDA move pops: `eps`, or one stack symbol as written
+    /// (`A`, `Z0`, `$`); whether a long one is allowed is decided when the
+    /// machine is built.
+    fn stack_label(&mut self) -> Parse<StackLabel> {
+        let span = self.span();
+        let symbol = match self.peek() {
+            Tok::Eps => None,
+            Tok::Ident(_) | Tok::Int(_) | Tok::Dollar => Some(self.text(span).to_string()),
+            other => {
+                return Err(self
+                    .error(format!("expected a stack symbol, found {}", other.describe()))
+                    .hint("a stack symbol is a letter, a digit or `$`, the starting symbol, or `eps` to pop nothing"));
+            }
+        };
+        self.advance();
+        Ok(StackLabel { symbol, span })
     }
 
     // tape-action := tape-symbol '/' tape-symbol ',' ('L' | 'R' | 'S')     in a TM
@@ -1355,18 +1416,18 @@ mod tests {
         let stmts = parse(src).unwrap();
         let StmtKind::MachineDef { machine, .. } = &stmts[0].kind else { panic!() };
         assert_eq!(machine.kind, MachineKind::Pda);
-        let moves: Vec<(Option<char>, Option<char>, String)> = machine.items[1..]
+        let moves: Vec<(Option<char>, Option<&str>, String)> = machine.items[1..]
             .iter()
             .map(|item| match item {
                 MachineItem::Transition { action: Action::Stack { read, pop, push, .. }, .. } => {
-                    (read.symbol, pop.symbol, push.iter().collect())
+                    (read.symbol, pop.symbol.as_deref(), push.clone())
                 }
                 _ => panic!(),
             })
             .collect();
         assert_eq!(
             moves,
-            [(Some('a'), None, "AZ".into()), (None, Some('Z'), "".into()), (Some('0'), Some('A'), "0A".into())]
+            [(Some('a'), None, "AZ".into()), (None, Some("Z"), "".into()), (Some('0'), Some("A"), "0A".into())]
         );
         let hint = |src: &str| parse(src).unwrap_err().hint.unwrap_or_default();
         assert!(hint("pda P over B { p --a--> q }").contains("read `a`, pop `Z`"));

@@ -103,7 +103,7 @@ pub fn render_pda(pda: &Pda, word: &str, search: &Search, dash: &str) -> String 
     };
     let stack = |config: &Config| -> String {
         let top_first: Vec<String> = config.stack.iter().rev().cloned().collect();
-        if top_first.is_empty() { dash.to_string() } else { Pda::show_symbols(&top_first) }
+        if top_first.is_empty() { dash.to_string() } else { pda.show_stack(&top_first) }
     };
     let mut rows: Vec<Vec<String>> = vec![
         ["Step", "Move", "State", "Input", "Stack"].map(String::from).to_vec(),
@@ -119,12 +119,17 @@ pub fn render_pda(pda: &Pda, word: &str, search: &Search, dash: &str) -> String 
     let (result, reason) = match search.outcome {
         Outcome::Accepted => (
             "ACCEPTED",
-            format!("Read all of the input and reached accepting state {}", pda.states[last.state]),
+            if pda.empty_stack {
+                format!("Read all of the input and emptied the stack, in state {}", pda.states[last.state])
+            } else {
+                format!("Read all of the input and reached accepting state {}", pda.states[last.state])
+            },
         ),
         Outcome::Rejected => (
             "REJECTED",
             format!(
-                "No run reads all of the input and ends in an accepting state; the run shown reads the most ({} of {total} symbol{})",
+                "No run reads all of the input and {}; the run shown reads the most ({} of {total} symbol{})",
+                if pda.empty_stack { "empties the stack" } else { "ends in an accepting state" },
                 last.read,
                 if total == 1 { "" } else { "s" }
             ),

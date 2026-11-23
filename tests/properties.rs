@@ -815,7 +815,8 @@ fn random_pda(rng: &mut Rng) -> Pda {
         start: 0,
         accept: (0..n).filter(|_| rng.chance(40)).collect(),
         moves,
-        bottom: "Z".into(),
+        bottom: Some("Z".into()),
+        empty_stack: false,
     }
 }
 
@@ -847,6 +848,37 @@ fn the_grammar_of_a_pda_has_its_language() {
         }
     }
     assert!(decided > CASES * 20, "the PDA search gave up too often: only {decided} answers");
+}
+
+/// The usual constructions between acceptance by final state and by empty
+/// stack keep the language, both ways, on random PDAs (with a stack that
+/// starts as `Z` or empty).
+#[test]
+fn ways_of_accepting_convert_both_ways() {
+    use kstar::automata::pdas;
+    let mut rng = Rng::new(seed());
+    let answer = |p: &Pda, w: &str| match p.search(w, 2_000).outcome {
+        Outcome::Accepted => Some(true),
+        Outcome::Rejected => Some(false),
+        _ => None,
+    };
+    for case in 0..CASES {
+        let mut pda = random_pda(&mut rng);
+        if rng.chance(30) {
+            pda.bottom = None;
+        }
+        pda.empty_stack = rng.chance(50);
+        let other = if pda.empty_stack { pdas::to_final_state(&pda) } else { pdas::to_empty_stack(&pda) };
+        assert_ne!(other.empty_stack, pda.empty_stack);
+        for word in words(3) {
+            if let (Some(a), Some(b)) = (answer(&pda, &word), answer(&other, &word)) {
+                assert_eq!(a, b, "case {case}, {word:?}:
+{pda}
+became
+{other}");
+            }
+        }
+    }
 }
 
 /// The questions of `std.tm` about a run agree with each other: a machine

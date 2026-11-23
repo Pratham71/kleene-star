@@ -26,6 +26,15 @@ its GitHub release, so write it for people who use Kleene Star.
   solved with R = Q + RP giving R = QP* and put into the others) and
   `std.regex.by_arden` gives the regex, the same language as `to_regex`'s.
   Example: `examples/26_arden.kstar`.
+- The usual textbook notation for PDAs. `stack starts Z0` names the
+  symbol the stack starts with (it may be longer than one character, so
+  `a, Z0/aZ0` pushes `a` onto `Z0`), and `stack starts empty` starts with
+  nothing, often followed by a move that pushes `$`. `accept by empty
+  stack` makes a PDA accept by emptying its stack; `std.pda.to_empty_stack`
+  and `std.pda.to_final_state` convert between the two ways of accepting.
+  `std.pda.ids(P, "w")` shows a run as instantaneous descriptions,
+  `(q, w, γ) ⊢ (q', w', γ')`. PDAs written as before work as before. New
+  error E0410. Example: `examples/27_pda_notation.kstar`.
 
 ## [0.6.0] - 2026-11-23
 

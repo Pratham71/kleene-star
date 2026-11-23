@@ -3,12 +3,13 @@
 //! Each move reads one input symbol (or nothing, for an eps move), pops one
 //! symbol off the stack (or nothing), pushes a string of symbols, and changes
 //! state. Like an NFA, a PDA may have several moves to choose from; it
-//! accepts a word if *some* sequence of moves reads all of it and ends in an
-//! accepting state. (This is acceptance by final state. What is left on the
-//! stack does not matter.)
+//! accepts a word if *some* sequence of moves reads all of it and then
+//! either ends in an accepting state (acceptance by final state, where what
+//! is left on the stack does not matter) or, for a PDA that accepts by
+//! empty stack, leaves the stack empty (whatever the state).
 //!
 //! The stack starts holding one bottom symbol, `Z` unless chosen otherwise,
-//! so a PDA can tell when its stack is "empty".
+//! so a PDA can tell when its stack is "empty"; or it may start empty.
 //!
 //! Running a PDA means searching through configurations (state, how much
 //! input is read, stack contents). The search is breadth-first, so it finds a
@@ -47,8 +48,10 @@ pub struct Pda {
     pub start: State,
     pub accept: BTreeSet<State>,
     pub moves: Vec<Move>,
-    /// The symbol the stack holds at the start.
-    pub bottom: String,
+    /// The symbol the stack holds at the start, or `None` if it starts empty.
+    pub bottom: Option<String>,
+    /// Whether the PDA accepts by empty stack rather than by final state.
+    pub empty_stack: bool,
 }
 
 /// A snapshot of a run: the state, how many input symbols have been read,
@@ -88,14 +91,45 @@ pub enum Outcome {
     Foreign { position: usize, symbol: char },
 }
 
+/// Splits the symbols written together in a push, such as `aZ0`, into
+/// stack symbols: each is one character, except that `long` (the starting
+/// symbol, when it is longer than one character) is read as one symbol
+/// wherever it appears.
+pub fn split_symbols(text: &str, long: Option<&str>) -> Vec<String> {
+    let long = long.filter(|l| l.chars().count() > 1);
+    let mut out = Vec::new();
+    let mut rest = text;
+    while let Some(c) = rest.chars().next() {
+        match long {
+            Some(l) if rest.starts_with(l) => {
+                out.push(l.to_string());
+                rest = &rest[l.len()..];
+            }
+            _ => {
+                out.push(c.to_string());
+                rest = &rest[c.len_utf8()..];
+            }
+        }
+    }
+    out
+}
+
 impl Pda {
-    /// Shows a stack symbol string: `AZ` when every symbol is one character,
-    /// `S0 Z` (with spaces) otherwise, `eps` when empty.
-    pub fn show_symbols(symbols: &[String]) -> String {
+    /// The stack at the start, bottom first.
+    pub fn initial_stack(&self) -> Vec<String> {
+        self.bottom.iter().cloned().collect()
+    }
+
+    /// Shows stack symbols, top first, as they are written in source:
+    /// together (`aZ0`) when they can be read back the same way, with
+    /// spaces (`S0 Z`) otherwise, and `eps` when there are none.
+    pub fn show_stack(&self, symbols: &[String]) -> String {
         if symbols.is_empty() {
-            "eps".to_string()
-        } else if symbols.iter().all(|s| s.chars().count() == 1) {
-            symbols.concat()
+            return "eps".to_string();
+        }
+        let together = symbols.concat();
+        if split_symbols(&together, self.bottom.as_deref()) == symbols {
+            together
         } else {
             symbols.join(" ")
         }
@@ -107,7 +141,30 @@ impl Pda {
             "{}, {}/{}",
             m.read.map_or("eps".to_string(), |c| c.to_string()),
             m.pop.as_deref().unwrap_or("eps"),
-            Self::show_symbols(&m.push)
+            self.show_stack(&m.push)
+        )
+    }
+
+    /// Whether a run that has read the whole word and is in `config`
+    /// accepts: by final state or by empty stack.
+    pub fn accepting(&self, config: &Config) -> bool {
+        if self.empty_stack {
+            config.stack.is_empty()
+        } else {
+            self.accept.contains(&config.state)
+        }
+    }
+
+    /// An instantaneous description: `(q, w, γ)`, the state, the input
+    /// still to read and the stack top first, with `eps` for nothing.
+    pub fn id(&self, word: &str, config: &Config) -> String {
+        let rest: String = word.chars().skip(config.read).collect();
+        let top_first: Vec<String> = config.stack.iter().rev().cloned().collect();
+        format!(
+            "({}, {}, {})",
+            self.states[config.state],
+            if rest.is_empty() { "eps" } else { &rest },
+            self.show_stack(&top_first)
         )
     }
 
@@ -117,14 +174,14 @@ impl Pda {
     pub fn search(&self, word: &str, limit: usize) -> Search {
         let word: Vec<char> = word.chars().collect();
         if let Some(position) = word.iter().position(|c| !self.alphabet.contains(c)) {
-            let start = Config { state: self.start, read: 0, stack: vec![self.bottom.clone()] };
+            let start = Config { state: self.start, read: 0, stack: self.initial_stack() };
             let outcome = Outcome::Foreign { position: position + 1, symbol: word[position] };
             return Search { path: vec![start], moves: Vec::new(), outcome, explored: 1 };
         }
 
         // Inside the search, stack symbols are small numbers: copying and
         // comparing stacks of numbers is much cheaper than of strings.
-        let mut symbols: Vec<String> = vec![self.bottom.clone()];
+        let mut symbols: Vec<String> = self.initial_stack();
         let mut id = |s: &String| match symbols.iter().position(|t| t == s) {
             Some(i) => i as u32,
             None => {
@@ -142,7 +199,8 @@ impl Pda {
         // Every configuration found, with the index of the one it came from
         // and the move that led to it, so a run can be rebuilt at the end.
         type Found = (State, usize, Vec<u32>);
-        let start: Found = (self.start, 0, vec![0]);
+        // The starting stack's symbols were numbered first: 0, or none.
+        let start: Found = (self.start, 0, (0..self.initial_stack().len() as u32).collect());
         let mut found: Vec<(Found, Option<(usize, usize)>)> = vec![(start.clone(), None)];
         let mut seen = HashSet::from([start]);
         let mut queue = VecDeque::from([0]);
@@ -154,7 +212,8 @@ impl Pda {
             if read > found[furthest].0 .1 {
                 furthest = i;
             }
-            if read == word.len() && self.accept.contains(&state) {
+            let done = if self.empty_stack { stack.is_empty() } else { self.accept.contains(&state) };
+            if read == word.len() && done {
                 outcome = Outcome::Accepted;
                 last = i;
                 break;
@@ -253,7 +312,8 @@ impl Pda {
             start,
             accept: BTreeSet::from([accept]),
             moves,
-            bottom,
+            bottom: Some(bottom),
+            empty_stack: false,
         }
     }
 }
@@ -264,18 +324,22 @@ impl fmt::Display for Pda {
         let accept: Vec<&str> = self.accept.iter().map(|&s| self.states[s].as_str()).collect();
         writeln!(
             f,
-            "PDA with {} state{} over {}, stack starts as {}",
+            "PDA with {} state{} over {}, stack starts {}",
             n,
             if n == 1 { "" } else { "s" },
             fmt_alphabet(&self.alphabet),
-            self.bottom
+            self.bottom.as_ref().map_or("empty".to_string(), |b| format!("as {b}"))
         )?;
-        write!(
-            f,
-            "start {}, accept {}",
-            self.states[self.start],
-            if accept.is_empty() { "nothing".to_string() } else { accept.join(", ") }
-        )?;
+        if self.empty_stack {
+            write!(f, "start {}, accept by empty stack", self.states[self.start])?;
+        } else {
+            write!(
+                f,
+                "start {}, accept {}",
+                self.states[self.start],
+                if accept.is_empty() { "nothing".to_string() } else { accept.join(", ") }
+            )?;
+        }
         if self.moves.is_empty() {
             return Ok(());
         }
@@ -285,7 +349,7 @@ impl fmt::Display for Pda {
                 self.states[m.from].clone(),
                 m.read.map_or("eps".into(), |c| c.to_string()),
                 m.pop.clone().unwrap_or_else(|| "eps".into()),
-                Self::show_symbols(&m.push),
+                self.show_stack(&m.push),
                 self.states[m.to].clone(),
             ]);
         }
@@ -306,7 +370,8 @@ mod tests {
             states: vec![s("p"), s("q"), s("f")],
             start: 0,
             accept: BTreeSet::from([2]),
-            bottom: s("Z"),
+            bottom: Some(s("Z")),
+            empty_stack: false,
             moves: vec![
                 Move { from: 0, read: Some('a'), pop: None, push: vec![s("A")], to: 0 },
                 Move { from: 0, read: None, pop: None, push: vec![], to: 1 },
@@ -337,6 +402,30 @@ mod tests {
         let run = anbn_pda().search("abb", STEP_LIMIT);
         assert_eq!(run.outcome, Outcome::Rejected);
         assert_eq!(run.path.last().unwrap().read, 2);
+    }
+
+    #[test]
+    fn a_long_starting_symbol_is_one_symbol() {
+        assert_eq!(split_symbols("aZ0", Some("Z0")), ["a", "Z0"]);
+        assert_eq!(split_symbols("aZ0", Some("Z")), ["a", "Z", "0"]);
+        assert_eq!(split_symbols("$", None), ["$"]);
+        let mut p = anbn_pda();
+        p.bottom = Some("Z0".into());
+        p.moves[3].pop = Some("Z0".into());
+        p.moves[3].push = vec!["Z0".into()];
+        assert!(p.search("aabb", STEP_LIMIT).outcome == Outcome::Accepted);
+        assert_eq!(p.show_stack(&["A".into(), "Z0".into()]), "AZ0");
+        // `Z` then `0` would read back as `Z0`, so it is shown with a space.
+        assert_eq!(p.show_stack(&["Z".into(), "0".into()]), "Z 0");
+        assert_eq!(p.label(&p.moves[3]), "eps, Z0/Z0");
+    }
+
+    #[test]
+    fn instantaneous_descriptions() {
+        let p = anbn_pda();
+        let run = p.search("ab", STEP_LIMIT);
+        let ids: Vec<String> = run.path.iter().map(|c| p.id("ab", c)).collect();
+        assert_eq!(ids, ["(p, ab, Z)", "(p, b, AZ)", "(q, b, AZ)", "(q, eps, Z)", "(f, eps, Z)"]);
     }
 
     #[test]

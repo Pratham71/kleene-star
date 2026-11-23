@@ -199,7 +199,10 @@ pub fn to_json(machine: &Machine, name: Option<&str>) -> String {
             fields.push(format!("\"states\": {}", names(&p.states)));
             fields.push(format!("\"start\": {}", q(&p.states[p.start])));
             fields.push(format!("\"accept\": {}", states(&p.states, &p.accept)));
-            fields.push(format!("\"bottom\": {}", q(&p.bottom)));
+            fields.push(format!("\"bottom\": {}", p.bottom.as_deref().map_or_else(|| "null".to_string(), q)));
+            if p.empty_stack {
+                fields.push("\"accept_by\": \"empty stack\"".to_string());
+            }
             let moves = p
                 .moves
                 .iter()
@@ -552,7 +555,18 @@ fn read_pda(root: &mut Obj) -> Result<Pda, JsonError> {
     let (states, index) = declared(root, "states")?;
     let start = reference(root.get("start")?, "start", &index, "states")?;
     let accept = references(root, "accept", &index, "states")?;
-    let bottom = name(root.get("bottom")?, "bottom")?;
+    let bottom = match root.get("bottom")? {
+        Value::Null => None,
+        other => Some(name(other, "bottom")?),
+    };
+    let empty_stack = match root.optional("accept_by") {
+        None => false,
+        Some(v) => match string(v, "accept_by")? {
+            "final state" => false,
+            "empty stack" => true,
+            _ => return fail("accept_by", "should be \"final state\" or \"empty stack\""),
+        },
+    };
     let path = root.at("moves");
     let mut moves = Vec::new();
     for (i, item) in array(root.get("moves")?, &path, MAX_ITEMS)?.iter().enumerate() {
@@ -577,7 +591,7 @@ fn read_pda(root: &mut Obj) -> Result<Pda, JsonError> {
         m.done()?;
         moves.push(pda::Move { from, read, pop, push, to });
     }
-    Ok(Pda { alphabet, states, start, accept, moves, bottom })
+    Ok(Pda { alphabet, states, start, accept, moves, bottom, empty_stack })
 }
 
 fn read_tm(root: &mut Obj) -> Result<Tm, JsonError> {

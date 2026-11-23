@@ -1,0 +1,34 @@
+# The textbook notation for PDAs: a named starting symbol, pushes of
+# several symbols top first, acceptance by empty stack, IDs, and JSON.
+alphabet AB = {a, b}
+pda P over AB {
+    stack starts Z0
+    start  p
+    accept by empty stack
+    p --a, Z0/AZ0  --> p
+    p --a, A/AA    --> p
+    p --b, A/eps   --> q
+    q --b, A/eps   --> q
+    q --eps, Z0/eps--> q
+}
+print P
+print std.pda.ids(P, "aabb")
+print std.pda.ids(P, "aab")
+print std.pda.stack_symbols(P)
+let Back = from_json(Pda, to_json(P, "P"))
+print to_json(P, "P")
+test std.testing.agree_up_to(P, Back, 6)
+test std.testing.agree_up_to(P, std.pda.to_final_state(P), 6)
+test std.pda.member(P, "ab")
+print std.pda.to_grammar(P) accepts "aabb"
+pda E over AB {
+    stack starts empty
+    start  s
+    accept f
+    s --eps, eps/$--> p
+    p --a, eps/eps--> p
+    p --eps, $/eps--> f
+}
+print E
+print std.pda.ids(E, "a")
+print std.pda.to_empty_stack(E)
