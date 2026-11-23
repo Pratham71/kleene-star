@@ -1,0 +1,29 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-EXPLAIN 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-explain \- explain an error code, such as E0200
+.SH SYNOPSIS
+.nf
+\fBkstar explain\fR <code>
+\fBkstar explain\fR \-\-list
+.fi
+.SH DESCRIPTION
+.PP
+Explains an error or warning code, such as E0200 or W0100, with an example.
+Every error message shows its code in brackets: NameError[E0200].
+.SH OPTIONS
+.TP
+\fB\-\-list\fR
+list every code with its title
+.SH EXAMPLES
+.TP
+\fBkstar explain E0200\fR
+explain one code
+.TP
+\fBkstar explain \-\-list\fR
+list them all
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

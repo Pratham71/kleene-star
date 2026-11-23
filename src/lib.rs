@@ -7,6 +7,7 @@
 
 pub mod automata;
 pub mod help;
+pub mod manual;
 pub mod ide;
 pub mod lang;
 

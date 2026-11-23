@@ -1,0 +1,1279 @@
+This is kstar.info, made from the kstar help (src/help.rs) by src/manual.rs.
+
+INFO-DIR-SECTION Programming
+START-INFO-DIR-ENTRY
+* kstar: (kstar).               Kleene Star, a language for Theory of Computation.
+END-INFO-DIR-ENTRY
+
+
+File: kstar.info,  Node: Top,  Next: run,  Up: (dir)
+
+Kleene Star
+***********
+
+Kleene Star: a small language for Theory of Computation, version 0.7.0
+
+Usage: kstar <command> [options]
+       kstar <file.kstar>   (short for kstar run <file.kstar>)
+
+Run and check:
+  run <files>...         run programs (files or folders of .kstar files)
+  check <files>...       look for errors and warnings without running
+  fmt <files>...         rewrite files in the standard style
+  new <name>             start a new program from a template
+
+Explore and learn:
+  repl                   try things out interactively
+  trace <file> <M> <w>   run a file quietly, then trace machine M on word w
+  explain <code>         explain an error code, such as E0200
+  help [topic]           help for a command, or for the standard library
+
+Export:
+  export <file> <M>      write machine M as Rust, Python or JSON
+
+Editor:
+  kstar-lsp              the language server editors start (a separate program)
+
+Install and update:
+  update                 update kstar and its VS Code extension
+  version                show the version, commit, build date and platform
+
+Options for every command:
+  -h, --help             show a command's help, as `kstar help <command>` does
+  -V, --version          show the version, as `kstar version` does
+
+Run `kstar help <command>` for a command's options and examples,
+`kstar help std` for the standard library, and `kstar explain <code>`
+for an error code.
+
+* Menu:
+
+* run::                 run programs (files or folders of .kstar files)
+* check::               look for errors and warnings without running
+* fmt::                 rewrite files in the standard style
+* new::                 start a new program from a template
+* repl::                try things out interactively
+* trace::               run a file quietly, then trace machine M on word w
+* explain::             explain an error code, such as E0200
+* help::                help for a command, or for the standard library
+* export::              write machine M as Rust, Python or JSON
+* kstar-lsp::           the language server editors start (a separate program)
+* update::              update kstar and its VS Code extension
+* version::             show the version, commit, build date and platform
+* Standard library::    the modules under std
+
+
+File: kstar.info,  Node: run,  Next: check,  Up: Top
+
+kstar run
+*********
+
+Usage: kstar run [options] <files>...
+       kstar <file.kstar>
+
+Runs each program. A folder means every .kstar file inside it, and
+`kstar file.kstar` is short for `kstar run file.kstar`. With several files,
+each file's output starts with its name, and a count of the files that
+passed and failed comes at the end.
+
+Imported files are checked before anything runs. A module's top level runs
+the first time one of its names is used, without its print, test, draw and
+trace statements.
+
+The exit code is 0 when every program ran without errors and no test
+failed, 1 otherwise, and 2 when the command itself was wrong.
+
+Options:
+  --out <dir>         where `draw` writes its files (default: the current
+                      folder)
+  --allow-path <dir>  let std.io also read and write files in <dir>; give it
+                      more than once for more folders. Without it a program may
+                      only use files in its own folder.
+  --fixed-clock       std.benchmark reports every time as 0, so the output is
+                      the same on every run
+  --watch             run again whenever a file changes; stop with Ctrl-C
+  --trace-calls       print every function call with its arguments, and every
+                      return with its result
+  --eager-imports     run each imported module at its import line, not when one
+                      of its names is first used
+  --color <when>      auto (the default), always or never. With auto, output is
+                      coloured only on a terminal and never when the NO_COLOR
+                      environment variable is set.
+
+Examples:
+  kstar run examples/tour.kstar
+      run one program
+  kstar run labs/ --out drawings
+      run every program in labs/, writing drawings into drawings/
+  kstar run --watch lab1.kstar
+      run lab1.kstar again on every save
+
+
+File: kstar.info,  Node: check,  Next: fmt,  Prev: run,  Up: Top
+
+kstar check
+***********
+
+Usage: kstar check [options] <files>...
+
+Reports every error and warning in each program, without running it. A
+folder means every .kstar file inside it.
+
+The exit code is 0 when no file has errors (warnings do not count), 1 when
+one has, and 2 when the command itself was wrong.
+
+Options:
+  --color <when>      auto (the default), always or never. With auto, output is
+                      coloured only on a terminal and never when the NO_COLOR
+                      environment variable is set.
+
+Examples:
+  kstar check lab1.kstar
+      check one program
+  kstar check labs/
+      check every program in labs/
+
+
+File: kstar.info,  Node: fmt,  Next: new,  Prev: check,  Up: Top
+
+kstar fmt
+*********
+
+Usage: kstar fmt [--check] <files>...
+       kstar fmt -
+
+Rewrites each file in the standard style. A folder means every .kstar file
+inside it, and `-` reads a program from standard input and writes the
+formatted program to standard output, for editors and scripts.
+
+Options:
+  --check             change nothing; list the files that need formatting and
+                      exit with code 1 if there are any
+
+Examples:
+  kstar fmt lab1.kstar
+      format one file in place
+  kstar fmt --check .
+      list the files in this folder that are not formatted
+  kstar fmt - < lab1.kstar
+      print lab1.kstar formatted, changing nothing
+
+
+File: kstar.info,  Node: new,  Next: repl,  Prev: fmt,  Up: Top
+
+kstar new
+*********
+
+Usage: kstar new <name>
+
+Writes <name>.kstar, a small working program to start from. An existing
+file is never overwritten.
+
+Examples:
+  kstar new lab1
+      write lab1.kstar
+  kstar run lab1.kstar
+      then run it
+
+
+File: kstar.info,  Node: repl,  Next: trace,  Prev: new,  Up: Top
+
+kstar repl
+**********
+
+Usage: kstar repl [options]
+
+An interactive prompt: type statements or expressions and see the results.
+A bare expression is printed, and names can be defined again. Inside it,
+`:type <expr>` shows a type, `:trace M <word>` traces a machine,
+`:load <file>` runs a file, `:reset` forgets everything, and `:help` and
+`:quit` do what they say. Tab completes names.
+
+Options:
+  --trace-calls       print every function call with its arguments, and every
+                      return with its result
+  --color <when>      auto (the default), always or never. With auto, output is
+                      coloured only on a terminal and never when the NO_COLOR
+                      environment variable is set.
+
+Examples:
+  kstar repl
+      start the prompt
+  kstar repl --trace-calls
+      start it, showing every call
+
+
+File: kstar.info,  Node: trace,  Next: explain,  Prev: repl,  Up: Top
+
+kstar trace
+***********
+
+Usage: kstar trace [options] <file> <machine> <word>
+
+Runs the file without showing its output, then shows every step of
+<machine> on <word>, as `trace <machine> on "<word>"` would at the end of
+the file. <machine> may be any expression, such as `to_dfa(r)`. Use "" for
+the empty word.
+
+Options:
+  --color <when>      auto (the default), always or never. With auto, output is
+                      coloured only on a terminal and never when the NO_COLOR
+                      environment variable is set.
+
+Examples:
+  kstar trace examples/01_dfa.kstar HasDouble1 0110
+      trace a DFA on 0110
+  kstar trace lab.kstar "to_dfa(r)" ""
+      trace an expression on the empty word
+
+
+File: kstar.info,  Node: explain,  Next: help,  Prev: trace,  Up: Top
+
+kstar explain
+*************
+
+Usage: kstar explain <code>
+       kstar explain --list
+
+Explains an error or warning code, such as E0200 or W0100, with an example.
+Every error message shows its code in brackets: NameError[E0200].
+
+Options:
+  --list              list every code with its title
+
+Examples:
+  kstar explain E0200
+      explain one code
+  kstar explain --list
+      list them all
+
+
+File: kstar.info,  Node: help,  Next: export,  Prev: explain,  Up: Top
+
+kstar help
+**********
+
+Usage: kstar help [<command>]
+       kstar help std
+       kstar help std.<module>[.<function>]
+
+Shows the overview of every command, or the full help for one command (the
+same as `kstar <command> --help`). `kstar help std` lists the modules of
+the standard library, `kstar help std.<module>` lists a module's functions
+with their types, and `kstar help std.<module>.<function>` shows one.
+
+Examples:
+  kstar help export
+      every option of kstar export
+  kstar help std
+      the modules of the standard library
+  kstar help std.automata
+      the functions of std.automata
+
+
+File: kstar.info,  Node: export,  Next: kstar-lsp,  Prev: help,  Up: Top
+
+kstar export
+************
+
+Usage: kstar export [options] <file> <machine>
+
+Runs the file without showing its output, then writes <machine> to a file
+next to <file>, named after the machine (HasDouble1.rs, HasDouble1.py or
+HasDouble1.json), and says where:
+
+    Wrote C:\Users\me\HasDouble1.rs (Rust, 42 lines)
+
+It never replaces a file that is already there unless given --force.
+
+As Rust (the default), the file is one dependency-free function
+`pub fn name(input: &str) -> bool` that accepts exactly the machine's
+words, with a `#[cfg(test)]` module of sample words. As Python, it is one
+dependency-free file with `def name(word: str) -> bool` that checks itself
+on sample words when run as a script. For both, <machine> may be any
+regular language (Dfa, Nfa, Regex or Set[Str]), such as `EvenZeros` or
+`to_dfa(r)`; it is turned into a DFA first.
+
+As JSON it writes <machine> in Kleene Star's JSON format, which `from_json`
+reads back: any Dfa, Nfa, Regex, Grammar, Pda or Tm, kept as it is, with
+its state names.
+
+Options:
+  --format <format>   rust (the default), python or json
+  --fn <name>         the function's name (default: <machine> in snake_case);
+                      not with --format json
+  -o, --out <path>    write to this file, or into this folder; `-o -` prints to
+                      standard output instead of writing a file
+  --force             replace the file if it is already there
+  --minimize          minimize the DFA first, for the smallest table
+  --color <when>      auto (the default), always or never. With auto, output is
+                      coloured only on a terminal and never when the NO_COLOR
+                      environment variable is set.
+
+Examples:
+  kstar export examples/01_dfa.kstar HasDouble1
+      write HasDouble1.rs next to the file
+  kstar export --format python lab.kstar M -o -
+      print M as a Python function
+  kstar export --format json lab.kstar G -o out/ --force
+      write out/G.json, replacing it
+
+
+File: kstar.info,  Node: kstar-lsp,  Next: update,  Prev: export,  Up: Top
+
+kstar-lsp
+*********
+
+Usage: kstar-lsp
+
+The Kleene Star language server. An editor starts it and talks to it over
+standard input and output with the Language Server Protocol; it is not
+meant to be run by hand. It reports errors and warnings as you type, and
+gives hover, completion, signature help, go to definition, references,
+rename, outline and formatting.
+
+The VS Code extension starts it for you (`kstar update` keeps the two
+matched). For another editor, configure kstar-lsp as the language server
+for .kstar files.
+
+Options:
+  -h, --help          show this help and exit
+  -V, --version       show the version and exit
+
+Examples:
+  kstar-lsp --version
+      check which version an editor would start
+
+
+File: kstar.info,  Node: update,  Next: version,  Prev: kstar-lsp,  Up: Top
+
+kstar update
+************
+
+Usage: kstar update [--check] [--yes] [--no-vscode]
+
+Asks GitHub for the latest stable release (through the `gh` command, or
+`curl` with GITHUB_TOKEN). If it is newer than this kstar, it shows both
+versions and what the release is about, and asks "Update to vX.Y.Z?
+[Y/n]". On yes it installs the release with its install script into the
+folder kstar is in, which also updates the VS Code extension; on no it
+changes nothing. Pre-releases (such as 0.2.5-beta) are not offered: install
+one by name with KSTAR_VERSION (see docs/install.md).
+
+When standard input is not a terminal (a script or CI), it does not ask and
+does not update: pass --yes.
+
+If VS Code is installed (the `code` command) and kstar is up to date, it
+also makes sure the Kleene Star extension matches this kstar: when it is
+missing or from another release, it downloads kleene-star-<version>.vsix
+from this kstar's release, checks its SHA-256 checksum and installs it.
+
+Options:
+  --check             only say whether a newer release exists, and whether the
+                      VS Code extension matches, without installing anything
+  -y, --yes           update without asking
+  --no-vscode         leave VS Code alone (so does KSTAR_NO_VSCODE=1)
+
+Examples:
+  kstar update --check
+      see whether there is a newer release
+  kstar update
+      update, after asking
+  kstar update --yes --no-vscode
+      update without asking, leaving VS Code alone
+
+
+File: kstar.info,  Node: version,  Next: Standard library,  Prev: update,  Up: Top
+
+kstar version
+*************
+
+Usage: kstar version
+       kstar --version
+
+Shows this kstar's version, the commit it was built from, the build date
+and the platform it was built for. `kstar --version` and `kstar -V` do the
+same.
+
+Examples:
+  kstar version
+      show the version
+
+
+File: kstar.info,  Node: Standard library,  Prev: version,  Up: Top
+
+The standard library
+********************
+
+The standard library
+
+Every module is reached as std.<module>.<name> without an import, or imported
+with `import std.<module>` or `from std.<module> import <name>`.
+
+Modules:
+  std.automata      Ready-made DFAs for common patterns (prefixes, suffixes,
+                    substrings, counting, parity, lengths), and questions about
+                    regular languages: a shortest word, a word that tells two
+                    languages apart, finiteness and counting words.
+  std.benchmark     How much work the algorithms do: counts that are the same on
+                    every computer, and times in microseconds.
+  std.binary        Binary numbers and bit strings over {0, 1}: divisibility and
+                    remainders, numerals without leading zeros, fixed widths,
+                    parity, runs of equal bits, and converting between Ints and
+                    bit strings.
+  std.collections   Sets: membership, subsets, union, intersection, difference,
+                    size, smallest, largest and sum, and every word of a given
+                    length over an alphabet.
+  std.grammar       Helpers for context-free grammars: the steps of the CNF
+                    construction one at a time, FIRST and FOLLOW sets, LL(1) and
+                    CNF checks, listing short words, and ready-made grammars.
+  std.io            Reading and writing text files in the program's folder, such
+                    as word lists and machines saved as JSON.
+  std.math          Whole-number arithmetic: division, powers, roots, divisors
+                    and primes.
+  std.pda           Ready-made pushdown automata, the grammar of a PDA, whether
+                    a PDA is deterministic, and membership and word lists that
+                    never give up.
+  std.random        Random Ints, words, DFAs, NFAs and grammars from a seed: the
+                    same seed always gives the same result.
+  std.regex         Regular expressions built at run time and put together from
+                    pieces: from text, from a word or an alphabet, by choice,
+                    sequence and repetition, and the common prefix, suffix and
+                    substring forms.
+  std.steps         The working of the conversions, step by step: eps-closures,
+                    the subset construction table, the k-equivalence partitions,
+                    state elimination and Arden's theorem.
+  std.string        Words as data: searching, slicing, repeating, and the
+                    prefixes, suffixes and substrings of a word.
+  std.testing       Checks for `test` statements that explain a failure:
+                    equality with the difference shown, sets of words a machine
+                    must accept or reject, equal languages with a word that
+                    tells them apart, and two acceptors that must agree on
+                    sample words.
+  std.tm            Ready-made Turing machines (binary increment, unary addition
+                    and copying, deciders for palindromes and a^n b^n c^n), and
+                    the steps, space and final state of a run.
+  std.visual        Drawings and traces as strings: DOT diagrams, a run drawn on
+                    its diagram, the trace table, and the page that plays a run.
+
+Run `kstar help std.<module>` for a module's functions.
+
+* Menu:
+
+* std automata::        Ready-made DFAs for common patterns (prefixes, suffixes, substrings, counting, parity, lengths), and questions about regular languages: a shortest word, a word that tells two languages apart, finiteness and counting words.
+* std benchmark::       How much work the algorithms do: counts that are the same on every computer, and times in microseconds.
+* std binary::          Binary numbers and bit strings over {0, 1}: divisibility and remainders, numerals without leading zeros, fixed widths, parity, runs of equal bits, and converting between Ints and bit strings.
+* std collections::     Sets: membership, subsets, union, intersection, difference, size, smallest, largest and sum, and every word of a given length over an alphabet.
+* std grammar::         Helpers for context-free grammars: the steps of the CNF construction one at a time, FIRST and FOLLOW sets, LL(1) and CNF checks, listing short words, and ready-made grammars.
+* std io::              Reading and writing text files in the program's folder, such as word lists and machines saved as JSON.
+* std math::            Whole-number arithmetic: division, powers, roots, divisors and primes.
+* std pda::             Ready-made pushdown automata, the grammar of a PDA, whether a PDA is deterministic, and membership and word lists that never give up.
+* std random::          Random Ints, words, DFAs, NFAs and grammars from a seed: the same seed always gives the same result.
+* std regex::           Regular expressions built at run time and put together from pieces: from text, from a word or an alphabet, by choice, sequence and repetition, and the common prefix, suffix and substring forms.
+* std steps::           The working of the conversions, step by step: eps-closures, the subset construction table, the k-equivalence partitions, state elimination and Arden's theorem.
+* std string::          Words as data: searching, slicing, repeating, and the prefixes, suffixes and substrings of a word.
+* std testing::         Checks for `test` statements that explain a failure: equality with the difference shown, sets of words a machine must accept or reject, equal languages with a word that tells them apart, and two acceptors that must agree on sample words.
+* std tm::              Ready-made Turing machines (binary increment, unary addition and copying, deciders for palindromes and a^n b^n c^n), and the steps, space and final state of a run.
+* std visual::          Drawings and traces as strings: DOT diagrams, a run drawn on its diagram, the trace table, and the page that plays a run.
+
+
+File: kstar.info,  Node: std automata,  Next: std benchmark,  Up: Standard library
+
+std.automata
+************
+
+Ready-made DFAs for common patterns (prefixes, suffixes, substrings, counting,
+parity, lengths), and questions about regular languages: a shortest word, a word
+that tells two languages apart, finiteness and counting words.
+
+  fn starts_with(alphabet: Alphabet, prefix: Str) -> Dfa
+      The smallest DFA for the strings over `alphabet` that begin with `prefix`.
+
+  fn ends_with(alphabet: Alphabet, suffix: Str) -> Dfa
+      The smallest DFA for the strings over `alphabet` that end with `suffix`.
+
+  fn contains_substring(alphabet: Alphabet, part: Str) -> Dfa
+      The smallest DFA for the strings over `alphabet` that contain `part`
+      somewhere.
+
+  fn exactly(alphabet: Alphabet, symbol: Str, n: Int) -> Dfa
+      The smallest DFA for the strings with exactly `n` copies of `symbol`.
+
+  fn at_least(alphabet: Alphabet, symbol: Str, n: Int) -> Dfa
+      The smallest DFA for the strings with at least `n` copies of `symbol`.
+
+  fn at_most(alphabet: Alphabet, symbol: Str, n: Int) -> Dfa
+      The smallest DFA for the strings with at most `n` copies of `symbol`.
+
+  fn count_mod(alphabet: Alphabet, symbol: Str, m: Int, r: Int) -> Dfa
+      The smallest DFA for the strings whose number of `symbol`s leaves
+      remainder `r` when divided by `m`; `m = 2` gives parity.
+
+  fn length_mod(alphabet: Alphabet, m: Int, r: Int) -> Dfa
+      The smallest DFA for the strings whose length leaves remainder `r` when
+      divided by `m`.
+
+  fn length_between(alphabet: Alphabet, min: Int, max: Int) -> Dfa
+      The smallest DFA for the strings of length `min` to `max`, both included.
+
+  fn shortest_word(lang: Lang) -> Str
+      A shortest word of the language (the first in alphabet order if there are
+      several); the language must not be empty.
+
+  fn distinguishing_word(a: Lang, b: Lang) -> Str
+      A shortest word in one language but not the other, showing why they are
+      not `equivalent`; they must differ.
+
+  fn is_finite(lang: Lang) -> Bool
+      Whether the language has only finitely many words.
+
+  fn count_words(lang: Lang, n: Int) -> Int
+      How many words of length exactly `n` the language has.
+
+  fn words_up_to(lang: Lang, n: Int) -> Set[Str]
+      The words of the language of length at most `n`, as a set; there may be at
+      most 100000 of them.
+
+Call them as std.automata.<name>(...), or import them with `from std.automata
+import <name>`.
+
+
+File: kstar.info,  Node: std benchmark,  Next: std binary,  Prev: std automata,  Up: Standard library
+
+std.benchmark
+*************
+
+How much work the algorithms do: counts that are the same on every computer, and
+times in microseconds.
+
+  fn equivalence_rounds(m: Lang) -> Int
+      The rounds of refinement minimising `m`'s DFA takes: the smallest k for
+      which k-equivalence equals (k+1)-equivalence.
+
+  fn pda_configs(p: Pda, w: Str) -> Int
+      How many configurations the search for an accepting run of `p` on `w`
+      looks at.
+
+  fn regex_size(m: Lang) -> Int
+      The number of symbols and operators in the regex state elimination builds
+      for `m`, as `to_regex` gives it.
+
+  fn time_accepts_us(m: Acceptor, w: Str) -> Int
+      Microseconds to decide whether `m` accepts `w`, the median of 5 runs; 0
+      with a fixed clock.
+
+  fn time_us(op: Str, m: Lang) -> Int
+      Microseconds the operation `op` (`to_dfa`, `minimize`, `to_regex`,
+      `remove_eps`, `complement` or `reverse`) takes on `m`, the median of 5
+      runs; 0 with a fixed clock.
+
+Call them as std.benchmark.<name>(...), or import them with `from std.benchmark
+import <name>`.
+
+
+File: kstar.info,  Node: std binary,  Next: std collections,  Prev: std benchmark,  Up: Standard library
+
+std.binary
+**********
+
+Binary numbers and bit strings over {0, 1}: divisibility and remainders,
+numerals without leading zeros, fixed widths, parity, runs of equal bits, and
+converting between Ints and bit strings.
+
+  fn divisible_by(n: Int) -> Dfa
+      The bit strings whose value is a multiple of `n`, as the machine with one
+      state per remainder.
+
+  fn remainder(n: Int, r: Int) -> Dfa
+      The bit strings whose value leaves remainder `r` when divided by `n`.
+
+  fn no_leading_zeros() -> Dfa
+      Numerals written without leading zeros: `0`, or a `1` followed by any
+      bits.
+
+  fn fixed_width(n: Int) -> Dfa
+      The bit strings of exactly `n` bits.
+
+  fn even_parity() -> Dfa
+      The bit strings with an even number of 1s.
+
+  fn odd_parity() -> Dfa
+      The bit strings with an odd number of 1s.
+
+  fn run_at_most(bit: Str, k: Int) -> Dfa
+      The bit strings in which `bit` never appears more than `k` times in a row.
+
+  fn to_binary(n: Int) -> Str
+      `n` written in binary without leading zeros; `n` must not be negative, and
+      0 is `"0"`.
+
+  fn from_binary(bits: Str) -> Int
+      The value of a bit string, most significant bit first; leading zeros do
+      not count and `""` is 0.
+
+Call them as std.binary.<name>(...), or import them with `from std.binary import
+<name>`.
+
+
+File: kstar.info,  Node: std collections,  Next: std grammar,  Prev: std binary,  Up: Standard library
+
+std.collections
+***************
+
+Sets: membership, subsets, union, intersection, difference, size, smallest,
+largest and sum, and every word of a given length over an alphabet.
+
+  fn contains(s: Set[T], x: T) -> Bool
+      Whether `x` is a member of the set `s`.
+
+  fn difference(a: Set[T], b: Set[T]) -> Set[T]
+      The members of the set `a` that are not in `b`.
+
+  fn intersect(a: Set[T], b: Set[T]) -> Set[T]
+      The members that the sets `a` and `b` have in common.
+
+  fn is_subset(a: Set[T], b: Set[T]) -> Bool
+      Whether every member of the set `a` is also in `b`; the empty set is a
+      subset of every set.
+
+  fn max(s: Set[Int]) -> Int
+      The largest member of a set of Ints; the set must not be empty.
+
+  fn min(s: Set[Int]) -> Int
+      The smallest member of a set of Ints; the set must not be empty.
+
+  fn size(s: Set[T]) -> Int
+      The number of members of the set `s`; the same as `len(s)`.
+
+  fn sum(s: Set[Int]) -> Int
+      The members of a set of Ints added up; the sum of the empty set is 0.
+
+  fn union(a: Set[T], b: Set[T]) -> Set[T]
+      The members that are in the set `a`, in `b`, or in both.
+
+  fn words(alphabet: Alphabet, n: Int) -> Set[Str]
+      Every string of length `n` over `alphabet`, as a set; `n` must not be
+      negative, and there may be at most 100000 of them.
+
+  fn sigma_star(alphabet: Alphabet, n: Int) -> Set[Str]
+      Σ* up to length `n`: every string over `alphabet` of length 0 to `n`, the
+      empty string included.
+
+  fn sigma_plus(alphabet: Alphabet, n: Int) -> Set[Str]
+      Σ+ up to length `n`: every string over `alphabet` of length 1 to `n`; Σ*
+      without the empty string.
+
+  fn concat(a: Set[Str], b: Set[Str]) -> Set[Str]
+      The concatenation of two sets of strings: every `xy` with `x` in `a` and
+      `y` in `b`.
+
+  fn power(a: Set[Str], n: Int) -> Set[Str]
+      `a` to the power `n`: every string made of `n` strings of `a` one after
+      another; the power 0 is the set holding the empty string.
+
+  fn star_up_to(a: Set[Str], n: Int) -> Set[Str]
+      The Kleene star of a set of strings, up to length `n`: every string of
+      length at most `n` made of strings of `a` one after another.
+
+  fn power_set(s: Set[T]) -> Set[Set[T]]
+      Every subset of `s`, the empty set and `s` included: 2^n of them for `n`
+      members, with `s` of at most 16 members.
+
+Call them as std.collections.<name>(...), or import them with `from
+std.collections import <name>`.
+
+
+File: kstar.info,  Node: std grammar,  Next: std io,  Prev: std collections,  Up: Standard library
+
+std.grammar
+***********
+
+Helpers for context-free grammars: the steps of the CNF construction one at a
+time, FIRST and FOLLOW sets, LL(1) and CNF checks, listing short words, and
+ready-made grammars.
+
+  fn nullable(g: Grammar) -> Set[Str]
+      The variables that can derive the empty word.
+
+  fn generating(g: Grammar) -> Set[Str]
+      The variables that can derive some word of terminals.
+
+  fn reachable(g: Grammar) -> Set[Str]
+      The variables that can appear in a derivation from the start variable.
+
+  fn remove_useless(g: Grammar) -> Grammar
+      The same grammar without the variables that generate nothing or cannot be
+      reached.
+
+  fn remove_eps(g: Grammar) -> Grammar
+      An equivalent grammar whose only eps rule, if any, is for a start variable
+      that is on no right-hand side.
+
+  fn remove_units(g: Grammar) -> Grammar
+      An equivalent grammar without unit rules such as `A -> B`.
+
+  fn is_cnf(g: Grammar) -> Bool
+      Whether the grammar is in Chomsky normal form, as `to_cnf` makes it.
+
+  fn first(g: Grammar, variable: Str) -> Set[Str]
+      The terminals that can begin a word `variable` derives, and `""` if it can
+      derive the empty word.
+
+  fn follow(g: Grammar, variable: Str) -> Set[Str]
+      The terminals that can come right after `variable`, and `""` if it can
+      come last.
+
+  fn is_ll1(g: Grammar) -> Bool
+      Whether a parser can always choose the rule to use by looking at the next
+      symbol only.
+
+  fn words_up_to(g: Grammar, n: Int) -> Set[Str]
+      The words of the grammar's language of length at most `n`, as a set.
+
+  fn parse_trees(g: Grammar, w: Str) -> Set[Str]
+      The parse trees of `w`, each written with brackets as `S(a S(eps) b)`; at
+      most 100, leaving out trees that go round a cycle of unit rules.
+
+  fn is_ambiguous_on(g: Grammar, w: Str) -> Bool
+      Whether `w` has two different parse trees (two different leftmost
+      derivations) in the grammar.
+
+  fn two_derivations(g: Grammar, w: Str) -> Str
+      Two different leftmost derivations of `w`, showing that the grammar is
+      ambiguous; `w` must have two parse trees.
+
+  fn balanced(open: Str, close: Str) -> Grammar
+      Balanced brackets: `S -> open S close S` or eps.
+
+  fn anbn(a: Str, b: Str) -> Grammar
+      `n` copies of `a` then `n` copies of `b`: `S -> a S b` or eps.
+
+  fn palindromes(alphabet: Alphabet) -> Grammar
+      The words over `alphabet` that read the same backwards.
+
+  fn equal_count(a: Str, b: Str) -> Grammar
+      The words over `a` and `b` with as many of one as of the other.
+
+Call them as std.grammar.<name>(...), or import them with `from std.grammar
+import <name>`.
+
+
+File: kstar.info,  Node: std io,  Next: std math,  Prev: std grammar,  Up: Standard library
+
+std.io
+******
+
+Reading and writing text files in the program's folder, such as word lists and
+machines saved as JSON.
+
+  fn append_text(path: Str, text: Str) -> Int
+      Adds `text` to the end of the file at `path`, creating it if needed, and
+      gives the number of bytes written.
+
+  fn exists(path: Str) -> Bool
+      Whether there is a file at `path`; a path outside the allowed folders is
+      an error, not `false`.
+
+  fn files(folder: Str) -> Set[Str]
+      The paths of the files directly in `folder` (`"."` for the program's own),
+      leaving out hidden ones.
+
+  fn read_lines(path: Str) -> Set[Str]
+      The lines of the file at `path` that are not empty, as a set.
+
+  fn read_text(path: Str) -> Str
+      The whole file at `path`, which must be UTF-8 text of at most 1 MiB; line
+      ends become `\n`.
+
+  fn read_words(path: Str) -> Set[Str]
+      The words of the file at `path`, separated by spaces or new lines, as a
+      set; a `#` starts a comment to the end of its line.
+
+  fn write_lines(path: Str, lines: Set[Str]) -> Int
+      Writes the members of `lines` to the file at `path`, one per line in the
+      set's order, and gives the number of bytes written.
+
+  fn write_text(path: Str, text: Str) -> Int
+      Creates or replaces the file at `path` with `text`, and gives the number
+      of bytes written.
+
+Call them as std.io.<name>(...), or import them with `from std.io import
+<name>`.
+
+
+File: kstar.info,  Node: std math,  Next: std pda,  Prev: std io,  Up: Standard library
+
+std.math
+********
+
+Whole-number arithmetic: division, powers, roots, divisors and primes.
+
+  fn abs(n: Int) -> Int
+      The size of `n`, without its sign.
+
+  fn div(a: Int, b: Int) -> Int
+      `a` divided by `b` as a whole number: the `q` with `a == b * q + a % b`.
+
+  fn factorial(n: Int) -> Int
+      `n! = 1 * 2 * ... * n`, for `n` from 0 to 20.
+
+  fn gcd(a: Int, b: Int) -> Int
+      The greatest common divisor of `a` and `b`; never negative, and `gcd(0,
+      0)` is 0.
+
+  fn is_prime(n: Int) -> Bool
+      Whether `n` is a prime number: greater than 1, with no divisors but 1 and
+      itself.
+
+  fn lcm(a: Int, b: Int) -> Int
+      The least common multiple of `a` and `b`; never negative, and 0 if either
+      is 0.
+
+  fn log2(n: Int) -> Int
+      The base-2 logarithm of `n`, rounded down; `n` must be positive.
+
+  fn max(a: Int, b: Int) -> Int
+      The larger of `a` and `b`.
+
+  fn min(a: Int, b: Int) -> Int
+      The smaller of `a` and `b`.
+
+  fn pow(base: Int, exp: Int) -> Int
+      `base` to the power `exp`; `exp` must not be negative.
+
+  fn sqrt(n: Int) -> Int
+      The square root of `n`, rounded down; `n` must not be negative.
+
+Call them as std.math.<name>(...), or import them with `from std.math import
+<name>`.
+
+
+File: kstar.info,  Node: std pda,  Next: std random,  Prev: std math,  Up: Standard library
+
+std.pda
+*******
+
+Ready-made pushdown automata, the grammar of a PDA, whether a PDA is
+deterministic, and membership and word lists that never give up.
+
+  fn anbn(a: Str, b: Str) -> Pda
+      A deterministic PDA for `n` copies of `a` then `n` copies of `b`.
+
+  fn balanced(open: Str, close: Str) -> Pda
+      A deterministic PDA for balanced brackets, with `open` and `close` as the
+      brackets.
+
+  fn palindromes(alphabet: Alphabet) -> Pda
+      A PDA for the words over `alphabet` that read the same backwards; it
+      guesses where the middle is.
+
+  fn equal_count(a: Str, b: Str) -> Pda
+      A PDA for the words over `a` and `b` with as many of one as of the other.
+
+  fn to_grammar(p: Pda) -> Grammar
+      A grammar with the same language as the PDA, by the triple construction.
+
+  fn is_deterministic(p: Pda) -> Bool
+      Whether at most one move can be taken in every configuration.
+
+  fn stack_symbols(p: Pda) -> Set[Str]
+      The symbols the PDA uses on its stack, the bottom symbol included.
+
+  fn member(p: Pda, w: Str) -> Bool
+      Whether the PDA accepts `w`, decided through its grammar, so it never
+      gives up as `accepts` can.
+
+  fn words_up_to(p: Pda, n: Int) -> Set[Str]
+      The words the PDA accepts of length at most `n`, as a set.
+
+  fn to_empty_stack(p: Pda) -> Pda
+      A PDA that accepts by empty stack the words `p` accepts, by the usual
+      construction; `p` itself if it already accepts by empty stack.
+
+  fn to_final_state(p: Pda) -> Pda
+      A PDA that accepts by final state the words `p` accepts, by the usual
+      construction; `p` itself if it already accepts by final state.
+
+  fn ids(p: Pda, w: Str) -> Str
+      The run of `p` on `w` as instantaneous descriptions, `(q, w, stack) ⊢ (q',
+      w', stack')`, one per line, then the result.
+
+Call them as std.pda.<name>(...), or import them with `from std.pda import
+<name>`.
+
+
+File: kstar.info,  Node: std random,  Next: std regex,  Prev: std pda,  Up: Standard library
+
+std.random
+**********
+
+Random Ints, words, DFAs, NFAs and grammars from a seed: the same seed always
+gives the same result.
+
+  fn int(seed: Int, low: Int, high: Int) -> Int
+      An Int from `low` to `high`, both included, each as likely.
+
+  fn pick(seed: Int, s: Set[T]) -> T
+      A member of the set `s`, each as likely; the set must not be empty.
+
+  fn word(seed: Int, alphabet: Alphabet, n: Int) -> Str
+      A word of length `n` over `alphabet`, each symbol drawn on its own.
+
+  fn words(seed: Int, alphabet: Alphabet, count: Int, max: Int) -> Set[Str]
+      `count` random words of length 0 to `max`, as a set, so fewer if some are
+      drawn twice.
+
+  fn word_in(seed: Int, lang: Lang, n: Int) -> Str
+      A word of length `n` in the language, each such word as likely; there must
+      be one.
+
+  fn random_dfa(seed: Int, alphabet: Alphabet, states: Int) -> Dfa
+      A random DFA with `states` states named `q0`, `q1`, ...
+
+  fn random_nfa(seed: Int, alphabet: Alphabet, states: Int) -> Nfa
+      A random NFA with `states` states named `q0`, `q1`, ..., which may have
+      eps moves.
+
+  fn random_grammar(seed: Int, alphabet: Alphabet, variables: Int) -> Grammar
+      A random grammar with `variables` variables, from 1 to 26, named `S`, `A`,
+      `B`, ...
+
+Call them as std.random.<name>(...), or import them with `from std.random import
+<name>`.
+
+
+File: kstar.info,  Node: std regex,  Next: std steps,  Prev: std random,  Up: Standard library
+
+std.regex
+*********
+
+Regular expressions built at run time and put together from pieces: from text,
+from a word or an alphabet, by choice, sequence and repetition, and the common
+prefix, suffix and substring forms.
+
+  fn parse(text: Str) -> Regex
+      The regex written in `text`, in the same syntax as between slashes; text
+      that is not a regex is an error.
+
+  fn literal(word: Str) -> Regex
+      The regex that matches exactly `word` and nothing else.
+
+  fn any_of(alphabet: Alphabet) -> Regex
+      The regex for any one symbol of `alphabet`, written out as a choice
+      between them.
+
+  fn alt(a: Regex, b: Regex) -> Regex
+      The choice of `a` or `b`: the words of either one.
+
+  fn seq(a: Regex, b: Regex) -> Regex
+      `ab`: a word of `a` followed by a word of `b`.
+
+  fn zero_or_more(r: Regex) -> Regex
+      `r*`: any number of words of `r` one after another, including none.
+
+  fn one_or_more(r: Regex) -> Regex
+      `r+`: one or more words of `r` one after another.
+
+  fn optional(r: Regex) -> Regex
+      `r?`: a word of `r`, or the empty string.
+
+  fn power(r: Regex, n: Int) -> Regex
+      Exactly `n` words of `r` one after another; `power(r, 0)` matches only the
+      empty string.
+
+  fn repeat_between(r: Regex, min: Int, max: Int) -> Regex
+      From `min` to `max` words of `r` one after another, both included.
+
+  fn at_least(r: Regex, n: Int) -> Regex
+      `n` or more words of `r` one after another.
+
+  fn starts_with(alphabet: Alphabet, prefix: Str) -> Regex
+      The regex for the strings over `alphabet` that begin with `prefix`.
+
+  fn ends_with(alphabet: Alphabet, suffix: Str) -> Regex
+      The regex for the strings over `alphabet` that end with `suffix`.
+
+  fn contains(alphabet: Alphabet, part: Str) -> Regex
+      The regex for the strings over `alphabet` that contain `part` somewhere.
+
+  fn size(r: Regex) -> Int
+      The number of parts of the regex: its symbols, operators and joins.
+
+  fn text(r: Regex) -> Str
+      The regex written out as a string, without the slashes.
+
+  fn by_arden(m: Lang) -> Regex
+      A regex for the language of `m` found by Arden's theorem, as
+      `std.steps.arden` shows; the same language as `to_regex(m)`, often written
+      differently.
+
+Call them as std.regex.<name>(...), or import them with `from std.regex import
+<name>`.
+
+
+File: kstar.info,  Node: std steps,  Next: std string,  Prev: std regex,  Up: Standard library
+
+std.steps
+*********
+
+The working of the conversions, step by step: eps-closures, the subset
+construction table, the k-equivalence partitions, state elimination and Arden's
+theorem.
+
+  fn arden(m: Lang) -> Str
+      From a finite automaton to a regex by Arden's theorem: an equation for
+      each state, then each solved with R = Q + RP giving R = QP* and put into
+      the others, then the regex.
+
+  fn elimination(m: Lang) -> Str
+      State elimination, as `to_regex` does it: the new start and final states,
+      then each state removed and the edges that replace the paths through it,
+      then the regex.
+
+  fn eps_closures(m: Lang) -> Str
+      A table of each state of `m`'s NFA and its eps-closure, the states it
+      reaches by eps moves alone.
+
+  fn partitions(m: Lang) -> Str
+      Minimisation of `m`'s DFA by k-equivalence: the partitions P0, P1, ...
+      until one is the same as the one before.
+
+  fn subset_table(m: Lang) -> Str
+      The subset construction for `m`'s NFA as a table: each set of states
+      found, in order, and where each symbol leads, with the empty set written
+      Ø.
+
+Call them as std.steps.<name>(...), or import them with `from std.steps import
+<name>`.
+
+
+File: kstar.info,  Node: std string,  Next: std testing,  Prev: std steps,  Up: Standard library
+
+std.string
+**********
+
+Words as data: searching, slicing, repeating, and the prefixes, suffixes and
+substrings of a word.
+
+  fn char_at(s: Str, i: Int) -> Str
+      The character of `s` at index `i`, counting from 0, as a string of length
+      1.
+
+  fn contains(s: Str, part: Str) -> Bool
+      Whether `part` occurs anywhere inside `s`; the empty string occurs in
+      every string.
+
+  fn count(s: Str, part: Str) -> Int
+      How many times `part` occurs in `s`, not overlapping: `count("aaaa",
+      "aa")` is 2; `part` must not be empty.
+
+  fn ends_with(s: Str, suffix: Str) -> Bool
+      Whether `s` ends with `suffix`.
+
+  fn from_int(n: Int) -> Str
+      The digits of `n` as a string, with a leading `-` if it is negative.
+
+  fn index_of(s: Str, part: Str) -> Int
+      The index of the first occurrence of `part` in `s`, or -1 if there is
+      none.
+
+  fn is_palindrome(s: Str) -> Bool
+      Whether `s` reads the same backwards; the empty string does.
+
+  fn length(s: Str) -> Int
+      The number of characters in `s`; the same as `len(s)`.
+
+  fn prefixes(s: Str) -> Set[Str]
+      Every prefix of `s`, including the empty string and `s` itself.
+
+  fn repeat(s: Str, n: Int) -> Str
+      `s` written `n` times in a row; `n` must not be negative, and the result
+      at most 1000000 characters.
+
+  fn reverse(s: Str) -> Str
+      The characters of `s` in the opposite order.
+
+  fn starts_with(s: Str, prefix: Str) -> Bool
+      Whether `s` starts with `prefix`.
+
+  fn substring(s: Str, start: Int, end: Int) -> Str
+      The characters of `s` from index `start` up to, but not including, index
+      `end`; needs `0 <= start <= end <= length(s)`.
+
+  fn substrings(s: Str) -> Set[Str]
+      Every substring of `s` (a run of neighbouring characters), including the
+      empty string and `s` itself.
+
+  fn suffixes(s: Str) -> Set[Str]
+      Every suffix of `s`, including the empty string and `s` itself.
+
+  fn symbols(s: Str) -> Set[Str]
+      The distinct characters of `s`, each as a string of length 1; the empty
+      string is not one of them.
+
+  fn to_int(s: Str) -> Int
+      The number written in `s`: digits with an optional leading `-` or `+`, and
+      nothing else.
+
+Call them as std.string.<name>(...), or import them with `from std.string import
+<name>`.
+
+
+File: kstar.info,  Node: std testing,  Next: std tm,  Prev: std string,  Up: Standard library
+
+std.testing
+***********
+
+Checks for `test` statements that explain a failure: equality with the
+difference shown, sets of words a machine must accept or reject, equal languages
+with a word that tells them apart, and two acceptors that must agree on sample
+words.
+
+  fn equal(expected: T, actual: T) -> Bool
+      Whether `actual` is `expected`; a failing test shows both, with the first
+      difference of two strings marked.
+
+  fn equal_sets(expected: Set[T], actual: Set[T]) -> Bool
+      Whether two sets are equal; a failing test lists the members that are
+      missing and those that should not be there.
+
+  fn accepts_all(machine: Acceptor, words: Set[Str]) -> Bool
+      Whether `machine` accepts every word of `words`; a failing test lists the
+      words it rejects.
+
+  fn rejects_all(machine: Acceptor, words: Set[Str]) -> Bool
+      Whether `machine` rejects every word of `words`; a failing test lists the
+      words it accepts.
+
+  fn same_language(expected: Lang, actual: Lang) -> Bool
+      Whether two regular languages are `equivalent`; a failing test shows a
+      shortest word that is in one but not the other.
+
+  fn agree_on(a: Acceptor, b: Acceptor, words: Set[Str]) -> Bool
+      Whether `a` and `b` accept the same words of `words`; a failing test lists
+      the words only one of them accepts.
+
+  fn agree_up_to(a: Acceptor, b: Acceptor, n: Int) -> Bool
+      Whether `a` and `b` accept the same words of length up to `n` over their
+      symbols, at most 10000 words; a failing test lists the words only one
+      accepts.
+
+Call them as std.testing.<name>(...), or import them with `from std.testing
+import <name>`.
+
+
+File: kstar.info,  Node: std tm,  Next: std visual,  Prev: std testing,  Up: Standard library
+
+std.tm
+******
+
+Ready-made Turing machines (binary increment, unary addition and copying,
+deciders for palindromes and a^n b^n c^n), and the steps, space and final state
+of a run.
+
+  fn increment() -> Tm
+      A machine that adds one to a binary number, leaving the sum on the tape.
+
+  fn unary_add() -> Tm
+      A machine that turns `m` ones, a 0 and `n` ones into `m + n` ones.
+
+  fn unary_copy() -> Tm
+      A machine that turns `n` ones into `n` ones, a 0 and `n` ones again.
+
+  fn palindromes(alphabet: Alphabet) -> Tm
+      A machine that decides the palindromes over `alphabet`, halting in `yes`
+      or `no`.
+
+  fn anbncn(a: Str, b: Str, c: Str) -> Tm
+      A machine that decides `n` copies of `a`, then of `b`, then of `c`, which
+      no PDA can.
+
+  fn steps(m: Tm, w: Str) -> Int
+      How many steps the machine takes on `w` before it halts.
+
+  fn space(m: Tm, w: Str) -> Int
+      How many tape cells the head visits on `w` before the machine halts.
+
+  fn final_state(m: Tm, w: Str) -> Str
+      The state the machine is in when it halts on `w`.
+
+  fn halts_within(m: Tm, w: Str, n: Int) -> Bool
+      Whether the machine halts on `w` within `n` steps, at most 100000.
+
+  fn tape_symbols(m: Tm) -> Set[Str]
+      The symbols that can be on the tape: the alphabet, the blank `_`, and
+      every symbol the machine writes.
+
+  fn ids(m: Tm, w: Str) -> Str
+      The run of `m` on `w` as instantaneous descriptions `u q v` (the head on
+      the first symbol of `v`), one per line after `⊢`, then how it halted; at
+      most 100 steps.
+
+Call them as std.tm.<name>(...), or import them with `from std.tm import
+<name>`.
+
+
+File: kstar.info,  Node: std visual,  Prev: std tm,  Up: Standard library
+
+std.visual
+**********
+
+Drawings and traces as strings: DOT diagrams, a run drawn on its diagram, the
+trace table, and the page that plays a run.
+
+  fn dot(m: Acceptor) -> Str
+      The Graphviz DOT text that `draw m` writes; a regex or set is drawn as its
+      NFA.
+
+  fn dot_run(m: Acceptor, w: Str) -> Str
+      The DOT text of machine `m` with its run on `w` drawn on it: the states
+      and moves used in bold, the states it ends in filled.
+
+  fn player(m: Acceptor, w: Str) -> Str
+      The self-contained HTML page that `draw m on w` writes, which plays the
+      run step by step.
+
+  fn trace_text(m: Acceptor, w: Str) -> Str
+      The table `trace m on w` prints, as a string, with `-` in the empty cells.
+
+Call them as std.visual.<name>(...), or import them with `from std.visual import
+<name>`.
+
+
+Tag Table:
+Node: Top231
+Node: run2557
+Node: check4471
+Node: fmt5179
+Node: new5903
+Node: repl6208
+Node: trace7114
+Node: explain7890
+Node: help8354
+Node: export9029
+Node: kstar-lsp11074
+Node: update11860
+Node: version13387
+Node: Standard library13752
+Node: std automata19797
+Node: std benchmark22284
+Node: std binary23453
+Node: std collections24869
+Node: std grammar27429
+Node: std io30179
+Node: std math31693
+Node: std pda33025
+Node: std random35001
+Node: std regex36462
+Node: std steps38877
+Node: std string40180
+Node: std testing42561
+Node: std tm44304
+Node: std visual46035
+
+End Tag Table
+
+
+Local Variables:
+coding: utf-8
+End:

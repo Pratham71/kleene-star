@@ -1,0 +1,67 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-EXPORT 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-export \- write machine M as Rust, Python or JSON
+.SH SYNOPSIS
+.nf
+\fBkstar export\fR [options] <file> <machine>
+.fi
+.SH DESCRIPTION
+.PP
+Runs the file without showing its output, then writes <machine> to a file
+next to <file>, named after the machine (HasDouble1.rs, HasDouble1.py or
+HasDouble1.json), and says where:
+.PP
+.RS 4
+.nf
+Wrote C:\eUsers\eme\eHasDouble1.rs (Rust, 42 lines)
+.fi
+.RE
+.PP
+It never replaces a file that is already there unless given \-\-force.
+.PP
+As Rust (the default), the file is one dependency-free function
+\fBpub fn name(input: &str) -> bool\fR that accepts exactly the machine's
+words, with a \fB#[cfg(test)]\fR module of sample words. As Python, it is one
+dependency-free file with \fBdef name(word: str) -> bool\fR that checks itself
+on sample words when run as a script. For both, <machine> may be any
+regular language (Dfa, Nfa, Regex or Set[Str]), such as \fBEvenZeros\fR or
+\fBto_dfa(r)\fR; it is turned into a DFA first.
+.PP
+As JSON it writes <machine> in Kleene Star's JSON format, which \fBfrom_json\fR
+reads back: any Dfa, Nfa, Regex, Grammar, Pda or Tm, kept as it is, with
+its state names.
+.SH OPTIONS
+.TP
+\fB\-\-format\fR \fI<format>\fR
+rust (the default), python or json
+.TP
+\fB\-\-fn\fR \fI<name>\fR
+the function's name (default: <machine> in snake_case); not with \-\-format json
+.TP
+\fB\-o\fR, \fB\-\-out\fR \fI<path>\fR
+write to this file, or into this folder; \fB\-o \-\fR prints to standard output instead of writing a file
+.TP
+\fB\-\-force\fR
+replace the file if it is already there
+.TP
+\fB\-\-minimize\fR
+minimize the DFA first, for the smallest table
+.TP
+\fB\-\-color\fR \fI<when>\fR
+auto (the default), always or never. With auto, output is coloured only on a terminal and never when the NO_COLOR environment variable is set.
+.SH EXAMPLES
+.TP
+\fBkstar export examples/01_dfa.kstar HasDouble1\fR
+write HasDouble1.rs next to the file
+.TP
+\fBkstar export \-\-format python lab.kstar M \-o \-\fR
+print M as a Python function
+.TP
+\fBkstar export \-\-format json lab.kstar G \-o out/ \-\-force\fR
+write out/G.json, replacing it
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

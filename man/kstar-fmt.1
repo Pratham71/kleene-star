@@ -1,0 +1,33 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-FMT 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-fmt \- rewrite files in the standard style
+.SH SYNOPSIS
+.nf
+\fBkstar fmt\fR [\-\-check] <files>...
+\fBkstar fmt\fR \-
+.fi
+.SH DESCRIPTION
+.PP
+Rewrites each file in the standard style. A folder means every .kstar file
+inside it, and \fB\-\fR reads a program from standard input and writes the
+formatted program to standard output, for editors and scripts.
+.SH OPTIONS
+.TP
+\fB\-\-check\fR
+change nothing; list the files that need formatting and exit with code 1 if there are any
+.SH EXAMPLES
+.TP
+\fBkstar fmt lab1.kstar\fR
+format one file in place
+.TP
+\fBkstar fmt \-\-check .\fR
+list the files in this folder that are not formatted
+.TP
+\fBkstar fmt \- < lab1.kstar\fR
+print lab1.kstar formatted, changing nothing
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

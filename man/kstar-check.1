@@ -1,0 +1,31 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-CHECK 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-check \- look for errors and warnings without running
+.SH SYNOPSIS
+.nf
+\fBkstar check\fR [options] <files>...
+.fi
+.SH DESCRIPTION
+.PP
+Reports every error and warning in each program, without running it. A
+folder means every .kstar file inside it.
+.PP
+The exit code is 0 when no file has errors (warnings do not count), 1 when
+one has, and 2 when the command itself was wrong.
+.SH OPTIONS
+.TP
+\fB\-\-color\fR \fI<when>\fR
+auto (the default), always or never. With auto, output is coloured only on a terminal and never when the NO_COLOR environment variable is set.
+.SH EXAMPLES
+.TP
+\fBkstar check lab1.kstar\fR
+check one program
+.TP
+\fBkstar check labs/\fR
+check every program in labs/
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

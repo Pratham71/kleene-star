@@ -1,0 +1,90 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar \- a small language for Theory of Computation
+.SH SYNOPSIS
+.nf
+\fBkstar\fR \fI<command>\fR [options]
+\fBkstar\fR \fI<file.kstar>\fR
+.fi
+.SH DESCRIPTION
+Kleene Star is a small language for Theory of Computation: DFAs, NFAs, regular expressions, grammars, pushdown automata and Turing machines, written the way a textbook writes them, with tests, traces and drawings. \fBkstar\fR runs, checks and formats programs, traces machines, and exports them as Rust, Python or JSON. \fBkstar file.kstar\fR is short for \fBkstar run file.kstar\fR.
+.PP
+Each command has its own page, such as kstar-run(1). \fBkstar help <command>\fR shows the same text in the terminal, and \fBkstar help std\fR describes the standard library.
+.SH COMMANDS
+.SS Run and check
+.TP
+\fBrun\fR <files>...
+run programs (files or folders of .kstar files); see \fBkstar\-run\fR(1).
+.TP
+\fBcheck\fR <files>...
+look for errors and warnings without running; see \fBkstar\-check\fR(1).
+.TP
+\fBfmt\fR <files>...
+rewrite files in the standard style; see \fBkstar\-fmt\fR(1).
+.TP
+\fBnew\fR <name>
+start a new program from a template; see \fBkstar\-new\fR(1).
+.SS Explore and learn
+.TP
+\fBrepl\fR
+try things out interactively; see \fBkstar\-repl\fR(1).
+.TP
+\fBtrace\fR <file> <M> <w>
+run a file quietly, then trace machine M on word w; see \fBkstar\-trace\fR(1).
+.TP
+\fBexplain\fR <code>
+explain an error code, such as E0200; see \fBkstar\-explain\fR(1).
+.TP
+\fBhelp\fR [topic]
+help for a command, or for the standard library; see \fBkstar\-help\fR(1).
+.SS Export
+.TP
+\fBexport\fR <file> <M>
+write machine M as Rust, Python or JSON; see \fBkstar\-export\fR(1).
+.SS Editor
+.TP
+\fBkstar-lsp\fR
+the language server editors start (a separate program); see \fBkstar\-lsp\fR(1).
+.SS Install and update
+.TP
+\fBupdate\fR
+update kstar and its VS Code extension; see \fBkstar\-update\fR(1).
+.TP
+\fBversion\fR
+show the version, commit, build date and platform; see \fBkstar\-version\fR(1).
+.SH OPTIONS
+For every command:
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+show a command's help, as \fBkstar help <command>\fR does
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+show the version, as \fBkstar version\fR does
+.SH ENVIRONMENT
+.TP
+\fBNO_COLOR\fR
+when set to anything but the empty string, nothing is coloured unless asked for with \fB\-\-color always\fR
+.TP
+\fBKSTAR_NO_VSCODE\fR
+when 1, \fBkstar update\fR leaves VS Code alone
+.TP
+\fBGITHUB_TOKEN\fR
+used by \fBkstar update\fR to ask GitHub for the latest release when the \fBgh\fR command is not installed
+.SH EXIT STATUS
+0 on success; 1 when a program had an error or a failed test (or, for \fBkstar fmt \-\-check\fR, a file would change); 2 when the command line itself was wrong. Warnings do not change the exit status.
+.SH SEE ALSO
+\fBkstar\-check\fR(1),
+\fBkstar\-explain\fR(1),
+\fBkstar\-export\fR(1),
+\fBkstar\-fmt\fR(1),
+\fBkstar\-help\fR(1),
+\fBkstar\-lsp\fR(1),
+\fBkstar\-new\fR(1),
+\fBkstar\-repl\fR(1),
+\fBkstar\-run\fR(1),
+\fBkstar\-trace\fR(1),
+\fBkstar\-update\fR(1),
+\fBkstar\-version\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

@@ -30,6 +30,15 @@ its GitHub release, so write it for people who use Kleene Star.
 ### Added
 
 - `kstar-lsp --help` and `kstar-lsp --version`.
+- Man pages: `man kstar` for the overview, `man kstar-run`,
+  `man kstar-export` and so on for each command, and `man kstar-lsp`, all
+  made from the same text as `kstar help`. And an info manual,
+  `kstar.info`, with a node per command and per standard-library module.
+  The Linux and macOS archives carry them in `man/`, and `install.sh`
+  installs them under `~/.kstar/share`, where `man` finds them with no
+  setup.
+- `install.sh --uninstall` removes what `install.sh` installed, the PATH
+  line in your shell's startup files included.
 
 ## [0.7.0] - 2026-11-23
 

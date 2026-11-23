@@ -1,0 +1,30 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-TRACE 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-trace \- run a file quietly, then trace machine M on word w
+.SH SYNOPSIS
+.nf
+\fBkstar trace\fR [options] <file> <machine> <word>
+.fi
+.SH DESCRIPTION
+.PP
+Runs the file without showing its output, then shows every step of
+<machine> on <word>, as \fBtrace <machine> on "<word>"\fR would at the end of
+the file. <machine> may be any expression, such as \fBto_dfa(r)\fR. Use "" for
+the empty word.
+.SH OPTIONS
+.TP
+\fB\-\-color\fR \fI<when>\fR
+auto (the default), always or never. With auto, output is coloured only on a terminal and never when the NO_COLOR environment variable is set.
+.SH EXAMPLES
+.TP
+\fBkstar trace examples/01_dfa.kstar HasDouble1 0110\fR
+trace a DFA on 0110
+.TP
+\fBkstar trace lab.kstar "to_dfa(r)" ""\fR
+trace an expression on the empty word
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

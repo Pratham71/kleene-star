@@ -1,0 +1,34 @@
+.\" Made from the kstar help (src/help.rs); do not edit. See src/manual.rs.
+.TH KSTAR-REPL 1 "" "Kleene Star" "Kleene Star Manual"
+.SH NAME
+kstar\-repl \- try things out interactively
+.SH SYNOPSIS
+.nf
+\fBkstar repl\fR [options]
+.fi
+.SH DESCRIPTION
+.PP
+An interactive prompt: type statements or expressions and see the results.
+A bare expression is printed, and names can be defined again. Inside it,
+\fB:type <expr>\fR shows a type, \fB:trace M <word>\fR traces a machine,
+\fB:load <file>\fR runs a file, \fB:reset\fR forgets everything, and \fB:help\fR and
+\fB:quit\fR do what they say. Tab completes names.
+.SH OPTIONS
+.TP
+\fB\-\-trace-calls\fR
+print every function call with its arguments, and every return with its result
+.TP
+\fB\-\-color\fR \fI<when>\fR
+auto (the default), always or never. With auto, output is coloured only on a terminal and never when the NO_COLOR environment variable is set.
+.SH EXAMPLES
+.TP
+\fBkstar repl\fR
+start the prompt
+.TP
+\fBkstar repl \-\-trace-calls\fR
+start it, showing every call
+.SH SEE ALSO
+\fBkstar\fR(1),
+\fBkstar\-help\fR(1)
+.PP
+The reference and the tutorial: https://github.com/Pratham71/kleene\-star

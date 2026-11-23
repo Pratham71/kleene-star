@@ -10,9 +10,16 @@
 #   gh api repos/Pratham71/kleene-star/contents/install.sh -H "Accept: application/vnd.github.raw" | sh
 #
 # It downloads the latest release for this machine, checks its SHA-256
-# checksum, puts the programs in ~/.kstar/bin and adds that folder to your
-# PATH in your shell's startup file. Settings, all optional, as environment
-# variables:
+# checksum, puts the programs in ~/.kstar/bin, the man pages in
+# ~/.kstar/share/man (so `man kstar` works) and the info manual in
+# ~/.kstar/share/info, and adds ~/.kstar/bin to your PATH in your shell's
+# startup file.
+#
+# To uninstall, run it with --uninstall:
+#
+#   curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | sh -s -- --uninstall
+#
+# Settings, all optional, as environment variables:
 #
 #   KSTAR_VERSION       a release tag such as v0.2.0 (default: the latest)
 #   KSTAR_INSTALL_DIR   where to install (default: ~/.kstar)
@@ -34,11 +41,53 @@ repo=${KSTAR_REPO:-Pratham71/kleene-star}
 tag=${KSTAR_VERSION:-}
 dir=${KSTAR_INSTALL_DIR:-$HOME/.kstar}
 bin=$dir/bin
+# `man` looks in ../share/man next to every folder on the PATH, so pages
+# here are found through the PATH entry for $bin.
+man_dir=$dir/share/man/man1
+info_dir=$dir/share/info
+line="export PATH=\"$bin:\$PATH\""
+comment="# Added by the Kleene Star installer"
 
 fail() {
     echo "kstar install: $*" >&2
     exit 1
 }
+
+# Removes what this script installed: the programs, the man pages, the info
+# manual, the folders they were in if nothing else is there, and the PATH
+# lines it added to the shell's startup files.
+uninstall() {
+    [ -e "$bin/kstar" ] || [ -e "$man_dir/kstar.1" ] || fail "Kleene Star is not installed in $dir"
+    rm -f "$bin/kstar" "$bin/kstar-lsp" "$man_dir"/kstar.1 "$man_dir"/kstar-*.1
+    if [ -f "$info_dir/kstar.info" ]; then
+        if command -v install-info >/dev/null 2>&1; then
+            install-info --delete --info-dir="$info_dir" "$info_dir/kstar.info" >/dev/null 2>&1 || true
+        fi
+        rm -f "$info_dir/kstar.info"
+        # The dir file, if it lists nothing else.
+        if [ -f "$info_dir/dir" ] && ! grep -q '^\* ' "$info_dir/dir"; then rm -f "$info_dir/dir"; fi
+    fi
+    for d in "$man_dir" "$dir/share/man" "$info_dir" "$dir/share" "$bin" "$dir"; do
+        rmdir "$d" 2>/dev/null || true
+    done
+    for rc in "$HOME/.profile" "$HOME/.bashrc" "$HOME/.zshrc"; do
+        if grep -qsxF "$line" "$rc"; then
+            kept=$(grep -vxF -e "$line" -e "$comment" "$rc" || true)
+            printf '%s\n' "$kept" >"$rc"
+            echo "Removed the PATH line from $rc"
+        fi
+    done
+    echo "Uninstalled Kleene Star from $dir."
+}
+
+case "${1:-}" in
+    "") ;;
+    --uninstall)
+        uninstall
+        exit 0
+        ;;
+    *) fail "unknown option $1; the only option is --uninstall" ;;
+esac
 
 # Downloads release file $2 of tag $1 into $3.
 fetch() {
@@ -135,16 +184,36 @@ for program in kstar kstar-lsp; do
     chmod 755 "$bin/$program"
 done
 
+# The man pages and the info manual (in the Linux and macOS archives).
+if [ -n "$(find "$work/unpacked" -type f -name 'kstar.1')" ]; then
+    mkdir -p "$man_dir"
+    # Pages of an older release go, in case one was renamed.
+    rm -f "$man_dir"/kstar.1 "$man_dir"/kstar-*.1
+    find "$work/unpacked" -type f -name 'kstar*.1' -exec cp {} "$man_dir/" \;
+    chmod 644 "$man_dir"/kstar*.1
+fi
+info=$(find "$work/unpacked" -type f -name kstar.info | head -n 1)
+if [ -n "$info" ]; then
+    mkdir -p "$info_dir"
+    cp "$info" "$info_dir/kstar.info"
+    chmod 644 "$info_dir/kstar.info"
+    if command -v install-info >/dev/null 2>&1; then
+        install-info --info-dir="$info_dir" "$info_dir/kstar.info" >/dev/null 2>&1 || true
+    fi
+fi
+
 echo
 "$bin/kstar" version
 echo
 echo "Installed kstar and kstar-lsp in $bin"
+if [ -f "$man_dir/kstar.1" ]; then
+    echo "Installed the man pages (man kstar) in $dir/share/man and the info manual in $info_dir"
+fi
 
 if [ "${KSTAR_NO_VSCODE:-}" != 1 ]; then
     install_extension "$("$bin/kstar" version | head -n 1 | cut -d ' ' -f 2)"
 fi
 
-line="export PATH=\"$bin:\$PATH\""
 if [ "${KSTAR_NO_PATH:-}" != 1 ]; then
     case ":$PATH:" in
         *":$bin:"*) echo "$bin is already on your PATH." ;;
@@ -154,7 +223,7 @@ if [ "${KSTAR_NO_PATH:-}" != 1 ]; then
                 # .profile always; the others only if that shell is in use.
                 if [ "$rc" = "$HOME/.profile" ] || [ -f "$rc" ]; then
                     if ! grep -qsF "$line" "$rc"; then
-                        printf '\n# Added by the Kleene Star installer\n%s\n' "$line" >>"$rc"
+                        printf '\n%s\n%s\n' "$comment" "$line" >>"$rc"
                     fi
                     added="$added $rc"
                 fi
@@ -166,6 +235,4 @@ if [ "${KSTAR_NO_PATH:-}" != 1 ]; then
 fi
 
 echo
-echo "To uninstall: rm -rf \"$dir\" and delete the line"
-echo "    $line"
-echo "(and the comment above it) from ~/.profile, ~/.bashrc and ~/.zshrc."
+echo "To uninstall: sh install.sh --uninstall (or the same curl line, ending in | sh -s -- --uninstall)."

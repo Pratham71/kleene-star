@@ -50,6 +50,33 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: .github/scripts/release-notes.sh "v$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)" > /dev/null
+      # The man pages render without a warning (on Linux, with groff), and
+      # an install from a release archive (made here from the debug build)
+      # makes `man kstar` work; --uninstall takes it all away again.
+      - name: man pages, info manual and install.sh
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends groff-base man-db info install-info
+            .github/scripts/check-man.sh
+            target=x86_64-unknown-linux-gnu
+          else
+            target=x86_64-apple-darwin
+          fi
+          mkdir -p stage files && cp target/debug/kstar target/debug/kstar-lsp README.md LICENSE stage/ && cp -R man stage/man
+          tar -czf "files/kstar-$target.tar.gz" -C stage .
+          (cd files && shasum -a 256 "kstar-$target.tar.gz" > "kstar-$target.tar.gz.sha256")
+          export HOME="$RUNNER_TEMP/home" && mkdir -p "$HOME"
+          KSTAR_NO_VSCODE=1 KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
+          PATH="$HOME/.kstar/bin:$PATH" man -w kstar | grep -F "/.kstar/share/man/man1/kstar.1"
+          PATH="$HOME/.kstar/bin:$PATH" MANWIDTH=80 man kstar-run | grep -F 'fixed-clock'
+          if command -v info >/dev/null; then
+            info -f "$HOME/.kstar/share/info/kstar.info" -n export -o - | grep -F 'kstar export'
+          fi
+          sh install.sh --uninstall
+          test ! -e "$HOME/.kstar"
+          if grep -F '.kstar/bin' "$HOME/.profile"; then echo "the PATH line is still there"; exit 1; fi
 
   vscode:
     name: VS Code extension
