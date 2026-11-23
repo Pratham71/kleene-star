@@ -12,6 +12,26 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-23
+
+The tools around the language. `kstar help` is rewritten, with every
+option and examples for each command and help for the standard library;
+the same text is now a man page for each command (`man kstar`) and an info
+manual, installed on Linux and macOS. Drawings and the page that plays a
+run come in light, dark and high-contrast themes. And on a terminal
+`kstar update` shows what is new and the install as it goes, while
+`kstar tui` lets you pick a program and a machine to run, trace step by
+step, draw or export.
+
+### Upgrading from 0.7.0
+
+Programs are unchanged. On the command line, `kstar check`, `kstar trace`
+and `kstar export` no longer accept `--trace-calls` (it did nothing for
+them), `kstar version` takes no arguments, and `tui` is a new command.
+Drawings now set their colours, so a `.dot` file from `draw` differs from
+before (light by default). To uninstall on Linux and macOS, use
+`install.sh --uninstall`.
+
 ### Changed
 
 - Drawings (`draw`, `std.visual.dot`, `dot_run`) now name their colours:
@@ -639,7 +659,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Pratham71/kleene-star/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Pratham71/kleene-star/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Pratham71/kleene-star/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...v0.5.2

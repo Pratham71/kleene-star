@@ -1,6 +1,6 @@
 # Kleene Star: a small, well-designed language for Theory of Computation
 
-> Status: version 0.7.0 (2026-11-23), MIT licensed. Stages 0 to 9 below are built, and so is most of
+> Status: version 0.8.0 (2026-11-23), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
 > Version 0.3 added imports between files, `kstar export` to Rust and a standard library with
@@ -14,7 +14,10 @@
 > measuring how the work grows. Version 0.7 followed the notation of the usual textbook
 > course: step-by-step working of the conversions (`std.steps`, with Arden's theorem), PDA
 > and Turing machine notation with traces in ID form, `tuple(M)`, ambiguity of grammars,
-> and sets of sets with the power set. This is the design as agreed on
+> and sets of sets with the power set. Version 0.8 worked on the tools: `kstar help` made
+> from one table that also gives the man pages and an info manual, themes shared by the
+> drawings and the run player, and a terminal UI for `kstar update` and `kstar tui`. This is
+> the design as agreed on
 > 2026-11-10, with the layout, error format and test sections updated to match the code.
 >
 > Roadmap, in order. **Next:** a list type (sets are still the only collection, and nest only
