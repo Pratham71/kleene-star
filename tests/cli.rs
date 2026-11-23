@@ -560,6 +560,47 @@ fn update_asks_first_and_never_hangs() {
 }
 
 #[test]
+fn update_beta_offers_the_newest_pre_release() {
+    let dir = scratch("update-beta");
+    let run = |args: &[&str], beta: &str| {
+        Command::new(env!("CARGO_BIN_EXE_kstar"))
+            .arg("update")
+            .args(args)
+            .current_dir(&dir)
+            .env("KSTAR_LATEST", "v0.0.1")
+            .env("KSTAR_LATEST_BETA", beta)
+            .env("KSTAR_LATEST_BETA_NOTES", "A beta with lists.")
+            .env("KSTAR_NO_VSCODE", "1")
+            .stdin(Stdio::null())
+            .output()
+            .unwrap()
+    };
+    // Without --beta, betas are not offered.
+    let stable = run(&["--check"], "v99.0.0-beta");
+    assert!(stdout(&stable).contains("is up to date"), "{}", stdout(&stable));
+    let beta = run(&["--check", "--beta"], "v99.0.0-beta");
+    let out = stdout(&beta);
+    assert!(out.contains("latest:    kstar 99.0.0-beta") && out.contains("A beta with lists."), "{out}");
+    assert!(out.contains("kstar update --beta"), "{out}");
+    // No beta at all: the stable release stands.
+    let none = run(&["--check", "--beta"], "");
+    assert!(stdout(&none).contains("is up to date (the latest release, betas included, is v0.0.1)"), "{}", stdout(&none));
+    // Without a terminal there is no full-screen view, whatever the flags.
+    let refused = run(&["--beta"], "v99.0.0-beta");
+    assert!(stderr(&refused).contains("--yes"), "{}", stderr(&refused));
+}
+
+#[test]
+fn tui_needs_a_terminal() {
+    let dir = scratch("tui");
+    let out = kstar(&dir, &["tui"]);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(stderr(&out).contains("needs a terminal"), "{}", stderr(&out));
+    let bad = kstar(&dir, &["tui", "no-such-folder"]);
+    assert!(stderr(&bad).contains("no-such-folder is not a folder"), "{}", stderr(&bad));
+}
+
+#[test]
 fn update_yes_replaces_the_programs_or_leaves_them() {
     let dir = scratch("update-yes");
     let bin = dir.join("home").join("bin");

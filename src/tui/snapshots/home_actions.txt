@@ -1,0 +1,24 @@
+╭ EvenZeros (Dfa) ─────────────────────────────────────────────────────────────╮
+│ What to do with it?                                                          │
+│                                                                              │
+│ ▶ Trace a word, step by step                                                 │
+│   Draw it (a .dot file, and .svg with Graphviz)                              │
+│   Draw a run (a page that plays it)                                          │
+│   Export as a Rust function                                                  │
+│   Export as a Python function                                                │
+│   Export as JSON                                                             │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑/↓ choose  ·  Enter open  ·  Esc back  ·  q quit

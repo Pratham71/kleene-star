@@ -1,0 +1,24 @@
+╭ kstar update to v0.8.0 ──────────────────────────────────────────────────────╮
+│ ✓ Set the old programs aside                                                 │
+│ / Download and install the release                                           │
+│   Check the new programs                                                     │
+│   The VS Code extension                                                      │
+│████████████████████                1 of 4                                    │
+│                                                                              │
+│ Output ──────────────────────────────────────────────────────────────────────│
+│Downloading kstar-x86_64-unknown-linux-gnu.tar.gz                             │
+│Checksum verified.                                                            │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Installing please wait

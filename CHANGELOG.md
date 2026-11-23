@@ -35,6 +35,15 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Added
 
+- A terminal UI. On a terminal, `kstar update` shows both versions, the
+  latest stable and beta releases and what is new in them, asks, then
+  shows the install step by step with its output. `kstar tui` is a
+  full-screen menu: pick a program, run it, or pick a machine and trace it
+  on a word one step at a time, draw it, draw a run, or export it.
+  `--no-tui`, `NO_COLOR`, `TERM=dumb` or output that is not a terminal
+  give the plain text as before, and everything is also a command.
+- `kstar update --beta` offers the newest beta when it is newer than the
+  latest stable release.
 - `kstar-lsp --help` and `kstar-lsp --version`.
 - Man pages: `man kstar` for the overview, `man kstar-run`,
   `man kstar-export` and so on for each command, and `man kstar-lsp`, all

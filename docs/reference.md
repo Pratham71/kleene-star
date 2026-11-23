@@ -2084,6 +2084,9 @@ cannot be defined either (E0209).
 | `kstar version` | The version, the commit it was built from, the build date and the target platform. |
 | `kstar update --check` | Asks GitHub whether a newer release exists (through the `gh` command, or `curl` with `GITHUB_TOKEN`), and whether the VS Code extension matches this `kstar`. |
 | `kstar update` | The same, and if there is a newer release, shows both versions and what the release is about, then asks `Update to vX.Y.Z? [Y/n]`. On yes it installs the release into the folder `kstar` is in, VS Code extension included; on no it changes nothing. If `kstar` is up to date but the VS Code extension is missing or from another release, it installs the matching `.vsix`. `--no-vscode` or `KSTAR_NO_VSCODE=1` leaves VS Code alone. |
+| `kstar update --beta` | Offers betas too: the newest pre-release, when it is newer than the latest stable release. |
+| `kstar update --no-tui` | Plain text and a `[Y/n]` question instead of the full-screen view a terminal gets. |
+| `kstar tui [folder]` | A full-screen menu: pick a `.kstar` file, run it, or pick a machine and trace it step by step, draw it, draw a run, or export it. Needs a terminal. |
 | `kstar update --yes` | Updates without asking. Without a terminal to ask on (a script or CI), `kstar update` refuses unless given `--yes`. |
 
 `--color auto|always|never` works with `run`, `check`, `trace`, `export`

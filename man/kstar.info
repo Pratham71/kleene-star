@@ -26,6 +26,7 @@ Explore and learn:
   repl                   try things out interactively
   trace <file> <M> <w>   run a file quietly, then trace machine M on word w
   explain <code>         explain an error code, such as E0200
+  tui [folder]           a full-screen menu to run, trace, draw or export
   help [topic]           help for a command, or for the standard library
 
 Export:
@@ -55,6 +56,7 @@ for an error code.
 * repl::                try things out interactively
 * trace::               run a file quietly, then trace machine M on word w
 * explain::             explain an error code, such as E0200
+* tui::                 a full-screen menu to run, trace, draw or export
 * help::                help for a command, or for the standard library
 * export::              write machine M as Rust, Python or JSON
 * kstar-lsp::           the language server editors start (a separate program)
@@ -239,7 +241,7 @@ Examples:
       trace an expression on the empty word
 
 
-File: kstar.info,  Node: explain,  Next: help,  Prev: trace,  Up: Top
+File: kstar.info,  Node: explain,  Next: tui,  Prev: trace,  Up: Top
 
 kstar explain
 *************
@@ -260,7 +262,37 @@ Examples:
       list them all
 
 
-File: kstar.info,  Node: help,  Next: export,  Prev: explain,  Up: Top
+File: kstar.info,  Node: tui,  Next: help,  Prev: explain,  Up: Top
+
+kstar tui
+*********
+
+Usage: kstar tui [--theme <name>] [<folder>]
+
+A full-screen menu in the terminal. Pick a .kstar file in <folder> (the
+current one by default, three folders deep), then run the whole file, or
+pick a machine in it and trace it on a word step by step (Left and Right
+step through the run), draw it, draw a run of it, or export it as Rust,
+Python or JSON. Esc goes back, q leaves.
+
+To list a file's machines it runs the file quietly, as `kstar trace`
+does. Everything here is also a command: `kstar run`, `kstar trace`,
+`draw` in a program, and `kstar export`. It needs a terminal; it does not
+start when output is redirected, or with NO_COLOR or TERM=dumb.
+
+Options:
+  --theme <name>      the colours of the screen: auto (the default: the
+                      terminal's own colours), light, dark or high-contrast.
+                      KSTAR_THEME and the config file work as for `kstar run`.
+
+Examples:
+  kstar tui
+      pick a program in this folder
+  kstar tui examples
+      pick one of the examples
+
+
+File: kstar.info,  Node: help,  Next: export,  Prev: tui,  Up: Top
 
 kstar help
 **********
@@ -362,15 +394,22 @@ File: kstar.info,  Node: update,  Next: version,  Prev: kstar-lsp,  Up: Top
 kstar update
 ************
 
-Usage: kstar update [--check] [--yes] [--no-vscode]
+Usage: kstar update [options]
 
-Asks GitHub for the latest stable release (through the `gh` command, or
+On a terminal, when there is a newer release, shows a full-screen view:
+this kstar's version, the latest stable and beta releases, what is new in
+the chosen one, a question, then the install step by step with its output.
+Left and Right choose stable or beta, Enter updates, q leaves.
+
+Otherwise (with --no-tui, --check or --yes, when standard input or output
+is not a terminal, or with NO_COLOR or TERM=dumb) it works in plain text:
+it asks GitHub for the latest stable release (through the `gh` command, or
 `curl` with GITHUB_TOKEN). If it is newer than this kstar, it shows both
 versions and what the release is about, and asks "Update to vX.Y.Z?
 [Y/n]". On yes it installs the release with its install script into the
 folder kstar is in, which also updates the VS Code extension; on no it
-changes nothing. Pre-releases (such as 0.2.5-beta) are not offered: install
-one by name with KSTAR_VERSION (see docs/install.md).
+changes nothing. Betas (pre-releases such as 0.2.5-beta) are offered only
+with --beta, or on the beta channel of the full-screen view.
 
 When standard input is not a terminal (a script or CI), it does not ask and
 does not update: pass --yes.
@@ -383,16 +422,23 @@ from this kstar's release, checks its SHA-256 checksum and installs it.
 Options:
   --check             only say whether a newer release exists, and whether the
                       VS Code extension matches, without installing anything
+  --beta              also offer betas: update to the latest pre-release when it
+                      is newer than the latest stable release
   -y, --yes           update without asking
   --no-vscode         leave VS Code alone (so does KSTAR_NO_VSCODE=1)
+  --no-tui            plain text and a [Y/n] question instead of the full-screen
+                      view
+  --theme <name>      the colours of the screen: auto (the default: the
+                      terminal's own colours), light, dark or high-contrast.
+                      KSTAR_THEME and the config file work as for `kstar run`.
 
 Examples:
   kstar update --check
       see whether there is a newer release
   kstar update
       update, after asking
-  kstar update --yes --no-vscode
-      update without asking, leaving VS Code alone
+  kstar update --beta --yes
+      update to the newest release, betas included, without asking
 
 
 File: kstar.info,  Node: version,  Next: Standard library,  Prev: update,  Up: Top
@@ -1254,34 +1300,35 @@ Call them as std.visual.<name>(...), or import them with `from std.visual import
 
 Tag Table:
 Node: Top231
-Node: run2557
-Node: check4950
-Node: fmt5658
-Node: new6382
-Node: repl6687
-Node: trace8060
-Node: explain8836
-Node: help9300
-Node: export9975
-Node: kstar-lsp12020
-Node: update12806
-Node: version14333
-Node: Standard library14698
-Node: std automata20743
-Node: std benchmark23230
-Node: std binary24399
-Node: std collections25815
-Node: std grammar28375
-Node: std io31125
-Node: std math32639
-Node: std pda33971
-Node: std random35947
-Node: std regex37408
-Node: std steps39823
-Node: std string41126
-Node: std testing43507
-Node: std tm45250
-Node: std visual46981
+Node: run2704
+Node: check5097
+Node: fmt5805
+Node: new6529
+Node: repl6834
+Node: trace8207
+Node: explain8983
+Node: tui9446
+Node: help10542
+Node: export11213
+Node: kstar-lsp13258
+Node: update14044
+Node: version16480
+Node: Standard library16845
+Node: std automata22890
+Node: std benchmark25377
+Node: std binary26546
+Node: std collections27962
+Node: std grammar30522
+Node: std io33272
+Node: std math34786
+Node: std pda36118
+Node: std random38094
+Node: std regex39555
+Node: std steps41970
+Node: std string43273
+Node: std testing45654
+Node: std tm47397
+Node: std visual49128
 
 End Tag Table
 

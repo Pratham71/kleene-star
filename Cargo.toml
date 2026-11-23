@@ -29,6 +29,11 @@ tower-lsp-server = "0.23"
 # Reads JSON machines (`from_json`). Already built for the language server,
 # so it adds nothing new to the build.
 serde_json = "1"
+# The terminal UI (`kstar update`, `kstar tui`): ratatui draws it and its
+# crossterm backend talks to the terminal, the same way on Windows
+# Terminal, PowerShell and Unix terminals. Only the crossterm backend and
+# the basic widgets are built.
+ratatui = { version = "0.30", default-features = false, features = ["crossterm_0_29", "layout-cache"] }
 
 # Puts the icon into kstar.exe; see build.rs.
 [target.'cfg(windows)'.build-dependencies]

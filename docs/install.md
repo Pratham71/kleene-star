@@ -193,7 +193,18 @@ kstar update --check
 ```
 
 says whether a newer stable release exists, and what it is about.
-`kstar update` says the same and asks:
+
+In a terminal, when there is something newer, `kstar update` opens a
+full-screen view: your version, the latest stable and beta releases, what
+is new in the one chosen (Left and Right switch between stable and beta,
+Up and Down scroll), and on Enter a question. On yes it shows each step of
+the install, with the install script's output as it comes. `q` leaves
+without changing anything. It works in Windows Terminal, PowerShell and
+the usual Linux and macOS terminals.
+
+Without the full-screen view (`--no-tui`, `--check` or `--yes`, output
+that is not a terminal, or `NO_COLOR` or `TERM=dumb` set), `kstar update`
+says the same in plain text and asks:
 
 ```text
 installed: kstar 0.5.1
@@ -253,13 +264,18 @@ Releases come in two kinds, both listed on the
   `kstar export`) and may still change before the next stable release.
   See [the changelog](../CHANGELOG.md) for what each one has.
 
-To install a beta, download its files from its release page, or give its
-tag to a script with `KSTAR_VERSION` as shown above. To go back to stable,
+To update to a beta, choose *Beta* in the view of `kstar update`, or run
+`kstar update --beta` (with `--check` to only look, or `--yes` to skip the
+question). It installs the newest beta when it is newer than the latest
+stable release, and the stable release otherwise. You can also download a
+beta's files from its release page, or give its tag to a script with
+`KSTAR_VERSION` as shown above. To go back to stable,
 run the script again without `KSTAR_VERSION`, or run the latest stable
 installer.
 
-`kstar update --check` only compares with the latest stable release, so on
-a beta it says you are up to date until a newer stable release comes out.
+Without `--beta`, `kstar update --check` only compares with the latest
+stable release, so on a beta it says you are up to date until a newer
+stable release comes out.
 
 ## Uninstalling
 

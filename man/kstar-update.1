@@ -4,17 +4,24 @@
 kstar\-update \- update kstar and its VS Code extension
 .SH SYNOPSIS
 .nf
-\fBkstar update\fR [\-\-check] [\-\-yes] [\-\-no-vscode]
+\fBkstar update\fR [options]
 .fi
 .SH DESCRIPTION
 .PP
-Asks GitHub for the latest stable release (through the \fBgh\fR command, or
+On a terminal, when there is a newer release, shows a full-screen view:
+this kstar's version, the latest stable and beta releases, what is new in
+the chosen one, a question, then the install step by step with its output.
+Left and Right choose stable or beta, Enter updates, q leaves.
+.PP
+Otherwise (with \-\-no-tui, \-\-check or \-\-yes, when standard input or output
+is not a terminal, or with NO_COLOR or TERM=dumb) it works in plain text:
+it asks GitHub for the latest stable release (through the \fBgh\fR command, or
 \fBcurl\fR with GITHUB_TOKEN). If it is newer than this kstar, it shows both
 versions and what the release is about, and asks "Update to vX.Y.Z?
 [Y/n]". On yes it installs the release with its install script into the
 folder kstar is in, which also updates the VS Code extension; on no it
-changes nothing. Pre-releases (such as 0.2.5-beta) are not offered: install
-one by name with KSTAR_VERSION (see docs/install.md).
+changes nothing. Betas (pre-releases such as 0.2.5-beta) are offered only
+with \-\-beta, or on the beta channel of the full-screen view.
 .PP
 When standard input is not a terminal (a script or CI), it does not ask and
 does not update: pass \-\-yes.
@@ -28,11 +35,20 @@ from this kstar's release, checks its SHA-256 checksum and installs it.
 \fB\-\-check\fR
 only say whether a newer release exists, and whether the VS Code extension matches, without installing anything
 .TP
+\fB\-\-beta\fR
+also offer betas: update to the latest pre-release when it is newer than the latest stable release
+.TP
 \fB\-y\fR, \fB\-\-yes\fR
 update without asking
 .TP
 \fB\-\-no-vscode\fR
 leave VS Code alone (so does KSTAR_NO_VSCODE=1)
+.TP
+\fB\-\-no-tui\fR
+plain text and a [Y/n] question instead of the full-screen view
+.TP
+\fB\-\-theme\fR \fI<name>\fR
+the colours of the screen: auto (the default: the terminal's own colours), light, dark or high-contrast. KSTAR_THEME and the config file work as for \fBkstar run\fR.
 .SH EXAMPLES
 .TP
 \fBkstar update \-\-check\fR
@@ -41,8 +57,8 @@ see whether there is a newer release
 \fBkstar update\fR
 update, after asking
 .TP
-\fBkstar update \-\-yes \-\-no-vscode\fR
-update without asking, leaving VS Code alone
+\fBkstar update \-\-beta \-\-yes\fR
+update to the newest release, betas included, without asking
 .SH SEE ALSO
 \fBkstar\fR(1),
 \fBkstar\-help\fR(1)

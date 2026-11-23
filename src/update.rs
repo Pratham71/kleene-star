@@ -32,32 +32,8 @@ pub fn version() -> String {
     )
 }
 
-/// A version as numbers, `0.2.0` -> [0, 2, 0], ignoring a leading `v` and
-/// anything after a `-` (a pre-release sorts before its release).
-fn parse(version: &str) -> Option<(Vec<u64>, bool)> {
-    let version = version.trim().trim_start_matches('v');
-    let (core, pre) = match version.split_once('-') {
-        Some((core, _)) => (core, true),
-        None => (version, false),
-    };
-    let numbers = core.split('.').map(|n| n.parse().ok()).collect::<Option<Vec<u64>>>()?;
-    Some((numbers, pre))
-}
-
-/// True if `candidate` is a later version than `current`.
-pub fn is_newer(candidate: &str, current: &str) -> bool {
-    match (parse(candidate), parse(current)) {
-        (Some((a, a_pre)), Some((b, b_pre))) => a > b || (a == b && b_pre && !a_pre),
-        _ => false,
-    }
-}
-
-/// The latest release: its tag and its notes.
-#[derive(Debug, Clone, PartialEq)]
-pub struct Release {
-    pub tag: String,
-    pub notes: String,
-}
+pub use kstar::tui::update::{is_newer, Release};
+use kstar::tui::update::{Channel, Outcome, Progress, StepState, UpdateScreen};
 
 /// The latest release, asked through the `gh` command (which handles
 /// signing in, needed if the repository is private) or, failing that,
@@ -103,6 +79,48 @@ fn parse_release(json: &str) -> Result<Release, String> {
     Ok(Release { tag, notes })
 }
 
+/// The latest pre-release (beta), if there is one, from GitHub's list of
+/// the newest releases, asked like `latest_release`. `KSTAR_LATEST_BETA`
+/// (a tag, or empty for none) stands in for GitHub, for testing, as does
+/// `KSTAR_LATEST` alone (no beta then). Any trouble asking means no beta:
+/// the stable release still works.
+fn latest_beta() -> Option<Release> {
+    if let Ok(tag) = std::env::var("KSTAR_LATEST_BETA") {
+        let notes = std::env::var("KSTAR_LATEST_BETA_NOTES").unwrap_or_default();
+        return (!tag.is_empty()).then_some(Release { tag, notes });
+    }
+    if std::env::var_os("KSTAR_LATEST").is_some() {
+        return None;
+    }
+    let path = format!("repos/{}/releases?per_page=30", repository());
+    let json = match Command::new("gh").args(["api", &path]).output() {
+        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).to_string(),
+        _ => {
+            let mut curl = Command::new("curl");
+            curl.args(["-fsSL", "-H", "Accept: application/vnd.github+json"]);
+            if let Ok(token) = std::env::var("GITHUB_TOKEN") {
+                curl.args(["-H", &format!("Authorization: Bearer {token}")]);
+            }
+            let out = curl.arg(format!("https://api.github.com/{path}")).output().ok()?;
+            if !out.status.success() {
+                return None;
+            }
+            String::from_utf8_lossy(&out.stdout).to_string()
+        }
+    };
+    newest_beta(&json)
+}
+
+/// The newest pre-release in GitHub's JSON list of releases.
+fn newest_beta(json: &str) -> Option<Release> {
+    let list: serde_json::Value = serde_json::from_str(json).ok()?;
+    list.as_array()?
+        .iter()
+        .filter(|r| r["prerelease"].as_bool() == Some(true) && r["draft"].as_bool() != Some(true))
+        .filter_map(|r| Some(Release { tag: r["tag_name"].as_str()?.to_string(), notes: r["body"].as_str().unwrap_or("").to_string() }))
+        .reduce(|a, b| if is_newer(&b.tag, &a.tag) { b } else { a })
+}
+
 /// What a release is about, for the question: the first paragraph of its
 /// notes that is not a heading, on one line, shortened past 300 characters.
 pub fn headline(notes: &str) -> String {
@@ -137,35 +155,58 @@ fn install_command() -> String {
     }
 }
 
-/// `kstar update`, with `--check`, `--yes` and `--no-vscode`.
+/// `kstar update`, with `--check`, `--yes`, `--no-vscode`, `--beta`,
+/// `--no-tui` and `--theme`. On a terminal, when there is something newer,
+/// it shows the update screen (`kstar::tui::update`); otherwise it asks a
+/// plain question.
 pub fn update(args: &[&str]) -> ExitCode {
     let mut check_only = false;
     let mut yes = false;
+    let mut beta = false;
+    let mut no_tui = false;
+    let mut theme = None;
     let mut vscode = std::env::var("KSTAR_NO_VSCODE").map_or(true, |v| v != "1");
-    for arg in args {
-        match *arg {
+    let mut args = args.iter();
+    while let Some(&arg) = args.next() {
+        match arg {
             "--check" => check_only = true,
             "-y" | "--yes" => yes = true,
             "--no-vscode" => vscode = false,
-            other => {
-                eprintln!(
-                    "kstar: unknown option `{other}`\n\nUsage:\n  kstar update [--check] [--yes] [--no-vscode]\n\nRun `kstar help update` for its options and examples."
-                );
-                return ExitCode::from(2);
-            }
+            "--beta" => beta = true,
+            "--no-tui" => no_tui = true,
+            "--theme" => match args.next() {
+                Some(&name) => theme = Some(name),
+                None => return usage("`--theme` needs auto, light, dark or high-contrast"),
+            },
+            _ if arg.starts_with("--theme=") => theme = Some(&arg["--theme=".len()..]),
+            other => return usage(&format!("unknown option `{other}`")),
         }
     }
+    let theme = match kstar::theme::resolve(theme) {
+        Ok(theme) => theme,
+        Err(message) => return usage(&message),
+    };
     let current = env!("CARGO_PKG_VERSION");
-    let release = match latest_release() {
+    let stable = match latest_release() {
         Ok(release) => release,
         Err(message) => {
             eprintln!("kstar: {message}");
             return ExitCode::FAILURE;
         }
     };
+    // The screen offers both channels, so it needs the beta too.
+    let tui = !check_only && !yes && kstar::tui::wanted(no_tui);
+    let newest_beta = if beta || tui { latest_beta() } else { None };
+    let channel = if beta { Channel::Beta } else { Channel::Stable };
+    let newer = [Some(&stable), newest_beta.as_ref()].into_iter().flatten().any(|r| is_newer(&r.tag, current));
+    if tui && newer {
+        return update_screen(current, stable, newest_beta, channel, vscode, theme);
+    }
+    let release = kstar::tui::update::target(channel, Some(&stable), newest_beta.as_ref()).cloned().unwrap_or(stable);
     let latest = &release.tag;
+    let which = if beta { "latest release, betas included," } else { "latest release" };
     if !is_newer(latest, current) {
-        println!("kstar {current} is up to date (the latest release is {latest})");
+        println!("kstar {current} is up to date (the {which} is {latest})");
         // The extension may still be from another release.
         if vscode {
             if let Err(message) = match_extension(current, check_only) {
@@ -182,7 +223,7 @@ pub fn update(args: &[&str]) -> ExitCode {
         println!("\n{summary}\n");
     }
     if check_only {
-        println!("run `kstar update` to install it");
+        println!("run `kstar update{}` to install it", if beta { " --beta" } else { "" });
         if vscode {
             if let Err(message) = match_extension(current, true) {
                 eprintln!("kstar: {message}");
@@ -205,12 +246,67 @@ pub fn update(args: &[&str]) -> ExitCode {
             return ExitCode::SUCCESS;
         }
     }
-    match install(latest, vscode) {
+    // Without the screen, the install script's output is shown as it comes.
+    let mut show = |progress: Progress| {
+        if let Progress::Log(line) = progress {
+            println!("{line}");
+        }
+    };
+    match install(latest, vscode, &mut show) {
         Ok(()) => {
             println!("Updated kstar to {latest}.");
             ExitCode::SUCCESS
         }
         Err(message) => {
+            eprintln!("kstar: {message}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn usage(message: &str) -> ExitCode {
+    eprintln!(
+        "kstar: {message}\n\nUsage:\n  kstar update [--check] [--beta] [--yes] [--no-vscode] [--no-tui] [--theme <name>]\n\nRun `kstar help update` for its options and examples."
+    );
+    ExitCode::from(2)
+}
+
+/// Installs in a thread of its own, sending its progress to the screen.
+struct InBackground {
+    vscode: bool,
+}
+
+impl kstar::tui::update::Installer for InBackground {
+    fn start(&mut self, tag: &str) -> std::sync::mpsc::Receiver<Progress> {
+        let (send, receive) = std::sync::mpsc::channel();
+        let (tag, vscode) = (tag.to_string(), self.vscode);
+        std::thread::spawn(move || {
+            let result = install(&tag, vscode, &mut |p| {
+                let _ = send.send(p);
+            });
+            let _ = send.send(Progress::Finished(result.map(|()| format!("Updated kstar to {tag}."))));
+        });
+        receive
+    }
+}
+
+/// The update screen; says afterwards, in the terminal, what happened.
+fn update_screen(current: &str, stable: Release, beta: Option<Release>, channel: Channel, vscode: bool, theme: kstar::theme::Choice) -> ExitCode {
+    let mut screen = UpdateScreen::new(current, Some(stable), beta, channel, Box::new(InBackground { vscode }));
+    if let Err(e) = kstar::tui::run(&mut screen, &kstar::tui::Palette::of(theme)) {
+        eprintln!("kstar: the update screen failed ({e}); run `kstar update --no-tui` instead");
+        return ExitCode::FAILURE;
+    }
+    match screen.outcome {
+        Outcome::Cancelled => {
+            println!("Nothing was changed.");
+            ExitCode::SUCCESS
+        }
+        Outcome::Updated(message) => {
+            println!("{message}");
+            ExitCode::SUCCESS
+        }
+        Outcome::Failed(message) => {
             eprintln!("kstar: {message}");
             ExitCode::FAILURE
         }
@@ -246,10 +342,15 @@ pub fn remove_old_programs() {
 /// Installs release `tag` into the folder above this program's `bin`
 /// folder, with the release's install script (`KSTAR_INSTALL_SCRIPT`, a
 /// local copy of it, for testing).
-fn install(tag: &str, vscode: bool) -> Result<(), String> {
+///
+/// It reports each of `kstar::tui::update::STEPS` and every line the
+/// script prints to `report`.
+fn install(tag: &str, vscode: bool, report: &mut dyn FnMut(Progress)) -> Result<(), String> {
+    report(Progress::Step(0, StepState::Running));
     let exe = std::env::current_exe().map_err(|e| format!("cannot tell where kstar is: {e}"))?;
     let bin = exe.parent().ok_or("kstar is not in a folder")?.to_path_buf();
     let Some(home) = bin.parent().filter(|_| bin.file_name().is_some_and(|n| n.eq_ignore_ascii_case("bin"))) else {
+        report(Progress::Step(0, StepState::Failed));
         return Err(format!(
             "kstar is in {}, not in a `bin` folder, so it was not installed by the installer, the install \
              script or cargo. Install {tag} the way you installed this one:\n\n    {}",
@@ -257,7 +358,15 @@ fn install(tag: &str, vscode: bool) -> Result<(), String> {
             install_command()
         ));
     };
-    let moved = set_aside(&bin)?;
+    let moved = match set_aside(&bin) {
+        Ok(moved) => moved,
+        Err(message) => {
+            report(Progress::Step(0, StepState::Failed));
+            return Err(message);
+        }
+    };
+    report(Progress::Step(0, StepState::Done));
+    report(Progress::Step(1, StepState::Running));
     let mut command = match std::env::var_os("KSTAR_INSTALL_SCRIPT") {
         Some(script) if cfg!(windows) => {
             let mut c = Command::new("powershell");
@@ -285,16 +394,52 @@ fn install(tag: &str, vscode: bool) -> Result<(), String> {
     if !vscode {
         command.env("KSTAR_NO_VSCODE", "1");
     }
-    let ok = command.status().is_ok_and(|s| s.success()) && program_files().iter().all(|f| bin.join(f).is_file());
+    let ran = run_reporting(&mut command, report);
+    report(Progress::Step(1, if ran { StepState::Done } else { StepState::Failed }));
+    let ok = ran && program_files().iter().all(|f| bin.join(f).is_file());
+    if ran {
+        report(Progress::Step(2, if ok { StepState::Done } else { StepState::Failed }));
+    }
     if !ok {
         put_back(&bin, &moved);
         return Err(format!("the install script could not install {tag}; kstar was left as it was"));
     }
+    // The script installs the extension when VS Code is there.
+    let extension = vscode && code_command().is_some();
+    report(Progress::Step(3, if extension { StepState::Done } else { StepState::Skipped }));
     for old in &moved {
         // On Windows the running kstar cannot be deleted; the next start does it.
         let _ = std::fs::remove_file(bin.join(old_name(old)));
     }
     Ok(())
+}
+
+/// Runs `command`, sending every line it prints (on either stream) to
+/// `report` as it comes. True if it ran and succeeded.
+fn run_reporting(command: &mut Command, report: &mut dyn FnMut(Progress)) -> bool {
+    use std::io::BufRead;
+    command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
+    let Ok(mut child) = command.spawn() else { return false };
+    let (send, receive) = std::sync::mpsc::channel::<String>();
+    let mut readers = Vec::new();
+    let streams: [Option<Box<dyn std::io::Read + Send>>; 2] =
+        [child.stdout.take().map(|s| Box::new(s) as _), child.stderr.take().map(|s| Box::new(s) as _)];
+    for stream in streams.into_iter().flatten() {
+        let send = send.clone();
+        readers.push(std::thread::spawn(move || {
+            for line in std::io::BufReader::new(stream).lines().map_while(Result::ok) {
+                let _ = send.send(line.trim_end_matches('\r').to_string());
+            }
+        }));
+    }
+    drop(send);
+    for line in receive {
+        report(Progress::Log(line));
+    }
+    for reader in readers {
+        let _ = reader.join();
+    }
+    child.wait().is_ok_and(|status| status.success())
 }
 
 /// Renames the programs in `bin` out of the way; returns the ones moved.
@@ -515,6 +660,40 @@ mod tests {
         assert!(!is_newer("v0.2.0-rc.1", "0.2.0"));
         assert!(!is_newer("v0.1.9", "0.2.0"));
         assert!(!is_newer("nonsense", "0.2.0"));
+    }
+
+    #[test]
+    fn finds_the_newest_beta() {
+        let json = r#"[
+            {"tag_name": "v0.8.0", "prerelease": false, "body": "stable"},
+            {"tag_name": "v0.8.1-beta", "prerelease": true, "body": "newer beta"},
+            {"tag_name": "v0.7.5-beta", "prerelease": true, "body": "older beta"},
+            {"tag_name": "v0.9.0-beta", "prerelease": true, "draft": true, "body": "a draft"}
+        ]"#;
+        assert_eq!(newest_beta(json), Some(Release { tag: "v0.8.1-beta".into(), notes: "newer beta".into() }));
+        assert_eq!(newest_beta("[]"), None);
+        assert_eq!(newest_beta("not json"), None);
+    }
+
+    #[test]
+    fn reports_every_line_a_command_prints() {
+        let mut command = if cfg!(windows) {
+            let mut c = Command::new("cmd");
+            c.args(["/C", "echo one&& echo two 1>&2"]);
+            c
+        } else {
+            let mut c = Command::new("sh");
+            c.args(["-c", "echo one; echo two >&2"]);
+            c
+        };
+        let mut lines = Vec::new();
+        assert!(run_reporting(&mut command, &mut |p| {
+            if let Progress::Log(line) = p {
+                lines.push(line.trim().to_string());
+            }
+        }));
+        lines.sort();
+        assert_eq!(lines, vec!["one", "two"]);
     }
 
     #[test]
