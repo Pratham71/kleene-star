@@ -304,7 +304,7 @@ fn set_aside(bin: &std::path::Path) -> Result<Vec<&'static str>, String> {
             continue;
         }
         let _ = std::fs::remove_file(&old);
-        if let Err(e) = std::fs::rename(&path, &old) {
+        if let Err(e) = patiently(|| std::fs::rename(&path, &old)) {
             put_back(bin, &moved);
             return Err(format!("cannot move {} aside to replace it: {e}", path.display()));
         }
@@ -313,11 +313,33 @@ fn set_aside(bin: &std::path::Path) -> Result<Vec<&'static str>, String> {
     Ok(moved)
 }
 
+/// Runs `f` until it succeeds, up to 25 times a fifth of a second apart.
+/// On Windows a program that was just written or started can be held for a
+/// moment by a virus scanner or the search indexer, and renaming it fails
+/// with "used by another process" until they let go.
+fn patiently<T>(f: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
+    retry(25, std::time::Duration::from_millis(200), f)
+}
+
+/// Runs `f` up to `attempts` times, `pause` apart, until it succeeds;
+/// returns its last error if it never does.
+fn retry<T>(attempts: usize, pause: std::time::Duration, mut f: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
+    let mut last = f();
+    for _ in 1..attempts {
+        if last.is_ok() {
+            break;
+        }
+        std::thread::sleep(pause);
+        last = f();
+    }
+    last
+}
+
 /// Undoes `set_aside`.
 fn put_back(bin: &std::path::Path, moved: &[&str]) {
     for file in moved {
         let _ = std::fs::remove_file(bin.join(file));
-        let _ = std::fs::rename(bin.join(old_name(file)), bin.join(file));
+        let _ = patiently(|| std::fs::rename(bin.join(old_name(file)), bin.join(file)));
     }
 }
 
@@ -609,6 +631,25 @@ if [ \"$1\" = --list-extensions ]; then echo '{listing}'; else echo \"$@\" > '{}
         for answer in ["n", "no", "N\n", "nope", "q"] {
             assert!(!is_yes(answer), "{answer:?}");
         }
+    }
+
+    #[test]
+    fn retries_until_it_works() {
+        let pause = std::time::Duration::from_millis(1);
+        let mut calls = 0;
+        let busy = || std::io::Error::other("used by another process");
+        let result = retry(5, pause, || {
+            calls += 1;
+            if calls < 3 { Err(busy()) } else { Ok(calls) }
+        });
+        assert_eq!(result.unwrap(), 3);
+        let mut calls = 0;
+        assert!(retry(4, pause, || -> std::io::Result<()> {
+            calls += 1;
+            Err(busy())
+        })
+        .is_err());
+        assert_eq!(calls, 4);
     }
 
     #[test]

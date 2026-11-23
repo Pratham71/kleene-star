@@ -23,6 +23,12 @@ its GitHub release, so write it for people who use Kleene Star.
   writes have size limits. New errors E0618 and E0619. Example:
   `examples/22_io.kstar`.
 
+### Fixed
+
+- `kstar update` on Windows no longer gives up at once when a virus
+  scanner or the search indexer is still holding `kstar.exe`: it tries
+  moving it aside for up to five seconds before saying it cannot.
+
 ## [0.5.2] - 2026-11-23
 
 `kstar update` now asks before it updates, and then updates by itself;
