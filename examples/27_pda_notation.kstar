@@ -1,0 +1,50 @@
+# Chapter 21: writing a PDA the usual textbook way. The stack can start
+# with a named symbol (`stack starts Z0`) or empty, a move pushes a string
+# written top first (`a, Z0/aZ0`), and a PDA can accept by emptying its
+# stack instead of by final state.
+
+alphabet AB = {a, b}
+
+# a^n b^n, accepting by empty stack: the stack starts as Z0, each a pushes
+# an a, each b pops one, and Z0 is popped at the end.
+pda Equal over AB {
+    stack starts Z0
+    start  q0
+    accept by empty stack
+    q0 --a, Z0/aZ0  --> q0
+    q0 --a, a/aa    --> q0
+    q0 --b, a/eps   --> q1
+    q1 --b, a/eps   --> q1
+    q1 --eps, Z0/eps--> q1
+    q0 --eps, Z0/eps--> q0
+}
+
+print Equal
+for w in {"", "ab", "aabb", "aab", "ba"} {
+    print w, Equal accepts w
+}
+
+# The run as instantaneous descriptions (state, input left, stack).
+print std.pda.ids(Equal, "aabb")
+
+# The same language with a stack that starts empty: the first move pushes
+# `$` to mark the bottom, and the PDA accepts by final state.
+pda Marked over AB {
+    stack starts empty
+    start  s
+    accept f
+    s --eps, eps/$  --> p
+    p --a, eps/a    --> p
+    p --eps, eps/eps--> r
+    r --b, a/eps    --> r
+    r --eps, $/eps  --> f
+}
+test std.testing.agree_up_to(Equal, Marked, 8)
+
+# Converting between the two ways of accepting keeps the language.
+let ByFinal = std.pda.to_final_state(Equal)
+let ByEmpty = std.pda.to_empty_stack(Marked)
+print ByFinal
+for w in {"", "ab", "aabb", "aab"} {
+    print w, ByFinal accepts w, ByEmpty accepts w
+}

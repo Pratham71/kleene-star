@@ -1,0 +1,25 @@
+Error in pda_notation_errors.kstar, line 4:
+    stack starts X
+    ^^^^^^^^^^^^^^
+MachineError[E0410]: PDA `Twice` already says how its stack starts
+  hint: a PDA's stack starts one way: write `stack starts` once
+
+Error in pda_notation_errors.kstar, line 11:
+    accept p
+           ^
+MachineError[E0410]: PDA `Both` accepts by empty stack, so it has no accepting states
+  hint: a PDA accepts by final state or by empty stack, not both; remove `accept by empty stack` or the accepting states
+
+Error in pda_notation_errors.kstar, line 16:
+    p --a, AB/eps--> p
+           ^^
+MachineError[E0410]: `AB` is not one stack symbol
+  hint: a stack symbol is one letter, digit or `$`; a longer one must be the starting symbol, named with `stack starts`
+
+Error in pda_notation_errors.kstar, line 19:
+    stack starts Z
+    ^^^^^^^^^^^^^^
+SyntaxError[E0111]: only a PDA has a stack, so `stack starts` cannot be in a `dfa`
+  hint: declare the machine with `pda` to give it a stack
+
+4 errors found

@@ -565,6 +565,8 @@ impl Interp {
             starts: Vec::new(),
             accepts: Vec::new(),
             rejects: Vec::new(),
+            stack_starts: Vec::new(),
+            empty_stack: None,
             transitions: Vec::new(),
         };
         self.machine_items(&m.items, &mut spec)?;
@@ -606,6 +608,8 @@ impl Interp {
                         spec.rejects.push((self.state_name(state)?, state.span));
                     }
                 }
+                MachineItem::StackStarts { symbol, span } => spec.stack_starts.push((symbol.clone(), *span)),
+                MachineItem::AcceptByEmptyStack { span } => spec.empty_stack = Some(*span),
                 MachineItem::Transition { from, action, to, span } => {
                     spec.transitions.push(Transition {
                         from: self.state_name(from)?,

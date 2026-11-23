@@ -38,6 +38,10 @@ pub struct MachineSpec {
     pub accepts: Vec<(String, Span)>,
     /// Turing machines only.
     pub rejects: Vec<(String, Span)>,
+    /// PDAs only: each `stack starts` (`None` for `empty`).
+    pub stack_starts: Vec<(Option<String>, Span)>,
+    /// PDAs only: where `accept by empty stack` is, if it is there.
+    pub empty_stack: Option<Span>,
     pub transitions: Vec<Transition>,
 }
 
@@ -87,6 +91,21 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
         }
     };
     let start = id(start);
+    // A PDA's starting stack: `Z` unless `stack starts` says otherwise.
+    let bottom = match spec.stack_starts.first() {
+        None => Some("Z".to_string()),
+        Some((first, _)) => {
+            if let Some((_, span)) = spec.stack_starts.iter().find(|(other, _)| other != first) {
+                return Err(machine_error(*span, format!("{title} already says how its stack starts")).code(codes::BAD_STACK).hint("a PDA's stack starts one way: write `stack starts` once"));
+            }
+            first.clone()
+        }
+    };
+    if let (Some(_), Some((_, accept))) = (spec.empty_stack, spec.accepts.first()) {
+        return Err(machine_error(*accept, format!("{title} accepts by empty stack, so it has no accepting states"))
+            .code(codes::BAD_STACK)
+            .hint("a PDA accepts by final state or by empty stack, not both; remove `accept by empty stack` or the accepting states"));
+    }
     let mut edges = Vec::new();
     let mut moves = Vec::new();
     let mut tape_moves: Vec<(tm::Move, Span)> = Vec::new();
@@ -113,11 +132,22 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
                         return Err(foreign_symbol(c, read.span, &spec.alphabet, &spec.alphabet_name));
                     }
                 }
+                let long = bottom.as_deref().filter(|b| b.chars().count() > 1);
+                if let Some(symbol) = &pop.symbol {
+                    if symbol.chars().count() > 1 && Some(symbol.as_str()) != long {
+                        return Err(machine_error(pop.span, format!("`{symbol}` is not one stack symbol"))
+                            .code(codes::BAD_STACK)
+                            .hint(match long {
+                                Some(b) => format!("a stack symbol is one letter, digit or `$`, or the starting symbol `{b}`"),
+                                None => "a stack symbol is one letter, digit or `$`; a longer one must be the starting symbol, named with `stack starts`".to_string(),
+                            }));
+                    }
+                }
                 moves.push(pda::Move {
                     from,
                     read: read.symbol,
-                    pop: pop.symbol.map(String::from),
-                    push: push.iter().map(|c| c.to_string()).collect(),
+                    pop: pop.symbol.clone(),
+                    push: pda::split_symbols(push, long),
                     to,
                 });
             }
@@ -175,7 +205,8 @@ pub fn build(spec: &MachineSpec) -> Result<Built, Diag> {
                 start,
                 accept,
                 moves,
-                bottom: "Z".to_string(),
+                bottom,
+                empty_stack: spec.empty_stack.is_some(),
             }))
         }
         MachineKind::Nfa => {

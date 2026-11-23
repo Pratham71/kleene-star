@@ -998,6 +998,33 @@ MachineError[E0409]: state index is negative (-1)
   hint: `%` always gives a result from 0 upwards, so `(i - 1) % n` wraps around safely
 ```
 
+## E0410: How a PDA's stack starts, or how it accepts, is unclear
+
+A PDA says once how its stack starts (`stack starts Z0`, or
+`stack starts empty`), and accepts either by final state (with `accept`
+states) or by empty stack (with `accept by empty stack`), not both. A stack
+symbol is one letter, digit or `$`; only the symbol named in
+`stack starts` may be longer.
+
+```kstar-error
+alphabet AB = {a, b}
+pda P over AB {
+    start  p
+    accept p
+    p --a, AB/eps--> p
+}
+```
+
+```text
+Error in demo.kstar, line 5:
+    p --a, AB/eps--> p
+           ^^
+MachineError[E0410]: `AB` is not one stack symbol
+  hint: a stack symbol is one letter, digit or `$`; a longer one must be the starting symbol, named with `stack starts`
+```
+
+Pop one symbol at a time, or name the long symbol with `stack starts AB`.
+
 ## E0500: A symbol that is not in the alphabet
 
 A machine or grammar uses a symbol that its alphabet (the one after `over`)

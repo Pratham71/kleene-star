@@ -1,0 +1,21 @@
+alphabet AB = {a, b}
+pda Twice over AB {
+    stack starts Z0
+    stack starts X
+    start p
+    accept p
+}
+pda Both over AB {
+    start p
+    accept by empty stack
+    accept p
+}
+pda Long over AB {
+    start p
+    accept p
+    p --a, AB/eps--> p
+}
+dfa NoStack over AB {
+    stack starts Z
+    start p
+}

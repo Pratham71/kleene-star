@@ -114,6 +114,7 @@ pub enum Tok {
     Arrow,     // ->   return type, grammar rules
     Bar,       // |    between grammar alternatives
     Slash,     // /    between pop and push in a PDA move
+    Dollar,    // $    a PDA stack symbol, often the bottom marker
 
     Eof,
 }
@@ -236,6 +237,7 @@ impl Tok {
             Tok::Arrow => "->",
             Tok::Bar => "|",
             Tok::Slash => "/",
+            Tok::Dollar => "$",
             Tok::Int(_) | Tok::Str(_) | Tok::Regex(_) | Tok::Ident(_) | Tok::Eof => "",
         }
     }

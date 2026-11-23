@@ -282,6 +282,11 @@ pub enum MachineItem {
     Accept(Vec<StateRef>),
     /// `reject q3` (Turing machines only)
     Reject(Vec<StateRef>),
+    /// `stack starts Z0`, or `stack starts empty` (`symbol` is `None`)
+    /// (PDAs only)
+    StackStarts { symbol: Option<String>, span: Span },
+    /// `accept by empty stack` (PDAs only)
+    AcceptByEmptyStack { span: Span },
     /// `q0 --a,b--> q1`, or in a PDA `q0 --a, Z/AZ--> q1`
     Transition { from: StateRef, action: Action, to: StateRef, span: Span },
     /// `for i in 0..n { ... }` generating more items
@@ -303,14 +308,24 @@ pub struct Label {
     pub span: Span,
 }
 
+/// The symbol a PDA move pops: one stack symbol as written, or `None` for
+/// `eps`.
+#[derive(Debug, Clone)]
+pub struct StackLabel {
+    pub symbol: Option<String>,
+    pub span: Span,
+}
+
 /// What a transition does, written between `--` and `-->`.
 #[derive(Debug, Clone)]
 pub enum Action {
     /// DFA and NFA: the symbols it reads, `a,b` (or `eps`).
     Symbols(Vec<Label>),
-    /// PDA: `read, pop/push`. `read` and `pop` may be `eps`; `push` is a
-    /// string of stack symbols, top first, empty for `eps`.
-    Stack { read: Label, pop: Label, push: Vec<char>, push_span: Span },
+    /// PDA: `read, pop/push`. `read` and `pop` may be `eps`; `push` is the
+    /// stack symbols written together, top first, empty for `eps`. They
+    /// are split into symbols when the machine is built, since the
+    /// starting symbol (`stack starts Z0`) may be longer than one character.
+    Stack { read: Label, pop: StackLabel, push: String, push_span: Span },
     /// Turing machine: `read/write,move`, for example `0/1,R`. The blank
     /// is `_`; `move` is `L`, `R` or `S` (stay).
     Tape { read: Label, write: Label, dir: Dir, dir_span: Span },

@@ -32,8 +32,12 @@ use std::collections::{BTreeSet, HashMap};
 /// has `S -> [begin $ end]`. The result is trimmed, so only variables that
 /// matter are left.
 pub fn to_grammar(pda: &Pda, max_rules: usize) -> Option<Grammar> {
+    // The construction below starts from acceptance by final state.
+    if pda.empty_stack {
+        return to_grammar(&to_final_state(pda), max_rules);
+    }
     // The stack symbols, the bottom first.
-    let mut stack: Vec<String> = vec![pda.bottom.clone()];
+    let mut stack: Vec<String> = pda.initial_stack();
     for m in &pda.moves {
         for s in m.pop.iter().chain(&m.push) {
             if !stack.contains(s) {
@@ -49,7 +53,9 @@ pub fn to_grammar(pda: &Pda, max_rules: usize) -> Option<Grammar> {
     let n = pda.states.len();
     let (start, end) = (n, n + 1);
     let mut moves: Vec<Move> = Vec::new();
-    moves.push(Move { from: start, read: None, pop: Some(floor.clone()), push: vec![pda.bottom.clone(), floor.clone()], to: pda.start });
+    let mut first = pda.initial_stack();
+    first.push(floor.clone());
+    moves.push(Move { from: start, read: None, pop: Some(floor.clone()), push: first, to: pda.start });
     for m in &pda.moves {
         match &m.pop {
             Some(_) => moves.push(m.clone()),
@@ -149,9 +155,72 @@ pub fn is_deterministic(pda: &Pda) -> bool {
     true
 }
 
+/// The new bottom symbol, start state and state names the two conversions
+/// between ways of accepting add: a bottom `X0` that no move of the PDA
+/// uses, under the PDA's own starting stack, so the PDA never empties the
+/// stack by itself.
+fn wrap(pda: &Pda, new_state: &str) -> (Pda, String, State) {
+    let taken: Vec<String> = stack_symbols(pda).into_iter().collect();
+    let floor = fresh_name(&taken, "X0");
+    let mut out = pda.clone();
+    let start = out.states.len();
+    out.states.push(fresh_name(&pda.states, "begin"));
+    let extra = out.states.len();
+    out.states.push(fresh_name(&out.states, new_state));
+    let mut first = pda.initial_stack();
+    first.reverse();
+    first.push(floor.clone());
+    out.moves.push(Move { from: start, read: None, pop: Some(floor.clone()), push: first, to: pda.start });
+    out.start = start;
+    out.bottom = Some(floor.clone());
+    (out, floor, extra)
+}
+
+/// A PDA that accepts by empty stack the words `pda` accepts by final
+/// state (the usual construction): a new start state `begin` puts a new
+/// bottom `X0` under the PDA's stack, and from each accepting state an eps
+/// move goes to a new state `drain`, which pops everything, `X0` last. The
+/// `X0` keeps the PDA from emptying its stack before it has finished.
+/// A PDA that already accepts by empty stack is returned as it is.
+pub fn to_empty_stack(pda: &Pda) -> Pda {
+    if pda.empty_stack {
+        return pda.clone();
+    }
+    let (mut out, _, drain) = wrap(pda, "drain");
+    let symbols: Vec<String> = stack_symbols(&out).into_iter().collect();
+    for &f in &pda.accept {
+        out.moves.push(Move { from: f, read: None, pop: None, push: Vec::new(), to: drain });
+    }
+    for x in symbols {
+        out.moves.push(Move { from: drain, read: None, pop: Some(x), push: Vec::new(), to: drain });
+    }
+    out.accept = BTreeSet::new();
+    out.empty_stack = true;
+    out
+}
+
+/// A PDA that accepts by final state the words `pda` accepts by empty
+/// stack (the usual construction): a new start state `begin` puts a new
+/// bottom `X0` under the PDA's stack; whenever `X0` is on top again, the
+/// PDA has emptied its own stack, and an eps move goes to a new accepting
+/// state `final`. A PDA that already accepts by final state is returned as
+/// it is.
+pub fn to_final_state(pda: &Pda) -> Pda {
+    if !pda.empty_stack {
+        return pda.clone();
+    }
+    let (mut out, floor, end) = wrap(pda, "final");
+    for q in 0..pda.states.len() {
+        out.moves.push(Move { from: q, read: None, pop: Some(floor.clone()), push: Vec::new(), to: end });
+    }
+    out.accept = BTreeSet::from([end]);
+    out.empty_stack = false;
+    out
+}
+
 /// The stack symbols a PDA uses, its bottom symbol included.
 pub fn stack_symbols(pda: &Pda) -> BTreeSet<String> {
-    let mut symbols = BTreeSet::from([pda.bottom.clone()]);
+    let mut symbols: BTreeSet<String> = pda.bottom.iter().cloned().collect();
     for m in &pda.moves {
         symbols.extend(m.pop.iter().cloned());
         symbols.extend(m.push.iter().cloned());
@@ -187,7 +256,8 @@ fn build(alphabet: &[char], states: &[&str], accept: &[&str], moves: &[Written])
                 to: at(to),
             })
             .collect(),
-        bottom: "Z".into(),
+        bottom: Some("Z".into()),
+        empty_stack: false,
     }
 }
 
@@ -261,7 +331,8 @@ pub fn palindromes(alphabet: &[char]) -> Pda {
         start: first,
         accept: BTreeSet::from([done]),
         moves,
-        bottom,
+        bottom: Some(bottom),
+        empty_stack: false,
     }
 }
 
@@ -321,6 +392,48 @@ mod tests {
         same(&palindromes(&['a', 'b']), &cfg::palindromes(&['a', 'b']));
         same(&palindromes(&['Z', 'a']), &cfg::palindromes(&['Z', 'a']));
         same(&equal_count('a', 'b'), &cfg::equal_count('a', 'b'));
+    }
+
+    #[test]
+    fn accepting_by_empty_stack_and_by_final_state_convert() {
+        for pda in [anbn('a', 'b'), balanced('l', 'r'), palindromes(&['a', 'b']), equal_count('a', 'b')] {
+            let empty = to_empty_stack(&pda);
+            assert!(empty.empty_stack && empty.accept.is_empty(), "{empty}");
+            assert_eq!(accepted(&empty, 6), accepted(&pda, 6), "{empty}");
+            let back = to_final_state(&empty);
+            assert!(!back.empty_stack, "{back}");
+            assert_eq!(accepted(&back, 6), accepted(&pda, 6), "{back}");
+            // Both ways, the grammar of the PDA keeps the language.
+            let g = to_grammar(&empty, 1 << 20).unwrap();
+            assert_eq!(cfg::words_up_to(&g, 6, 1 << 20).unwrap(), accepted(&pda, 6));
+        }
+    }
+
+    #[test]
+    fn a_stack_that_starts_empty() {
+        // a^n b^n with `$` pushed first as the bottom marker, accepting by
+        // empty stack when the `$` is popped.
+        let s = |x: &str| x.to_string();
+        let pda = Pda {
+            alphabet: vec!['a', 'b'],
+            states: vec![s("p"), s("q"), s("r")],
+            start: 0,
+            accept: BTreeSet::new(),
+            bottom: None,
+            empty_stack: true,
+            moves: vec![
+                Move { from: 0, read: None, pop: None, push: vec![s("$")], to: 1 },
+                Move { from: 1, read: Some('a'), pop: None, push: vec![s("A")], to: 1 },
+                Move { from: 1, read: None, pop: None, push: vec![], to: 2 },
+                Move { from: 2, read: Some('b'), pop: Some(s("A")), push: vec![], to: 2 },
+                Move { from: 2, read: None, pop: Some(s("$")), push: vec![], to: 2 },
+            ],
+        };
+        assert_eq!(accepted(&pda, 6), cfg::words_up_to(&cfg::anbn('a', 'b'), 6, 1 << 20).unwrap());
+        assert_eq!(accepted(&to_final_state(&pda), 6), accepted(&pda, 6));
+        assert!(pda.to_string().starts_with("PDA with 3 states over {a, b}, stack starts empty
+start p, accept by empty stack"), "{pda}");
+        assert!(!stack_symbols(&pda).contains("Z"));
     }
 
     #[test]
