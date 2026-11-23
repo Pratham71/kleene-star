@@ -58,6 +58,12 @@ factorial function called as `print fact(3)`:
 
 `kstar new name` writes `name.kstar`, a small working program to change.
 
+`kstar help` lists every command, and `kstar help run` (or
+`kstar run --help`) shows one command's options with examples.
+`kstar help std` lists the standard library's modules, and
+`kstar help std.automata` the functions of one, with their types, without
+leaving the terminal.
+
 In the REPL, `:type expr` shows a type without running anything,
 `:load file.kstar` brings in a file's definitions, `:trace M 0101` steps
 through a machine, and Tab completes names.

@@ -12,6 +12,25 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Changed
+
+- `kstar help` is rewritten. With no topic it lists every command, one
+  line each, grouped by task (run and check, explore and learn, export,
+  editor, install and update). `kstar help <command>` and
+  `kstar <command> --help` give the full usage, every option and two or
+  three examples, and `kstar help std`, `kstar help std.<module>` and
+  `kstar help std.<module>.<function>` describe the standard library. The
+  help is coloured on a terminal, unless `NO_COLOR` is set.
+- A mistake on the command line now shows the command's usage and where to
+  find its help, instead of the whole help.
+- `kstar check`, `kstar trace` and `kstar export` no longer accept
+  `--trace-calls`, which did nothing for them, and `kstar version` takes no
+  arguments.
+
+### Added
+
+- `kstar-lsp --help` and `kstar-lsp --version`.
+
 ## [0.7.0] - 2026-11-23
 
 The notation and the working of the usual textbook course. The conversions

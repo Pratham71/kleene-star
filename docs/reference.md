@@ -2032,15 +2032,19 @@ cannot be defined either (E0209).
 | `kstar export --format json <file> <M>` | The same, as `M.json`: `M` (any `Dfa`, `Nfa`, `Regex`, `Grammar`, `Pda` or `Tm`) in [the JSON format](#the-json-format), with its name. |
 | `kstar explain <code>` | Explains an error or warning code; `--list` lists them all. |
 | `kstar repl` | Interactive prompt. A bare expression is printed; names can be redefined. |
-| `kstar help [command]`, `kstar <command> --help` | Help, for one command or all. |
+| `kstar help` | Every command, one line each, grouped by task. |
+| `kstar help <command>`, `kstar <command> --help` | Everything about one command: its usage, every option, and examples. |
+| `kstar help std` | The modules of the standard library. |
+| `kstar help std.<module>` | A module's functions, with their types: `kstar help std.automata`. `kstar help std.<module>.<function>` shows one. |
 | `kstar version` | The version, the commit it was built from, the build date and the target platform. |
 | `kstar update --check` | Asks GitHub whether a newer release exists (through the `gh` command, or `curl` with `GITHUB_TOKEN`), and whether the VS Code extension matches this `kstar`. |
 | `kstar update` | The same, and if there is a newer release, shows both versions and what the release is about, then asks `Update to vX.Y.Z? [Y/n]`. On yes it installs the release into the folder `kstar` is in, VS Code extension included; on no it changes nothing. If `kstar` is up to date but the VS Code extension is missing or from another release, it installs the matching `.vsix`. `--no-vscode` or `KSTAR_NO_VSCODE=1` leaves VS Code alone. |
 | `kstar update --yes` | Updates without asking. Without a terminal to ask on (a script or CI), `kstar update` refuses unless given `--yes`. |
 
-`--color auto|always|never` works with `run`, `check` and `repl`. By default
-errors, warnings and test results are coloured only when the output is a
-terminal and the `NO_COLOR` environment variable is not set.
+`--color auto|always|never` works with `run`, `check`, `trace`, `export`
+and `repl`. By default errors, warnings, test results and the help are
+coloured only when the output is a terminal and the `NO_COLOR` environment
+variable is not set. A command refuses an option its help does not list.
 
 With several files, `kstar run` and `kstar check` name each file before its
 output and end with a count of the files that passed and failed.

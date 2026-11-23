@@ -6,6 +6,7 @@
 //! * `ide` answers editor questions; the `kstar-lsp` server is built on it.
 
 pub mod automata;
+pub mod help;
 pub mod ide;
 pub mod lang;
 

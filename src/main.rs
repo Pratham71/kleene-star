@@ -12,177 +12,31 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{Duration, SystemTime};
 
-const USAGE: &str = "\
-Kleene Star: a small language for Theory of Computation
-
-Usage: kstar <command> [options]
-
-Commands:
-  run <files>...        run programs (files or folders of .kstar files)
-  check <files>...      look for errors and warnings without running
-  fmt <files>...        rewrite files in the standard style
-  new <name>            start a new program from a template
-  trace <file> <M> <w>  run a file quietly, then trace machine M on word w
-  export <file> <M>     write machine M as a standalone Rust function
-  explain <code>        explain an error code, such as E0200
-  repl                  try things out interactively
-  version               show the version, commit, build date and target
-  update [--check]      see whether a newer release exists
-  help [command]        show this message, or the help for a command
-
-`kstar file.kstar` is short for `kstar run file.kstar`.
-Run `kstar help <command>` for the options of a command.";
-
-const RUN_HELP: &str = "\
-Usage: kstar run [options] <files>...
-
-Runs each program. A folder means every .kstar file inside it.
-
-Options:
-  --out <dir>        where `draw` writes its files (default: the current folder)
-  --allow-path <dir> let std.io also read and write files in <dir> (repeatable);
-                     otherwise a program may only use files in its own folder
-  --fixed-clock      std.benchmark reports every time as 0, so the output is
-                     the same on every run
-  --watch            run again whenever a file changes; stop with Ctrl-C
-  --trace-calls      print every function call and return
-  --eager-imports    run each imported module at its import, not at first use
-  --color <when>     auto (default), always or never
-
-Imported files are checked before anything runs. A module's top level runs
-the first time one of its names is used, without its print, test, draw and
-trace statements.
-
-The exit code is 0 when every program ran without errors and no test failed.";
-
-const CHECK_HELP: &str = "\
-Usage: kstar check [options] <files>...
-
-Reports every error and warning in each program, without running it. A
-folder means every .kstar file inside it.
-
-Options:
-  --color <when>     auto (default), always or never
-
-The exit code is 0 when no file has errors (warnings do not count).";
-
-const FMT_HELP: &str = "\
-Usage: kstar fmt [--check] <files>...
-
-Rewrites each file in the standard style. A folder means every .kstar file
-inside it, and `-` reads a program from standard input and writes the
-formatted program to standard output.
-
-Options:
-  --check            change nothing; list the files that need formatting
-                     and exit with code 1 if there are any";
-
-const NEW_HELP: &str = "\
-Usage: kstar new <name>
-
-Writes <name>.kstar, a small program to start from. An existing file is
-never overwritten.";
-
-const TRACE_HELP: &str = "\
-Usage: kstar trace [--color <when>] <file> <machine> <word>
-
-Runs the file without showing its output, then shows every step of
-<machine> on <word>, as `trace <machine> on \"<word>\"` would at the end of
-the file. <machine> may be any expression, such as `to_dfa(r)`. Use \"\" for
-the empty word.";
-
-const EXPORT_HELP: &str = "\
-Usage: kstar export [options] <file> <machine>
-
-Runs the file without showing its output, then writes <machine> to a file
-next to <file>, named after the machine (HasDouble1.rs, HasDouble1.py or
-HasDouble1.json), and says where:
-
-  Wrote C:\\Users\\me\\HasDouble1.rs (Rust, 42 lines)
-
-It never replaces a file that is already there unless you pass --force.
-
-As Rust (the default), the file is one dependency-free function
-`pub fn name(input: &str) -> bool` that accepts exactly the machine's words,
-with a `#[cfg(test)]` module of sample words. As Python, it is one
-dependency-free file with `def name(word: str) -> bool` that checks itself on
-sample words when run as a script. For both, <machine> may be any regular
-language (Dfa, Nfa, Regex or Set[Str]), such as `EvenZeros` or `to_dfa(r)`;
-it is turned into a DFA first.
-
-As JSON it writes <machine> in Kleene Star's JSON format, which `from_json`
-reads back: any Dfa, Nfa, Regex, Grammar, Pda or Tm, kept as it is, with its
-state names.
-
-Options:
-  --format <format>  rust (default), python or json
-  --fn <name>        the function's name (default: <machine> in snake_case)
-  -o, --out <path>   write to this file, or into this folder; `-o -` prints
-                     to standard output instead of writing a file
-  --force            replace the file if it is already there
-  --minimize         minimize the DFA first, for the smallest table
-  --color <when>     auto (default), always or never";
-
-const UPDATE_HELP: &str = "\
-Usage: kstar update [--check] [--yes] [--no-vscode]
-
-Asks GitHub for the latest stable release. If it is newer than this kstar, it
-shows both versions and what the release is about, and asks
-\"Update to vX.Y.Z? [Y/n]\". On yes it installs the release with its install
-script into the folder kstar is in, which also updates the VS Code extension;
-on no it changes nothing. Pre-releases (such as 0.2.5-beta) are not offered:
-install one by name with KSTAR_VERSION (see docs/install.md).
-
-When standard input is not a terminal (a script or CI), it does not ask and
-does not update: pass --yes.
-
-If VS Code is installed (the `code` command) and kstar is up to date, it
-also makes sure the Kleene Star extension matches this kstar: when it is
-missing or from another release, it downloads kleene-star-<version>.vsix from
-this kstar's release, checks its SHA-256 checksum and installs it.
-
-Options:
-  --check       only say whether a newer release exists, and whether the
-                VS Code extension matches, without installing anything
-  -y, --yes     update without asking
-  --no-vscode   leave VS Code alone (so does KSTAR_NO_VSCODE=1)";
-
-const VERSION_HELP: &str = "\
-Usage: kstar version
-
-Shows this kstar's version, the commit it was built from, the build date and
-the platform it was built for. `kstar --version` and `kstar -V` do the same.";
-
-const EXPLAIN_HELP: &str = "\
-Usage: kstar explain <code>
-
-Explains an error or warning code, such as E0200 or W0100, with an example.
-Every error message shows its code in brackets: NameError[E0200].
-`kstar explain --list` lists every code.";
-
-const REPL_HELP: &str = "\
-Usage: kstar repl [--trace-calls] [--color <when>]
-
-An interactive prompt: type statements or expressions and see the results.
-Type :help inside it for its commands.";
-
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     update::remove_old_programs();
     let Some((&command, rest)) = args.split_first() else {
-        println!("{USAGE}");
-        return ExitCode::SUCCESS;
+        return help(None);
     };
     if rest.iter().any(|a| matches!(*a, "--help" | "-h")) {
         return help(Some(command));
     }
+    // These take only names, so any option they do not list is a mistake.
+    if matches!(command, "new" | "explain" | "version") {
+        if let Some(bad) = rest.iter().find(|a| a.starts_with('-') && !kstar::help::accepts(command, a)) {
+            return usage_error(&format!("unknown option `{bad}`"), command);
+        }
+    }
     match command {
         "help" | "--help" | "-h" => help(rest.first().copied()),
-        "version" | "--version" | "-V" => {
-            println!("{}", update::version());
-            ExitCode::SUCCESS
-        }
+        "version" | "--version" | "-V" => match rest {
+            [] => {
+                println!("{}", update::version());
+                ExitCode::SUCCESS
+            }
+            [arg, ..] => usage_error(&format!("`kstar version` takes no arguments, not `{arg}`"), "version"),
+        },
         "update" => update::update(rest),
         "run" => run_command(rest, false),
         "check" => run_command(rest, true),
@@ -192,7 +46,7 @@ fn main() -> ExitCode {
         }
         "new" => match rest {
             [name] => new_file(name),
-            _ => usage_error("`kstar new` needs one name", NEW_HELP),
+            _ => usage_error("`kstar new` needs one name", "new"),
         },
         "trace" => trace_command(rest),
         "export" => export_command(rest),
@@ -205,50 +59,63 @@ fn main() -> ExitCode {
                 ExitCode::SUCCESS
             }
             [code] => explain(code),
-            _ => usage_error("`kstar explain` needs one code, such as E0200", EXPLAIN_HELP),
+            _ => usage_error("`kstar explain` needs one code, such as E0200", "explain"),
         },
         "repl" => {
-            let options = match Options::parse(rest, false) {
+            let options = match Options::parse(rest, "repl") {
                 Ok(options) if options.files.is_empty() => options,
-                Ok(_) => return usage_error("`kstar repl` takes no files; use `:load <file>` inside it", REPL_HELP),
-                Err(message) => return usage_error(&message, REPL_HELP),
+                Ok(_) => return usage_error("`kstar repl` takes no files; use `:load <file>` inside it", "repl"),
+                Err(message) => return usage_error(&message, "repl"),
             };
             kstar::with_big_stack(move || repl::repl(options.color, options.trace_calls))
         }
         file if file.ends_with(".kstar") => run_command(&args, false),
         other => {
             let mut message = format!("unknown command `{other}`");
-            let commands =
-                ["run", "check", "fmt", "new", "trace", "export", "explain", "repl", "version", "update", "help"];
-            if let Some(close) = kstar::lang::error::did_you_mean(other, commands.into_iter()) {
+            if let Some(close) = kstar::lang::error::did_you_mean(other, kstar::help::command_names()) {
                 message.push_str(&format!("; did you mean `{close}`?"));
             }
-            usage_error(&message, USAGE)
+            usage_error(&message, "")
         }
     }
 }
 
-fn help(command: Option<&str>) -> ExitCode {
-    let text = match command {
-        None => USAGE,
-        Some("run") => RUN_HELP,
-        Some("check") => CHECK_HELP,
-        Some("fmt") => FMT_HELP,
-        Some("new") => NEW_HELP,
-        Some("explain") => EXPLAIN_HELP,
-        Some("repl") => REPL_HELP,
-        Some("trace") => TRACE_HELP,
-        Some("export") => EXPORT_HELP,
-        Some("update") => UPDATE_HELP,
-        Some("version") => VERSION_HELP,
-        Some(_) => USAGE,
-    };
-    println!("{text}");
-    ExitCode::SUCCESS
+/// `kstar help [topic]` and `kstar <command> --help`, coloured only on a
+/// terminal.
+fn help(topic: Option<&str>) -> ExitCode {
+    let paint = Paint(color_wanted());
+    match topic {
+        None => {
+            println!("{}", kstar::help::overview(paint));
+            ExitCode::SUCCESS
+        }
+        Some(topic) => match kstar::help::topic(topic, paint) {
+            Ok(text) => {
+                println!("{text}");
+                ExitCode::SUCCESS
+            }
+            Err(message) => {
+                eprintln!("kstar: {message}");
+                ExitCode::from(2)
+            }
+        },
+    }
 }
 
-fn usage_error(message: &str, usage: &str) -> ExitCode {
-    eprintln!("kstar: {message}\n\n{usage}");
+/// A mistake in the command line: the message, then the command's usage
+/// (or, for "", where to find the commands). The exit code is 2.
+fn usage_error(message: &str, command: &str) -> ExitCode {
+    match kstar::help::command(command) {
+        Some(c) => {
+            let usage: Vec<String> = c.usage.iter().map(|u| format!("  {u}")).collect();
+            eprintln!(
+                "kstar: {message}\n\nUsage:\n{}\n\nRun `kstar help {}` for its options and examples.",
+                usage.join("\n"),
+                c.name
+            );
+        }
+        None => eprintln!("kstar: {message}\n\nRun `kstar help` for the list of commands."),
+    }
     ExitCode::from(2)
 }
 
@@ -266,7 +133,9 @@ struct Options {
 }
 
 impl Options {
-    fn parse(args: &[&str], allow_out: bool) -> Result<Options, String> {
+    /// Reads the options of `command`; an option its help does not list
+    /// is an error, so every option the parser takes is documented.
+    fn parse(args: &[&str], command: &str) -> Result<Options, String> {
         let mut options = Options {
             files: Vec::new(),
             out_dir: ".".into(),
@@ -280,20 +149,22 @@ impl Options {
         let mut color = "auto";
         let mut args = args.iter();
         while let Some(&arg) = args.next() {
+            let is_option = arg.starts_with('-') && arg != "-";
+            if is_option && !kstar::help::accepts(command, arg) {
+                return Err(format!("unknown option `{arg}`"));
+            }
             match arg {
-                "--out" if allow_out => {
-                    options.out_dir = args.next().ok_or("`--out` needs a folder")?.to_string();
-                }
-                "--allow-path" if allow_out => {
+                "--out" => options.out_dir = args.next().ok_or("`--out` needs a folder")?.to_string(),
+                "--allow-path" => {
                     options.allow_paths.push(args.next().ok_or("`--allow-path` needs a folder")?.to_string());
                 }
-                "--watch" if allow_out => options.watch = true,
-                "--fixed-clock" if allow_out => options.fixed_clock = true,
-                "--eager-imports" if allow_out => options.eager_imports = true,
+                "--watch" => options.watch = true,
+                "--fixed-clock" => options.fixed_clock = true,
+                "--eager-imports" => options.eager_imports = true,
                 "--trace-calls" => options.trace_calls = true,
                 "--color" => color = args.next().ok_or("`--color` needs auto, always or never")?,
                 _ if arg.starts_with("--color=") => color = &arg["--color=".len()..],
-                _ if arg.starts_with('-') && arg != "-" => return Err(format!("unknown option `{arg}`")),
+                _ if is_option => unreachable!("`{arg}` is in the help of `kstar {command}` but not handled"),
                 file => options.files.push(file.to_string()),
             }
         }
@@ -391,8 +262,8 @@ fn shown(path: &Path) -> String {
 
 /// `kstar run` and `kstar check`.
 fn run_command(args: &[&str], check_only: bool) -> ExitCode {
-    let usage = if check_only { CHECK_HELP } else { RUN_HELP };
-    let options = match Options::parse(args, !check_only) {
+    let usage = if check_only { "check" } else { "run" };
+    let options = match Options::parse(args, usage) {
         Ok(options) => options,
         Err(message) => return usage_error(&message, usage),
     };
@@ -545,12 +416,12 @@ fn watch(options: &Options) -> ExitCode {
 /// `kstar trace`: runs a file with its output thrown away, then traces one
 /// machine on one word.
 fn trace_command(args: &[&str]) -> ExitCode {
-    let options = match Options::parse(args, false) {
+    let options = match Options::parse(args, "trace") {
         Ok(options) => options,
-        Err(message) => return usage_error(&message, TRACE_HELP),
+        Err(message) => return usage_error(&message, "trace"),
     };
     let [file, machine, word] = &options.files[..] else {
-        return usage_error("`kstar trace` needs a file, a machine and a word", TRACE_HELP);
+        return usage_error("`kstar trace` needs a file, a machine and a word", "trace");
     };
     let text = match std::fs::read_to_string(file) {
         Ok(text) => text.replace("\r\n", "\n"),
@@ -660,11 +531,11 @@ fn export_command(args: &[&str]) -> ExitCode {
         match arg {
             "--fn" => match iter.next() {
                 Some(name) => fn_name = Some(name.to_string()),
-                None => return usage_error("`--fn` needs a function name", EXPORT_HELP),
+                None => return usage_error("`--fn` needs a function name", "export"),
             },
             "-o" | "--out" => match iter.next() {
                 Some(file) => out = Some(file.to_string()),
-                None => return usage_error("`-o` needs a file or folder, or `-` for standard output", EXPORT_HELP),
+                None => return usage_error("`-o` needs a file or folder, or `-` for standard output", "export"),
             },
             "--minimize" => minimize = true,
             "--force" => force = true,
@@ -672,18 +543,18 @@ fn export_command(args: &[&str]) -> ExitCode {
                 Some(&"rust") => format = ExportFormat::Rust,
                 Some(&"python") => format = ExportFormat::Python,
                 Some(&"json") => format = ExportFormat::Json,
-                Some(other) => return usage_error(&format!("unknown format `{other}`: use `rust`, `python` or `json`"), EXPORT_HELP),
-                None => return usage_error("`--format` needs `rust`, `python` or `json`", EXPORT_HELP),
+                Some(other) => return usage_error(&format!("unknown format `{other}`: use `rust`, `python` or `json`"), "export"),
+                None => return usage_error("`--format` needs `rust`, `python` or `json`", "export"),
             },
             other => rest.push(other),
         }
     }
-    let options = match Options::parse(&rest, false) {
+    let options = match Options::parse(&rest, "export") {
         Ok(options) => options,
-        Err(message) => return usage_error(&message, EXPORT_HELP),
+        Err(message) => return usage_error(&message, "export"),
     };
     let [file, machine] = &options.files[..] else {
-        return usage_error("`kstar export` needs a file and a machine", EXPORT_HELP);
+        return usage_error("`kstar export` needs a file and a machine", "export");
     };
     let text = match std::fs::read_to_string(file) {
         Ok(text) => text.replace("\r\n", "\n"),
@@ -701,12 +572,12 @@ fn export_command(args: &[&str]) -> ExitCode {
         kstar::automata::codegen::snake_case(if own_name.is_empty() { "accepts" } else { &own_name })
     });
     if format == ExportFormat::Json && fn_name_given {
-        return usage_error("`--fn` names a function; it does not go with `--format json`", EXPORT_HELP);
+        return usage_error("`--fn` names a function; it does not go with `--format json`", "export");
     }
     // (For Rust, `to_rust` checks the name and reports it like any error.)
     if format == ExportFormat::Python {
         if let Err(message) = kstar::automata::codegen::check_fn_name(&fn_name) {
-            return usage_error(&message, EXPORT_HELP);
+            return usage_error(&message, "export");
         }
     }
     let base = if own_name.is_empty() { fn_name.clone() } else { own_name.clone() };
@@ -805,14 +676,14 @@ fn fmt_command(args: &[&str]) -> ExitCode {
     let check = args.contains(&"--check");
     let paths: Vec<String> = args.iter().filter(|a| **a != "--check").map(|a| a.to_string()).collect();
     if let Some(bad) = paths.iter().find(|a| a.starts_with('-') && *a != "-") {
-        return usage_error(&format!("unknown option `{bad}`"), FMT_HELP);
+        return usage_error(&format!("unknown option `{bad}`"), "fmt");
     }
     if paths.is_empty() {
-        return usage_error("`kstar fmt` needs at least one file or folder, or `-` for standard input", FMT_HELP);
+        return usage_error("`kstar fmt` needs at least one file or folder, or `-` for standard input", "fmt");
     }
     if paths.iter().any(|p| p == "-") {
         if paths.len() > 1 {
-            return usage_error("`-` cannot be combined with files", FMT_HELP);
+            return usage_error("`-` cannot be combined with files", "fmt");
         }
         return fmt_stdin(check);
     }

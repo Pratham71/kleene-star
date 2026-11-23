@@ -50,6 +50,99 @@ fn help_for_every_command() {
     assert!(stderr(&unknown).contains("did you mean `check`?"));
 }
 
+/// The string literals in `src` that look like options: `"--out"`, `"-y"`.
+fn option_literals(src: &str) -> Vec<String> {
+    src.split('"')
+        .skip(1)
+        .step_by(2)
+        .filter(|s| {
+            let body = s.trim_start_matches('-');
+            let dashes = s.len() - body.len();
+            (dashes == 2 || (dashes == 1 && body.len() == 1))
+                && !body.is_empty()
+                && body.trim_end_matches('=').chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        })
+        .map(|s| s.trim_end_matches('=').to_string())
+        .collect()
+}
+
+#[test]
+fn every_option_the_parsers_take_is_in_the_help() {
+    use kstar::help::{COMMANDS, GLOBAL_FLAGS};
+    let documented: Vec<&str> =
+        COMMANDS.iter().flat_map(|c| c.flags.iter()).chain(GLOBAL_FLAGS).flat_map(|f| f.spellings()).collect();
+    // Every option spelled out in the command line code. In update.rs only
+    // `kstar update`'s own parser counts: the rest are arguments to `gh`,
+    // `curl`, `code` and the install scripts.
+    let main = include_str!("../src/main.rs");
+    let update = include_str!("../src/update.rs");
+    let start = update.find("pub fn update(").unwrap();
+    let update = &update[start..start + update[start..].find("\n}\n").unwrap()];
+    for option in option_literals(main).iter().chain(&option_literals(update)) {
+        assert!(documented.contains(&option.as_str()), "`{option}` is accepted but not in the help");
+    }
+    // Every command main.rs dispatches on is in the help.
+    let start = main.find("    match command {").unwrap();
+    let dispatch = &main[start..start + main[start..].find("\n    }\n").unwrap()];
+    for line in dispatch.lines().filter(|l| l.trim_start().starts_with('"') && l.contains("=>")) {
+        let name = line.trim_start().split('"').nth(1).unwrap();
+        if !name.starts_with('-') {
+            assert!(kstar::help::command(name).is_some(), "`kstar {name}` is not in the help");
+        }
+    }
+
+    // And the other way: each command takes exactly the options its help
+    // lists. (`update` asks GitHub, so only its source is checked, above.)
+    let dir = scratch("options");
+    let all: Vec<&kstar::help::Flag> = COMMANDS.iter().flat_map(|c| c.flags.iter()).collect();
+    for command in COMMANDS.iter().filter(|c| !matches!(c.name, "update" | "help" | "kstar-lsp")) {
+        let page = stdout(&kstar(&dir, &[command.name, "--help"]));
+        for flag in all.iter().filter(|f| f.spellings().iter().all(|s| s.starts_with("--"))) {
+            let spelling = flag.spellings()[0];
+            let listed = command.flags.iter().any(|f| f.spellings().contains(&spelling));
+            let mut args = vec![command.name, spelling];
+            if flag.takes_value() {
+                args.push(if spelling == "--color" { "never" } else { "x" });
+            }
+            let output = kstar(&dir, &args);
+            let err = stderr(&output);
+            let refused = err.contains(&format!("unknown option `{spelling}`")) || err.contains("takes no arguments");
+            assert_eq!(!refused, listed, "kstar {}: {err}", args.join(" "));
+            if command.flags.iter().any(|f| f.names == flag.names) {
+                assert!(page.contains(flag.names), "`kstar {} --help` does not show {}", command.name, flag.names);
+            }
+        }
+    }
+    // The short spellings, which the loop above leaves out.
+    assert!(!stderr(&kstar(&dir, &["export", "-o"])).contains("unknown option"));
+    assert!(stderr(&kstar(&dir, &["run", "-o", "x"])).contains("unknown option `-o`"));
+}
+
+#[test]
+fn help_topics() {
+    let dir = scratch("help-topics");
+    let overview = stdout(&kstar(&dir, &["help"]));
+    for heading in kstar::help::GROUPS {
+        assert!(overview.contains(&format!("{heading}:\n")), "{heading}");
+    }
+    assert_eq!(stdout(&kstar(&dir, &[])), overview);
+    let modules = stdout(&kstar(&dir, &["help", "std"]));
+    assert!(modules.contains("std.automata"));
+    let module = kstar(&dir, &["help", "std.collections"]);
+    assert!(module.status.success());
+    assert!(stdout(&module).contains("fn power_set(s: Set[T]) -> Set[Set[T]]"));
+    let unknown = kstar(&dir, &["help", "std.colections"]);
+    assert_eq!(unknown.status.code(), Some(2));
+    assert!(stderr(&unknown).contains("did you mean `std.collections`?"));
+    // No colour when the output is not a terminal, as here.
+    assert!(!overview.contains('\x1b'));
+    // kstar-lsp has the same page.
+    let lsp = Command::new(env!("CARGO_BIN_EXE_kstar-lsp")).arg("--help").output().unwrap();
+    assert_eq!(stdout(&lsp), stdout(&kstar(&dir, &["help", "kstar-lsp"])).replace('\x1b', ""));
+    let version = Command::new(env!("CARGO_BIN_EXE_kstar-lsp")).arg("--version").output().unwrap();
+    assert_eq!(stdout(&version).trim(), format!("kstar-lsp {}", env!("CARGO_PKG_VERSION")));
+}
+
 #[test]
 fn run_several_files_and_folders() {
     let dir = scratch("run");

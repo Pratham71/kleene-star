@@ -291,6 +291,21 @@ fn same_file(a: &std::path::Path, b: &std::path::Path) -> bool {
 }
 
 fn main() {
+    // Editors start the server with no arguments (or with `--stdio`).
+    for arg in std::env::args().skip(1) {
+        match arg.as_str() {
+            "-h" | "--help" => {
+                let page = kstar::help::command("kstar-lsp").expect("kstar-lsp has a help page");
+                println!("{}", kstar::help::command_page(page, kstar::lang::error::Paint(false)));
+                return;
+            }
+            "-V" | "--version" => {
+                println!("kstar-lsp {}", env!("CARGO_PKG_VERSION"));
+                return;
+            }
+            _ => {}
+        }
+    }
     // The parser, checker and formatter are recursive. The nesting limit
     // keeps them within a few megabytes even in a debug build, which is
     // more than a default 2 MB thread has, so give every thread plenty.
