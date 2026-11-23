@@ -192,7 +192,7 @@ which is installed next to `kstar`; see
 
 | | Version | What it has |
 |---|---|---|
-| Stable | **0.5.1** | Everything above: imports between files, `kstar export` to Rust and JSON, and the standard library (`std.math`, `std.string`, `std.collections`, `std.automata`, `std.regex`, `std.binary`, `std.testing`, `std.grammar`, `std.pda`, `std.tm`, `std.random`). The install scripts and `kstar update` use it. |
+| Stable | **0.5.2** | Everything above: imports between files, `kstar export` to Rust and JSON, and the standard library (`std.math`, `std.string`, `std.collections`, `std.automata`, `std.regex`, `std.binary`, `std.testing`, `std.grammar`, `std.pda`, `std.tm`, `std.random`). The install scripts and `kstar update` use it. |
 
 What changed in each version, and how to upgrade, is in the
 [changelog](CHANGELOG.md). Next are a list type and reading files from a program,

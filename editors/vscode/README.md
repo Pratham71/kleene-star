@@ -62,7 +62,7 @@ installed, it installs this extension too. Otherwise:
 3. **Install it**:
 
    ```bash
-   code --install-extension kleene-star-0.5.1.vsix
+   code --install-extension kleene-star-0.5.2.vsix
    ```
 
    (The install scripts and `kstar update` do this step for you when VS

@@ -12,6 +12,50 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-23
+
+`kstar update` now asks before it updates, and then updates by itself;
+`kstar export` writes a file (Rust, Python or JSON) instead of printing the
+code; highlighting in VS Code colours every part of a program in any theme.
+
+### Upgrading from 0.5.1
+
+Nothing changes for programs. Scripts that read the code `kstar export`
+printed must now pass `-o -`. Scripts that run `kstar update` must pass
+`--yes`, or they stop with a message saying so instead of updating.
+
+### Changed
+
+- `kstar update` asks before it updates, and then updates: it shows the
+  installed and the latest version and what the release is about, asks
+  `Update to vX.Y.Z? [Y/n]`, and on yes installs the release (and its VS
+  Code extension) into the folder `kstar` is in. On no it changes nothing.
+  `--yes` (or `-y`) skips the question. Without a terminal to ask on, it
+  refuses unless given `--yes`, instead of waiting. `--check` is unchanged.
+- `kstar export` writes a file instead of printing the code: `<Machine>.rs`
+  (or `.py`, `.json`) next to the program, or where `-o` says, and prints
+  `Wrote <full path> (Rust, N lines)`. It never replaces a file unless
+  given `--force`. **For scripts that read the code from standard output,
+  add `-o -`**, which prints it as before.
+
+### Added
+
+- `kstar export --format python`: a dependency-free Python file with a
+  function that runs the DFA, and a self-test on sample words when it is
+  run as a script.
+- Golden tests that check the conversions against the usual textbook
+  worked examples, step for step: removing eps moves, the subset
+  construction with its dead state, minimisation by k-equivalence, state
+  elimination, grammar to PDA, the run of a PDA on a word, and the Turing
+  machine for 0^n 1^n. All of them already agreed.
+
+### Fixed
+
+- Highlighting in VS Code: names, brackets, commas and the quotes of
+  strings and regexes now have scopes too, so every part of a program is
+  coloured by any theme, and all scope names are standard ones. Snapshot
+  tests over every example keep it that way.
+
 ## [0.5.1] - 2026-11-21
 
 A fix for the VS Code extension. Installing or updating Kleene Star now
@@ -426,7 +470,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/Pratham71/kleene-star/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Pratham71/kleene-star/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pratham71/kleene-star/compare/v0.3.0...v0.4.0
