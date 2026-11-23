@@ -1,0 +1,41 @@
+Warning in std_steps_arden.kstar, line 11:
+    r --a  --> dead
+               ^^^^
+Warning[W0101]: no accepting state can be reached from state `dead`
+  hint: every path through this state is rejected; an NFA does not need a dead state, so this one can go
+
+Left out, as they are not on a path from the start to an accepting state: q2
+The equations, one for the words that lead to each state:
+  q0 = eps + q0 a
+  q1 = q0 b
+Solve q1: it does not refer to itself, so it stays as it is:
+  q1 = q0 b
+Solve q0: q0 = eps + q0 a has the form R = Q + RP with P = a, so by Arden's theorem R = QP*:
+  q0 = a*
+Put q0 into the equations that use it:
+  q1 = a*b
+The accepting state is q1, so the language is its regex.
+Regex: a*b
+Left out, as they are not on a path from the start to an accepting state: dead
+The equations, one for the words that lead to each state:
+  p = eps
+  q = p a + q a
+  r = p b + q b
+Solve p: it does not refer to itself, so it stays as it is:
+  p = eps
+Put p into the equations that use it:
+  q = a + q a
+  r = b + q b
+Solve r: it does not refer to itself, so it stays as it is:
+  r = b + q b
+Solve q: q = a + q a has the form R = Q + RP with P = a, so by Arden's theorem R = QP*:
+  q = aa*
+Put q into the equations that use it:
+  r = b|aa*b
+The accepting state is r, so the language is its regex.
+Regex: b|aa*b
+/b|aa*b/
+Left out, as they are not on a path from the start to an accepting state: x, y
+No accepting state can be reached, so the language is empty.
+Regex: []
+tests: 1 passed, 0 failed

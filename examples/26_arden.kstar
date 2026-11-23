@@ -1,0 +1,38 @@
+# Chapter 20: from a finite automaton to a regex by Arden's theorem.
+# Each state gets an equation for the words that lead to it; Arden's
+# theorem solves R = Q + RP as R = QP*, one state at a time.
+
+alphabet B = {0, 1}
+
+# The strings with an odd number of 1s.
+dfa Odd over B {
+    start  even
+    accept odd
+    even --0--> even
+    even --1--> odd
+    odd  --0--> odd
+    odd  --1--> even
+}
+
+print std.steps.arden(Odd)
+print ""
+
+# Arden and state elimination often write the answer differently, but
+# they always describe the same language.
+let byArden = std.regex.by_arden(Odd)
+let byElimination = to_regex(Odd)
+print byArden, byElimination
+test equivalent(byArden, byElimination)
+test equivalent(byArden, Odd)
+
+# An NFA works as it is: here, the strings that end in 10.
+nfa EndsIn10 over B {
+    start  a
+    accept c
+    a --0,1--> a
+    a --1  --> b
+    b --0  --> c
+}
+print ""
+print std.steps.arden(EndsIn10)
+test equivalent(std.regex.by_arden(EndsIn10), EndsIn10)

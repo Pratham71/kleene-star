@@ -1,0 +1,22 @@
+# Arden's theorem on a regex (its minimal DFA), an eps-NFA and a machine
+# with a state that cannot reach acceptance.
+alphabet AB = {a, b}
+print std.steps.arden(/a*b/)
+nfa N over AB {
+    start  p
+    accept r
+    p --eps--> q
+    q --a  --> q
+    q --b  --> r
+    r --a  --> dead
+}
+print std.steps.arden(N)
+print std.regex.by_arden(N)
+test equivalent(std.regex.by_arden(N), to_regex(N))
+dfa Never over AB {
+    start  x
+    accept y
+    x --a,b--> x
+    y --a,b--> x
+}
+print std.steps.arden(Never)

@@ -1,0 +1,185 @@
+> # Chapter 20: from a finite automaton to a regex by Arden's theorem.
+    0 "# Chapter 20: from a finite automaton to a regex by Arden's theorem." comment.line.number-sign.kstar
+> # Each state gets an equation for the words that lead to it; Arden's
+    0 "# Each state gets an equation for the words that lead to it; Arden's" comment.line.number-sign.kstar
+> # theorem solves R = Q + RP as R = QP*, one state at a time.
+    0 "# theorem solves R = Q + RP as R = QP*, one state at a time." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # The strings with an odd number of 1s.
+    0 "# The strings with an odd number of 1s." comment.line.number-sign.kstar
+> dfa Odd over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "Odd" meta.machine.kstar entity.name.type.machine.kstar
+    8 "over" meta.machine.kstar keyword.other.over.kstar
+   13 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   15 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  even
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "even" meta.machine.kstar variable.other.state.kstar
+>     accept odd
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "odd" meta.machine.kstar variable.other.state.kstar
+>     even --0--> even
+    4 "even" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   16 "even" meta.machine.kstar variable.other.state.kstar
+>     even --1--> odd
+    4 "even" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   16 "odd" meta.machine.kstar variable.other.state.kstar
+>     odd  --0--> odd
+    4 "odd" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   16 "odd" meta.machine.kstar variable.other.state.kstar
+>     odd  --1--> even
+    4 "odd" meta.machine.kstar variable.other.state.kstar
+    9 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   11 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   12 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   16 "even" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> print std.steps.arden(Odd)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "steps" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "arden" entity.name.function.call.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "Odd" variable.other.kstar
+   25 ")" punctuation.section.parens.end.kstar
+> print ""
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # Arden and state elimination often write the answer differently, but
+    0 "# Arden and state elimination often write the answer differently, but" comment.line.number-sign.kstar
+> # they always describe the same language.
+    0 "# they always describe the same language." comment.line.number-sign.kstar
+> let byArden = std.regex.by_arden(Odd)
+    0 "let" keyword.control.kstar
+    4 "byArden" variable.other.kstar
+   12 "=" keyword.operator.assignment.kstar
+   14 "std" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "regex" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "by_arden" entity.name.function.call.kstar
+   32 "(" punctuation.section.parens.begin.kstar
+   33 "Odd" variable.other.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> let byElimination = to_regex(Odd)
+    0 "let" keyword.control.kstar
+    4 "byElimination" variable.other.kstar
+   18 "=" keyword.operator.assignment.kstar
+   20 "to_regex" support.function.builtin.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Odd" variable.other.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> print byArden, byElimination
+    0 "print" keyword.control.kstar
+    6 "byArden" variable.other.kstar
+   13 "," punctuation.separator.comma.kstar
+   15 "byElimination" variable.other.kstar
+> test equivalent(byArden, byElimination)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "byArden" variable.other.kstar
+   23 "," punctuation.separator.comma.kstar
+   25 "byElimination" variable.other.kstar
+   38 ")" punctuation.section.parens.end.kstar
+> test equivalent(byArden, Odd)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "byArden" variable.other.kstar
+   23 "," punctuation.separator.comma.kstar
+   25 "Odd" variable.other.kstar
+   28 ")" punctuation.section.parens.end.kstar
+> 
+> # An NFA works as it is: here, the strings that end in 10.
+    0 "# An NFA works as it is: here, the strings that end in 10." comment.line.number-sign.kstar
+> nfa EndsIn10 over B {
+    0 "nfa" meta.machine.kstar storage.type.machine.kstar
+    4 "EndsIn10" meta.machine.kstar entity.name.type.machine.kstar
+   13 "over" meta.machine.kstar keyword.other.over.kstar
+   18 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  a
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "a" meta.machine.kstar variable.other.state.kstar
+>     accept c
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "c" meta.machine.kstar variable.other.state.kstar
+>     a --0,1--> a
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+    9 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   10 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "a" meta.machine.kstar variable.other.state.kstar
+>     a --1  --> b
+    4 "a" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "b" meta.machine.kstar variable.other.state.kstar
+>     b --0  --> c
+    4 "b" meta.machine.kstar variable.other.state.kstar
+    6 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    8 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   11 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   15 "c" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> print ""
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> print std.steps.arden(EndsIn10)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "steps" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "arden" entity.name.function.call.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 "EndsIn10" variable.other.kstar
+   30 ")" punctuation.section.parens.end.kstar
+> test equivalent(std.regex.by_arden(EndsIn10), EndsIn10)
+    0 "test" keyword.control.kstar
+    5 "equivalent" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "std" entity.name.namespace.kstar
+   19 "." punctuation.accessor.kstar
+   20 "regex" entity.name.namespace.kstar
+   25 "." punctuation.accessor.kstar
+   26 "by_arden" entity.name.function.call.kstar
+   34 "(" punctuation.section.parens.begin.kstar
+   35 "EndsIn10" variable.other.kstar
+   43 ")" punctuation.section.parens.end.kstar
+   44 "," punctuation.separator.comma.kstar
+   46 "EndsIn10" variable.other.kstar
+   54 ")" punctuation.section.parens.end.kstar
+> 

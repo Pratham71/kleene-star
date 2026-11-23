@@ -10,7 +10,7 @@ use common::{seed, Rng};
 use kstar::automata::grammar::{Grammar, Rule, Sym};
 use kstar::automata::pda::{Outcome, Pda};
 use kstar::automata::tm::{self, Dir, Halt, Tm};
-use kstar::automata::{cfg, convert, minimize, ops, regex, Dfa, Nfa, Regex};
+use kstar::automata::{arden, cfg, convert, minimize, ops, regex, Dfa, Nfa, Regex};
 use std::collections::BTreeSet;
 
 const ALPHABET: [char; 2] = ['a', 'b'];
@@ -154,6 +154,28 @@ fn regex_conversions_round_trip() {
         let printed = r.to_string();
         let reparsed = regex::parse(&printed).unwrap_or_else(|e| panic!("{what} printed as /{printed}/: {e:?}"));
         assert!(ops::equivalent(&d, &dfa(&reparsed)), "{what} printed as /{printed}/");
+    }
+}
+
+#[test]
+fn arden_agrees_with_state_elimination() {
+    let mut rng = Rng::new(seed());
+    for case in 0..CASES {
+        // A random DFA, and a random NFA without eps moves, as given.
+        let d = random_dfa(&mut rng);
+        let mut n = random_nfa(&mut rng);
+        for edges in &mut n.delta {
+            edges.remove(&None);
+        }
+        for (what, nfa) in [("DFA", convert::dfa_to_nfa(&d)), ("NFA", n)] {
+            let arden = arden::solve(&nfa, usize::MAX).expect("no limit").regex;
+            let eliminated = convert::dfa_to_regex(&convert::nfa_to_dfa(&nfa));
+            assert!(
+                ops::equivalent(&dfa(&arden), &dfa(&eliminated)),
+                "case {case}, {what}: Arden gave /{arden}/, state elimination /{eliminated}/
+{nfa}"
+            );
+        }
     }
 }
 

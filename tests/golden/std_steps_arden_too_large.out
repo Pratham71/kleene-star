@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_steps_arden_too_large.kstar, line 1, in <main>
+    print std.steps.arden(/(a|b)*a(a|b)(a|b)(a|b)(a|b)(a|b)(a|b)(a|b)/)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0608]: the equations grow past 5000 parts as they are solved
+  hint: `minimize` the machine first: fewer states give much shorter equations
