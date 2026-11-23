@@ -50,6 +50,12 @@ its GitHub release, so write it for people who use Kleene Star.
   says whether it has two, `two_derivations(G, w)` shows two different
   leftmost derivations, and `draw G on "w"` draws the trees side by side.
   Example: `examples/30_ambiguity.kstar`.
+- The basics of strings and languages: `std.collections.sigma_star(B, n)`
+  and `sigma_plus(B, n)` (Σ* and Σ+ up to length `n`; `words(B, n)` is
+  Σ^n), and `concat`, `power` and `star_up_to` on languages written as sets
+  of strings. Sets may now hold sets, one level deep, so
+  `std.collections.power_set(s)` gives the power set as a `Set[Set[T]]`.
+  Example: `examples/31_basics.kstar`.
 
 ## [0.6.0] - 2026-11-23
 

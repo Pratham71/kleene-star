@@ -24,9 +24,4 @@ Error in std_testing_checks.kstar, line 7:
                                            ^^^
 TypeError[E0300]: argument 3 of `std.testing.agree_up_to` must be an Int, but this is a Str
 
-Error in std_testing_checks.kstar, line 8:
-    test std.testing.equal({1}, {1})
-                           ^^^
-TypeError[E0300]: argument 1 of `std.testing.equal` must be an Int, a Str or a Bool, but this is a Set[Int]
-
-6 errors found
+5 errors found

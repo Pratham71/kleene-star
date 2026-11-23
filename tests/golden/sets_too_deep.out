@@ -1,0 +1,5 @@
+Error in sets_too_deep.kstar, line 1:
+    print {{{1}}}
+           ^^^^^
+TypeError[E0305]: a set can hold Int, Str or Bool values, or sets of them, not a Set[Set[Int]]
+  hint: sets nest one level deep: a set of sets of Ints, Strs or Bools

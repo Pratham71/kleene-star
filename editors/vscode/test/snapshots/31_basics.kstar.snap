@@ -1,0 +1,269 @@
+> # Chapter 25: the basics. Strings over an alphabet, the sets Σ^n, Σ* and
+    0 "# Chapter 25: the basics. Strings over an alphabet, the sets Σ^n, Σ* and" comment.line.number-sign.kstar
+> # Σ+ (cut off at a length, since Σ* is infinite), operations on languages
+    0 "# Σ+ (cut off at a length, since Σ* is infinite), operations on languages" comment.line.number-sign.kstar
+> # written as sets of strings, and the power set.
+    0 "# written as sets of strings, and the power set." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # Σ^2, and Σ* and Σ+ up to length 2.
+    0 "# Σ^2, and Σ* and Σ+ up to length 2." comment.line.number-sign.kstar
+> print std.collections.words(B, 2)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "words" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "B" variable.other.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "2" constant.numeric.integer.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> print std.collections.sigma_star(B, 2)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "sigma_star" entity.name.function.call.kstar
+   32 "(" punctuation.section.parens.begin.kstar
+   33 "B" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "2" constant.numeric.integer.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> print std.collections.sigma_plus(B, 2)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "sigma_plus" entity.name.function.call.kstar
+   32 "(" punctuation.section.parens.begin.kstar
+   33 "B" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "2" constant.numeric.integer.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> print len(std.collections.sigma_star(B, 4))
+    0 "print" keyword.control.kstar
+    6 "len" support.function.builtin.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "collections" entity.name.namespace.kstar
+   25 "." punctuation.accessor.kstar
+   26 "sigma_star" entity.name.function.call.kstar
+   36 "(" punctuation.section.parens.begin.kstar
+   37 "B" variable.other.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "4" constant.numeric.integer.kstar
+   41 ")" punctuation.section.parens.end.kstar
+   42 ")" punctuation.section.parens.end.kstar
+> 
+> # Operations on one string.
+    0 "# Operations on one string." comment.line.number-sign.kstar
+> let w = "0110"
+    0 "let" keyword.control.kstar
+    4 "w" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    9 "0110" string.quoted.double.kstar
+   13 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> print len(w), std.string.reverse(w), std.string.repeat("01", 3)
+    0 "print" keyword.control.kstar
+    6 "len" support.function.builtin.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "w" variable.other.kstar
+   11 ")" punctuation.section.parens.end.kstar
+   12 "," punctuation.separator.comma.kstar
+   14 "std" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "string" entity.name.namespace.kstar
+   24 "." punctuation.accessor.kstar
+   25 "reverse" support.function.builtin.kstar
+   32 "(" punctuation.section.parens.begin.kstar
+   33 "w" variable.other.kstar
+   34 ")" punctuation.section.parens.end.kstar
+   35 "," punctuation.separator.comma.kstar
+   37 "std" entity.name.namespace.kstar
+   40 "." punctuation.accessor.kstar
+   41 "string" entity.name.namespace.kstar
+   47 "." punctuation.accessor.kstar
+   48 "repeat" entity.name.function.call.kstar
+   54 "(" punctuation.section.parens.begin.kstar
+   55 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   56 "01" string.quoted.double.kstar
+   58 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   59 "," punctuation.separator.comma.kstar
+   61 "3" constant.numeric.integer.kstar
+   62 ")" punctuation.section.parens.end.kstar
+> print std.string.prefixes("011")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "string" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "prefixes" entity.name.function.call.kstar
+   25 "(" punctuation.section.parens.begin.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   27 "011" string.quoted.double.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   31 ")" punctuation.section.parens.end.kstar
+> print std.string.count(w, "1")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "string" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "count" entity.name.function.call.kstar
+   22 "(" punctuation.section.parens.begin.kstar
+   23 "w" variable.other.kstar
+   24 "," punctuation.separator.comma.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   27 "1" string.quoted.double.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   29 ")" punctuation.section.parens.end.kstar
+> 
+> # Operations on languages given as sets of strings.
+    0 "# Operations on languages given as sets of strings." comment.line.number-sign.kstar
+> let L = {"0", "01"}
+    0 "let" keyword.control.kstar
+    4 "L" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "{" punctuation.section.braces.begin.kstar
+    9 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   10 "0" string.quoted.double.kstar
+   11 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   12 "," punctuation.separator.comma.kstar
+   14 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   15 "01" string.quoted.double.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> let M = {"", "1"}
+    0 "let" keyword.control.kstar
+    4 "M" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "{" punctuation.section.braces.begin.kstar
+    9 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   10 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   14 "1" string.quoted.double.kstar
+   15 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   16 "}" punctuation.section.braces.end.kstar
+> print std.collections.concat(L, M)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "concat" support.function.builtin.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "L" variable.other.kstar
+   30 "," punctuation.separator.comma.kstar
+   32 "M" variable.other.kstar
+   33 ")" punctuation.section.parens.end.kstar
+> print std.collections.power(L, 2)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "power" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "L" variable.other.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "2" constant.numeric.integer.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> print std.collections.power(L, 0)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "power" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "L" variable.other.kstar
+   29 "," punctuation.separator.comma.kstar
+   31 "0" constant.numeric.integer.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> print std.collections.star_up_to(L, 3)
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "collections" entity.name.namespace.kstar
+   21 "." punctuation.accessor.kstar
+   22 "star_up_to" entity.name.function.call.kstar
+   32 "(" punctuation.section.parens.begin.kstar
+   33 "L" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "3" constant.numeric.integer.kstar
+   37 ")" punctuation.section.parens.end.kstar
+> 
+> # Sets of sets: the power set of {a, b, c} has 2^3 = 8 members.
+    0 "# Sets of sets: the power set of {a, b, c} has 2^3 = 8 members." comment.line.number-sign.kstar
+> let P = std.collections.power_set({"a", "b", "c"})
+    0 "let" keyword.control.kstar
+    4 "P" variable.other.kstar
+    6 "=" keyword.operator.assignment.kstar
+    8 "std" entity.name.namespace.kstar
+   11 "." punctuation.accessor.kstar
+   12 "collections" entity.name.namespace.kstar
+   23 "." punctuation.accessor.kstar
+   24 "power_set" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "{" punctuation.section.braces.begin.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   36 "a" string.quoted.double.kstar
+   37 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   41 "b" string.quoted.double.kstar
+   42 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   43 "," punctuation.separator.comma.kstar
+   45 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   46 "c" string.quoted.double.kstar
+   47 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   48 "}" punctuation.section.braces.end.kstar
+   49 ")" punctuation.section.parens.end.kstar
+> print P
+    0 "print" keyword.control.kstar
+    6 "P" variable.other.kstar
+> print len(P)
+    0 "print" keyword.control.kstar
+    6 "len" support.function.builtin.kstar
+    9 "(" punctuation.section.parens.begin.kstar
+   10 "P" variable.other.kstar
+   11 ")" punctuation.section.parens.end.kstar
+> for subset in P {
+    0 "for" keyword.control.kstar
+    4 "subset" variable.other.kstar
+   11 "in" keyword.control.kstar
+   14 "P" variable.other.kstar
+   16 "{" punctuation.section.braces.begin.kstar
+>     if len(subset) == 2 {
+    4 "if" keyword.control.kstar
+    7 "len" support.function.builtin.kstar
+   10 "(" punctuation.section.parens.begin.kstar
+   11 "subset" variable.other.kstar
+   17 ")" punctuation.section.parens.end.kstar
+   19 "==" keyword.operator.comparison.kstar
+   22 "2" constant.numeric.integer.kstar
+   24 "{" punctuation.section.braces.begin.kstar
+>         print subset
+    8 "print" keyword.control.kstar
+   14 "subset" variable.other.kstar
+>     }
+    4 "}" punctuation.section.braces.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 

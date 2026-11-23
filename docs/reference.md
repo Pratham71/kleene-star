@@ -561,9 +561,54 @@ Sets: membership, subsets, union, intersection, difference, size, smallest, larg
 | `sum(s: Set[Int]) -> Int` | The members of a set of Ints added up; the sum of the empty set is 0. |
 | `union(a: Set[T], b: Set[T]) -> Set[T]` | The members that are in the set `a`, in `b`, or in both. |
 | `words(alphabet: Alphabet, n: Int) -> Set[Str]` | Every string of length `n` over `alphabet`, as a set; `n` must not be negative, and there may be at most 100000 of them. |
+| `sigma_star(alphabet: Alphabet, n: Int) -> Set[Str]` | Σ* up to length `n`: every string over `alphabet` of length 0 to `n`, the empty string included. |
+| `sigma_plus(alphabet: Alphabet, n: Int) -> Set[Str]` | Σ+ up to length `n`: every string over `alphabet` of length 1 to `n`; Σ* without the empty string. |
+| `concat(a: Set[Str], b: Set[Str]) -> Set[Str]` | The concatenation of two sets of strings: every `xy` with `x` in `a` and `y` in `b`. |
+| `power(a: Set[Str], n: Int) -> Set[Str]` | `a` to the power `n`: every string made of `n` strings of `a` one after another; the power 0 is the set holding the empty string. |
+| `star_up_to(a: Set[Str], n: Int) -> Set[Str]` | The Kleene star of a set of strings, up to length `n`: every string of length at most `n` made of strings of `a` one after another. |
+| `power_set(s: Set[T]) -> Set[Set[T]]` | Every subset of `s`, the empty set and `s` included: 2^n of them for `n` members, with `s` of at most 16 members. |
 
-A set holds `Int`, `Str` or `Bool` values. In the signatures, `T` stands for
-that element type: `contains(s, x)` works for a set of Ints with an Int and
+**Strings over an alphabet.** `words(B, n)` is Σ^n, the strings of
+length exactly `n`; `sigma_star(B, n)` and `sigma_plus(B, n)` are Σ* and
+Σ+ cut off at length `n` (Σ* has infinitely many strings, so a program can
+only list a part). `concat`, `power` and `star_up_to` are the operations on
+languages written as sets of strings: L1L2, Lⁿ (with L⁰ = {""}, even for
+the empty language) and L* up to a length. The string operations on one
+string are in `std.string`: `length`, `reverse`, `repeat` (wⁿ),
+`prefixes`, `suffixes`, `substrings`, `count`. Each result has at most
+100000 strings (E0612), and a negative length is E0610.
+
+**Sets of sets.** A set may hold sets of Ints, Strs or Bools, one level
+deep: `{{1, 2}, {}, {3}}` is a `Set[Set[Int]]`, and so is the power set
+`power_set({1, 2})`. A set of sets of sets is a `TypeError` (E0305).
+
+```kstar
+alphabet B = {0, 1}
+print std.collections.sigma_star(B, 2)
+print std.collections.sigma_plus(B, 2) == std.collections.difference(std.collections.sigma_star(B, 2), {""})
+let L = {"a", "ab"}
+print std.collections.concat(L, {"", "b"}), std.collections.power(L, 2)
+print std.collections.star_up_to(L, 3)
+print std.collections.power_set({1, 2, 3})
+let s = {{1, 2}, {}, {3}}
+for x in s {
+    print x, len(x)
+}
+```
+
+```text
+{"", "0", "00", "01", "1", "10", "11"}
+true
+{"a", "ab", "abb"} {"aa", "aab", "aba", "abab"}
+{"", "a", "aa", "aaa", "aab", "ab", "aba"}
+{{}, {1}, {1, 2}, {1, 2, 3}, {1, 3}, {2}, {2, 3}, {3}}
+{} 0
+{1, 2} 2
+{3} 1
+```
+
+A set holds `Int`, `Str` or `Bool` values, or sets of them. In the
+signatures, `T` stands for that element type: `contains(s, x)` works for a set of Ints with an Int and
 for a set of Strs with a Str, and `union(a, b)` needs both sets to hold the
 same kind of value. `{}` fits any `Set[T]`. `min`, `max` and `sum` need a set
 of Ints. `min` and `max` of the empty set are a `ValueError` (E0613) with a
@@ -576,9 +621,10 @@ whose message names that limit, instead of a program that never finishes;
 a negative `n` is E0610.
 
 **Names that also belong to the built-ins.** The built-ins `union`,
-`intersect` and `difference` combine *languages* into a machine:
+`intersect`, `difference` and `concat` combine *languages* into a machine:
 `union({"a"}, {"b"})` is a `Dfa`. The functions here are different: they
-combine the *members of sets* and give a set back. Call them by their full
+combine the *members of sets* (or, for `concat`, the strings of two sets)
+and give a set back. Call them by their full
 names (`std.collections.union(a, b)`) or import them under other names
 (`from std.collections import union as set_union`). Taking one under its own
 name, as in `from std.collections import union`, is an error (E0203), because

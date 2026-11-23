@@ -1050,24 +1050,40 @@ impl Checker {
             ExprKind::Grammar(g) => self.grammar(g, None),
             ExprKind::Set(items) => {
                 let Some(first) = items.first() else { return Ok(Type::EmptySet) };
-                let element = self.expr(first)?;
-                if !matches!(element, Type::Int | Type::Str | Type::Bool) {
+                let mut types = Vec::new();
+                for item in items {
+                    types.push(self.expr(item)?);
+                }
+                // `{}` fits any set, so a set of sets takes its type from
+                // the first member that is not `{}`.
+                let (at, element) = types
+                    .iter()
+                    .enumerate()
+                    .find(|(_, t)| **t != Type::EmptySet)
+                    .map_or((0, types[0].clone()), |(i, t)| (i, t.clone()));
+                if !can_be_member(&element) {
+                    let span = if at == 0 { first.span } else { items[at].span };
+                    let hint = if matches!(&element, Type::Set(inner) if matches!(**inner, Type::Set(_))) {
+                        "sets nest one level deep: a set of sets of Ints, Strs or Bools"
+                    } else {
+                        "machines and regexes cannot go in a set; to combine languages use `union(a, b)`"
+                    };
                     return Err(type_error(
-                        first.span,
-                        format!("a set can hold Int, Str or Bool values, not {}", article(&element)),
+                        span,
+                        format!("a set can hold Int, Str or Bool values, or sets of them, not {}", article(&element)),
                     )
                     .code(codes::BAD_SET)
-                    .hint("machines and regexes cannot go in a set; to combine languages use `union(a, b)`"));
+                    .hint(hint));
                 }
-                for item in &items[1..] {
-                    let ty = self.expr(item)?;
-                    if ty != element {
+                let element = if element == Type::EmptySet { Type::Set(Box::new(Type::EmptySet)) } else { element };
+                for (item, ty) in items.iter().zip(&types) {
+                    if !fits(&element, ty) {
                         return Err(type_error(
                             item.span,
                             format!(
                                 "every item of a set must have the same type: the first is {}, but this is {}",
                                 article(&element),
-                                article(&ty)
+                                article(ty)
                             ),
                         )
                         .code(codes::BAD_SET));
@@ -1322,11 +1338,27 @@ fn check_arguments(name: &str, signature: &Signature, types: &[Type], args: &[Ex
     })
 }
 
-/// Like `fits`, but a `T` in `wanted` may be decided here: it can be an Int,
-/// a Str or a Bool (what a set can hold), the same for the whole call.
+/// Like `fits`, but a `T` in `wanted` may be decided here: it can be
+/// anything a set can hold, the same for the whole call.
 fn fits_generic(wanted: &Type, actual: &Type, element: &mut Option<Type>) -> bool {
     let mut decide = |found: &Type| {
-        matches!(found, Type::Int | Type::Str | Type::Bool) && element.get_or_insert_with(|| found.clone()) == found
+        // `{}` as a `T` fits a `T` that is (or turns out to be) a set.
+        if *found == Type::EmptySet {
+            return element.as_ref().is_none_or(|d| matches!(d, Type::Set(_)));
+        }
+        if !can_be_member(found) {
+            return false;
+        }
+        let decided = element.get_or_insert_with(|| found.clone());
+        if fits(decided, found) {
+            true
+        } else if fits(found, decided) {
+            // `{}` first, then `{1}`: the set type wins.
+            *decided = found.clone();
+            true
+        } else {
+            false
+        }
     };
     match (wanted, actual) {
         (Type::Var, found) => decide(found),
@@ -1395,9 +1427,24 @@ fn defined_name(stmt: &Stmt) -> Option<&str> {
     }
 }
 
-/// Can a value of type `actual` be used where `wanted` is required?
+/// Can a value of type `actual` be used where `wanted` is required? `{}`
+/// fits any set, also inside a set of sets.
 fn fits(wanted: &Type, actual: &Type) -> bool {
-    wanted == actual || (*actual == Type::EmptySet && matches!(wanted, Type::Set(_)))
+    match (wanted, actual) {
+        _ if wanted == actual => true,
+        (Type::Set(_), Type::EmptySet) => true,
+        (Type::Set(w), Type::Set(a)) => fits(w, a),
+        _ => false,
+    }
+}
+
+/// What a set can hold: Ints, Strs, Bools, or sets of those (one level).
+fn can_be_member(ty: &Type) -> bool {
+    match ty {
+        Type::Int | Type::Str | Type::Bool | Type::EmptySet => true,
+        Type::Set(inner) => matches!(**inner, Type::Int | Type::Str | Type::Bool | Type::EmptySet),
+        _ => false,
+    }
 }
 
 /// True if running these statements always ends in a `return`.
