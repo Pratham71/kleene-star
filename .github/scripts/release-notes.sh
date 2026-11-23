@@ -48,12 +48,12 @@ echo
 if [ -n "$beta" ]; then
     echo "This is a pre-release. The install scripts and \`kstar update\` use the latest stable release unless you ask for this one:"
     echo
-    echo "- **Windows:** download and run \`kstar-setup-x64.exe\` below, or in PowerShell:"
+    echo "- **Windows:** download and run \`kstar-setup-x64.exe\` below (recommended), or in PowerShell:"
     echo "  \`\$env:KSTAR_VERSION = \"$tag\"; irm $raw/install.ps1 | iex\`"
     echo "- **Linux and macOS:** \`curl -fsSL $raw/install.sh | KSTAR_VERSION=$tag sh\`"
 else
-    echo "- **Windows:** download and run \`kstar-setup-x64.exe\` below, or in PowerShell:"
-    echo "  \`powershell -c \"irm $raw/install.ps1 | iex\"\`"
+    echo "- **Windows:** download and run \`kstar-setup-x64.exe\` below (recommended), or in PowerShell:"
+    echo "  \`irm $raw/install.ps1 | iex\`"
     echo "- **Linux and macOS:** \`curl -fsSL $raw/install.sh | sh\`"
 fi
 echo "- **VS Code:** download \`kleene-star-$version.vsix\` below and run \`code --install-extension kleene-star-$version.vsix\`."

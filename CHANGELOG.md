@@ -12,6 +12,24 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-23
+
+A fix for `kstar update` on Windows. In 0.8.0 it installed by running the
+install script through PowerShell, which Microsoft Defender can take for
+malware: it could stop the update and quarantine `kstar.exe`. Now kstar
+downloads, checks and installs the release by itself.
+
+### Upgrading from 0.8.0
+
+**On Windows, reinstall with the installer**: download
+`kstar-setup-x64.exe` from the release page, check its checksum and run
+it. It installs over 0.8.0. Do not use `kstar update` from 0.8.0: it is
+0.8.0's own updater that is blocked, and it cannot fix itself. If Windows
+Security already removed `kstar.exe`, the installer puts it back.
+
+On Linux and macOS, `kstar update` from 0.8.0 works as before.
+Programs and commands are unchanged.
+
 ### Fixed
 
 - `kstar update` no longer starts PowerShell or a shell to install. In
@@ -682,7 +700,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/Pratham71/kleene-star/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Pratham71/kleene-star/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Pratham71/kleene-star/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Pratham71/kleene-star/compare/v0.5.2...v0.6.0

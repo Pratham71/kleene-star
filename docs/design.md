@@ -1,6 +1,6 @@
 # Kleene Star: a small, well-designed language for Theory of Computation
 
-> Status: version 0.8.0 (2026-11-23), MIT licensed. Stages 0 to 9 below are built, and so is most of
+> Status: version 0.8.1 (2026-11-23), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
 > Version 0.3 added imports between files, `kstar export` to Rust and a standard library with
