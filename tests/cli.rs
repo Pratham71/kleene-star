@@ -102,7 +102,11 @@ fn every_option_the_parsers_take_is_in_the_help() {
             let listed = command.flags.iter().any(|f| f.spellings().contains(&spelling));
             let mut args = vec![command.name, spelling];
             if flag.takes_value() {
-                args.push(if spelling == "--color" { "never" } else { "x" });
+                args.push(match spelling {
+                    "--color" => "never",
+                    "--theme" => "light",
+                    _ => "x",
+                });
             }
             let output = kstar(&dir, &args);
             let err = stderr(&output);
@@ -113,6 +117,10 @@ fn every_option_the_parsers_take_is_in_the_help() {
             }
         }
     }
+    // `--name=value`, and a value on an option that takes none.
+    assert!(!stderr(&kstar(&dir, &["run", "--out=x"])).contains("unknown option"));
+    assert!(stderr(&kstar(&dir, &["run", "--watch=1", "x.kstar"])).contains("`--watch` takes no value"));
+    assert!(stderr(&kstar(&dir, &["run", "--nope=1"])).contains("unknown option `--nope`"));
     // The short spellings, which the loop above leaves out.
     assert!(!stderr(&kstar(&dir, &["export", "-o"])).contains("unknown option"));
     assert!(stderr(&kstar(&dir, &["run", "-o", "x"])).contains("unknown option `-o`"));
@@ -615,4 +623,56 @@ fn draw_on_writes_a_page_whose_script_parses() {
         Ok(check) => assert!(check.status.success(), "{}", String::from_utf8_lossy(&check.stderr)),
         Err(_) => println!("SKIPPED: no Node on the PATH to check the player's script"),
     }
+}
+
+/// Runs `kstar` in `dir` with extra environment variables, and with no
+/// theme from the machine running the tests.
+fn kstar_env(dir: &Path, args: &[&str], env: &[(&str, &str)]) -> Output {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_kstar"));
+    command.args(args).current_dir(dir).env_remove("NO_COLOR").env_remove("KSTAR_THEME");
+    // A config folder of the test's own, so a real config file is not read.
+    let config = dir.join("config-home");
+    command.env("XDG_CONFIG_HOME", &config).env("APPDATA", &config);
+    for (k, v) in env {
+        command.env(k, v);
+    }
+    command.output().unwrap()
+}
+
+#[test]
+fn the_theme_comes_from_the_option_the_environment_or_the_config_file() {
+    let dir = scratch("theme");
+    std::fs::write(dir.join("m.kstar"), "alphabet B = {0, 1}\ndfa M over B {\n    start a\n    accept a\n    a --0,1--> a\n}\ndraw M\ndraw M on \"01\"\n").unwrap();
+    let drawn = |args: &[&str], env: &[(&str, &str)]| {
+        let out = kstar_env(&dir, args, env);
+        assert!(out.status.success(), "{}", stderr(&out));
+        (std::fs::read_to_string(dir.join("M.dot")).unwrap(), std::fs::read_to_string(dir.join("M.html")).unwrap())
+    };
+    // By default the drawing is light and the page follows the system.
+    let (dot, page) = drawn(&["run", "m.kstar"], &[]);
+    assert!(dot.contains(&format!("bgcolor=\"{}\"", kstar::theme::LIGHT.background)));
+    assert!(page.contains("data-theme=\"auto\""));
+    let (dot, page) = drawn(&["run", "--theme", "dark", "m.kstar"], &[]);
+    assert!(dot.contains(&format!("bgcolor=\"{}\"", kstar::theme::DARK.background)), "{dot}");
+    assert!(page.contains("data-theme=\"dark\""));
+    let (dot, _) = drawn(&["run", "m.kstar"], &[("KSTAR_THEME", "high-contrast")]);
+    assert!(dot.contains(&format!("bgcolor=\"{}\"", kstar::theme::HIGH_CONTRAST.background)), "{dot}");
+    // The option wins over the environment.
+    let (dot, _) = drawn(&["run", "--theme=light", "m.kstar"], &[("KSTAR_THEME", "dark")]);
+    assert!(dot.contains(&format!("bgcolor=\"{}\"", kstar::theme::LIGHT.background)), "{dot}");
+
+    let config = dir.join("config-home").join("kstar");
+    std::fs::create_dir_all(&config).unwrap();
+    std::fs::write(config.join("config.toml"), "# my settings\ntheme = \"dark\"\n").unwrap();
+    let (dot, _) = drawn(&["run", "m.kstar"], &[]);
+    assert!(dot.contains(&format!("bgcolor=\"{}\"", kstar::theme::DARK.background)), "{dot}");
+
+    // A name that is not a theme says where it came from.
+    let bad = kstar_env(&dir, &["run", "--theme", "blue", "m.kstar"], &[]);
+    assert_eq!(bad.status.code(), Some(2));
+    assert!(stderr(&bad).contains("`--theme` is `blue`; it must be auto, light, dark or high-contrast"), "{}", stderr(&bad));
+    let bad = kstar_env(&dir, &["run", "m.kstar"], &[("KSTAR_THEME", "sepia")]);
+    assert!(stderr(&bad).contains("KSTAR_THEME is `sepia`"), "{}", stderr(&bad));
+    // ...but only for commands that draw.
+    assert!(kstar_env(&dir, &["check", "m.kstar"], &[("KSTAR_THEME", "sepia")]).status.success());
 }

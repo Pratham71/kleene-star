@@ -4,14 +4,17 @@ wrote machine2.html
 true
 digraph machine {
     rankdir=LR;
+    bgcolor="#ffffff";
+    node [color="#59636e", fontcolor="#1f2328", style=filled, fillcolor="#ffffff"];
+    edge [color="#59636e", fontcolor="#59636e"];
     node [shape=circle];
-    __start [shape=point];
-    "e" [shape=doublecircle, style=bold, color="#1f6feb"];
-    "o" [style="bold,filled", color="#1f6feb", fillcolor="#cfe3ff"];
+    __start [shape=point, fillcolor="#59636e"];
+    "e" [shape=doublecircle, style="bold,filled", color="#0969da"];
+    "o" [style="bold,filled", color="#0969da", fillcolor="#ddf4ff"];
     __start -> "e";
     "e" -> "e" [label="1"];
-    "e" -> "o" [label="0", style=bold, color="#1f6feb", fontcolor="#1f6feb"];
+    "e" -> "o" [label="0", style=bold, color="#bc4c00", fontcolor="#bc4c00"];
     "o" -> "e" [label="0"];
-    "o" -> "o" [label="1", style=bold, color="#1f6feb", fontcolor="#1f6feb"];
+    "o" -> "o" [label="1", style=bold, color="#bc4c00", fontcolor="#bc4c00"];
 }
 

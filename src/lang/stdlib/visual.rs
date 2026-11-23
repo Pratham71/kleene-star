@@ -65,7 +65,7 @@ fn run_of(args: &[Value]) -> Result<player::Play, Failure> {
 
 fn dot_run(args: &[Value]) -> Result<Value, Failure> {
     let play = run_of(args)?;
-    Ok(Value::str(&dot::render(&play.diagram, Some(&player::highlight(&play)))))
+    Ok(Value::str(&dot::render(&play.diagram, Some(&player::highlight(&play)), crate::theme::current().theme())))
 }
 
 fn player_page(args: &[Value]) -> Result<Value, Failure> {

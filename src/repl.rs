@@ -74,8 +74,9 @@ fn history_file() -> Option<PathBuf> {
     Some(PathBuf::from(home).join(".kstar_history"))
 }
 
-fn new_session(color: bool, trace_calls: bool) -> Session {
+fn new_session(color: bool, trace_calls: bool, theme: kstar::theme::Choice) -> Session {
     let mut session = Session::new("<repl>", Box::new(std::io::stdout()), PathBuf::from("."), true);
+    session.theme(theme);
     session.render_svg(true);
     session.ascii_only(crate::console_needs_ascii());
     session.color(color);
@@ -83,7 +84,7 @@ fn new_session(color: bool, trace_calls: bool) -> Session {
     session
 }
 
-pub fn repl(color: bool, trace_calls: bool) -> ExitCode {
+pub fn repl(color: bool, trace_calls: bool, theme: kstar::theme::Choice) -> ExitCode {
     let mut editor: Editor<Completion, DefaultHistory> = match Editor::new() {
         Ok(editor) => editor,
         Err(e) => {
@@ -99,7 +100,7 @@ pub fn repl(color: bool, trace_calls: bool) -> ExitCode {
     }
 
     println!("Kleene Star {}. Type :help for help, :quit to leave.", env!("CARGO_PKG_VERSION"));
-    let mut session = new_session(color, trace_calls);
+    let mut session = new_session(color, trace_calls, theme);
     let mut entry = String::new();
     loop {
         let prompt = if entry.is_empty() { "kstar> " } else { "...> " };
@@ -120,7 +121,7 @@ pub fn repl(color: bool, trace_calls: bool) -> ExitCode {
                 ":quit" | ":q" | ":exit" => break,
                 ":help" | ":h" => println!("{HELP}"),
                 ":reset" => {
-                    session = new_session(color, trace_calls);
+                    session = new_session(color, trace_calls, theme);
                     println!("everything defined so far is forgotten");
                 }
                 ":type" | ":t" if !argument.is_empty() => match session.type_of(argument) {

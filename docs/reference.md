@@ -266,10 +266,54 @@ step by step, like an animated `trace`. Open it in any browser.
   most 1000 steps.
 - The page is one file with nothing to download: no Graphviz, no network.
   The states are laid out in columns by their distance from the start
-  state. It follows the browser's light or dark theme.
+  state.
+- The **Theme** button (or T) changes the colours: auto (the system's
+  light, dark or more-contrast setting), light, dark and high contrast.
+  The page remembers the choice. It starts in the theme of the run (see
+  [themes](#themes)). With reduced motion set in the system, nothing
+  fades.
 - The layout is for machines of at most 300 states; past that it is a
   `LimitError` (E0612). `minimize` the machine, or use `trace`.
 - `std.visual.player(M, "w")` gives the same page as a string.
+
+## Themes
+
+Drawings (`draw`, `std.visual.dot` and `dot_run`, `draw g on "w"`) and the
+page `draw M on "w"` writes share one set of colours, in three themes:
+
+| Theme | For |
+|---|---|
+| `light` | Paper and bright screens: dark text and lines on white. The default for drawings, so they print well. |
+| `dark` | Dark screens. |
+| `high-contrast` | White and bright colours on black, with text at 7:1 contrast or more. |
+
+Every theme has the same roles: the background, panels, text, secondary
+text, lines, the accent of controls, accepting states (green), the
+state(s) the machine is in, the moves just taken, rejecting states and
+errors (red), and the cells of the input, stack and tape. Every pair of
+colours read together meets WCAG AA (4.5:1 for text, 3:1 for lines), and
+a test checks it. Colour is never the only sign: accepting states are
+double circles, rejecting states boxes, and the current state is also
+drawn thicker.
+
+Choose one with, first to last:
+
+1. `kstar run --theme <name>` (or `kstar repl --theme <name>`);
+2. the `KSTAR_THEME` environment variable;
+3. `theme = "<name>"` in the config file, `~/.config/kstar/config.toml`
+   (`$XDG_CONFIG_HOME/kstar/config.toml` if that is set), or
+   `%APPDATA%\kstar\config.toml` on Windows;
+4. otherwise `auto`: the page follows the reader's system, and drawings
+   are light.
+
+```toml
+# ~/.config/kstar/config.toml
+theme = "dark"
+```
+
+A name that is not a theme stops `kstar run` with a message saying where
+it came from. Commands that draw nothing (`check`, `fmt`, `trace`,
+`export`) ignore the setting.
 
 ## Modules
 
@@ -880,8 +924,8 @@ Drawings and traces as strings: DOT diagrams, a run drawn on its diagram, the tr
 | `player(m: Acceptor, w: Str) -> Str` | The self-contained HTML page that `draw m on w` writes, which plays the run step by step. |
 | `trace_text(m: Acceptor, w: Str) -> Str` | The table `trace m on w` prints, as a string, with `-` in the empty cells. |
 
-These give, as strings, what the statements `draw`, `draw M on "w"` and
-`trace` write or print, so a program can print them, test them, or save
+These give, as strings, in the colours of the run's [theme](#themes),
+what the statements `draw`, `draw M on "w"` and `trace` write or print, so a program can print them, test them, or save
 them with `std.io`. `m` may be a `Dfa`, `Nfa`, `Pda` or `Tm`; `dot` also
 takes a regex or set (drawn as its NFA). A run needs states, so
 `dot_run`, `trace_text` and `player` refuse a regex, a set or a grammar
@@ -2019,6 +2063,7 @@ cannot be defined either (E0209).
 | `kstar run --trace-calls ...` | Prints a line for every function call (with its arguments) and return (with its result). |
 | `kstar run --fixed-clock ...` | Makes every time from `std.benchmark` 0, so the output is the same on every run. |
 | `kstar run --allow-path dir ...` | Lets `std.io` also read and write files in `dir`; without it a program may only use files in its own folder. |
+| `kstar run --theme dark ...` | Draws in a [theme](#themes): `auto`, `light`, `dark` or `high-contrast`. |
 | `kstar run --eager-imports ...` | Runs each imported module at its `import` line, instead of when one of its names is first used. |
 | `kstar check <files>...` | Reports every error and warning without running. |
 | `kstar fmt <files>...` | Rewrites files (or every file in a folder) in the standard style. See [formatting](#formatting). |

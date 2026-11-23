@@ -8,6 +8,7 @@
 pub mod automata;
 pub mod help;
 pub mod manual;
+pub mod theme;
 pub mod ide;
 pub mod lang;
 
@@ -39,6 +40,7 @@ pub struct Session {
     interp: Interp,
     repl: bool,
     color: bool,
+    theme: theme::Choice,
     /// Warnings from the last `check`, rendered, waiting to be shown.
     warnings: Vec<String>,
 }
@@ -66,6 +68,7 @@ impl Session {
             interp,
             repl,
             color: false,
+            theme: theme::Choice::Auto,
             warnings: Vec::new(),
         }
     }
@@ -132,9 +135,14 @@ impl Session {
     /// Warnings are kept for `take_warnings`.
     pub fn run(&mut self, text: &str) -> Result<(), String> {
         let program = self.check(text)?;
-        self.interp
-            .run(&program, &self.sources)
+        let (interp, sources) = (&mut self.interp, &self.sources);
+        theme::with_choice(self.theme, || interp.run(&program, sources))
             .map_err(|diag| diag.render_styled(&self.sources, self.color))
+    }
+
+    /// The colours of drawings and run players (`kstar run --theme`).
+    pub fn theme(&mut self, choice: theme::Choice) {
+        self.theme = choice;
     }
 
     /// Lexes, parses and checks `text` without running it. On failure

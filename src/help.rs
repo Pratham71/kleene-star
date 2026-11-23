@@ -98,12 +98,16 @@ failed, 1 otherwise, and 2 when the command itself was wrong.",
             Flag { names: "--watch", help: "run again whenever a file changes; stop with Ctrl-C" },
             Flag { names: "--trace-calls", help: "print every function call with its arguments, and every return with its result" },
             Flag { names: "--eager-imports", help: "run each imported module at its import line, not when one of its names is first used" },
+            Flag {
+                names: "--theme <name>",
+                help: "the colours of drawings and of the page `draw M on \"w\"` writes: auto (the default: the page follows the system, drawings are light), light, dark or high-contrast. Without it, the KSTAR_THEME environment variable or `theme = \"<name>\"` in the config file (~/.config/kstar/config.toml, or %APPDATA%\\kstar\\config.toml on Windows) decides.",
+            },
             COLOR,
         ],
         examples: &[
             ("kstar run examples/tour.kstar", "run one program"),
             ("kstar run labs/ --out drawings", "run every program in labs/, writing drawings into drawings/"),
-            ("kstar run --watch lab1.kstar", "run lab1.kstar again on every save"),
+            ("kstar run --theme dark lab1.kstar", "run lab1.kstar, drawing in the dark theme"),
         ],
     },
     Command {
@@ -170,6 +174,10 @@ A bare expression is printed, and names can be defined again. Inside it,
 `:quit` do what they say. Tab completes names.",
         flags: &[
             Flag { names: "--trace-calls", help: "print every function call with its arguments, and every return with its result" },
+            Flag {
+                names: "--theme <name>",
+                help: "the colours of drawings and of the page `draw M on \"w\"` writes: auto (the default: the page follows the system, drawings are light), light, dark or high-contrast. Without it, the KSTAR_THEME environment variable or `theme = \"<name>\"` in the config file (~/.config/kstar/config.toml, or %APPDATA%\\kstar\\config.toml on Windows) decides.",
+            },
             COLOR,
         ],
         examples: &[("kstar repl", "start the prompt"), ("kstar repl --trace-calls", "start it, showing every call")],

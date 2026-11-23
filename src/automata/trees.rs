@@ -251,7 +251,10 @@ pub fn to_dot(g: &Grammar, trees: &[Tree]) -> String {
         }
         id
     }
-    let mut out = String::from("digraph parse_trees {\n    node [fontname=\"Helvetica\"];\n");
+    let t = crate::theme::current().theme();
+    let mut out = String::from("digraph parse_trees {\n");
+    out.push_str(&super::dot::palette(t));
+    out.push_str(&format!("    node [fontname=\"Helvetica\"];\n    graph [fontcolor=\"{}\", color=\"{}\"];\n", t.text, t.border));
     let mut next = 0;
     for (k, t) in trees.iter().enumerate() {
         out.push_str(&format!("  subgraph cluster_{k} {{\n    label=\"tree {}\";\n", k + 1));

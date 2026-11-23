@@ -40,6 +40,9 @@ print every function call with its arguments, and every return with its result
 \fB\-\-eager-imports\fR
 run each imported module at its import line, not when one of its names is first used
 .TP
+\fB\-\-theme\fR \fI<name>\fR
+the colours of drawings and of the page \fBdraw M on "w"\fR writes: auto (the default: the page follows the system, drawings are light), light, dark or high-contrast. Without it, the KSTAR_THEME environment variable or \fBtheme = "<name>"\fR in the config file (~/.config/kstar/config.toml, or %APPDATA%\ekstar\econfig.toml on Windows) decides.
+.TP
 \fB\-\-color\fR \fI<when>\fR
 auto (the default), always or never. With auto, output is coloured only on a terminal and never when the NO_COLOR environment variable is set.
 .SH EXAMPLES
@@ -50,8 +53,8 @@ run one program
 \fBkstar run labs/ \-\-out drawings\fR
 run every program in labs/, writing drawings into drawings/
 .TP
-\fBkstar run \-\-watch lab1.kstar\fR
-run lab1.kstar again on every save
+\fBkstar run \-\-theme dark lab1.kstar\fR
+run lab1.kstar, drawing in the dark theme
 .SH SEE ALSO
 \fBkstar\fR(1),
 \fBkstar\-help\fR(1)
