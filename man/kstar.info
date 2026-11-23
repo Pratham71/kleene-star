@@ -11,7 +11,7 @@ File: kstar.info,  Node: Top,  Next: run,  Up: (dir)
 Kleene Star
 ***********
 
-Kleene Star: a small language for Theory of Computation, version 0.8.0
+Kleene Star: a small language for Theory of Computation, version 0.8.1
 
 Usage: kstar <command> [options]
        kstar <file.kstar>   (short for kstar run <file.kstar>)
