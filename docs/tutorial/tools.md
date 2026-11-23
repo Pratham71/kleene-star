@@ -62,22 +62,39 @@ In the REPL, `:type expr` shows a type without running anything,
 `:load file.kstar` brings in a file's definitions, `:trace M 0101` steps
 through a machine, and Tab completes names.
 
-## Exporting a machine to Rust
+## Exporting a machine to Rust or Python
 
 A Kleene Star program is a script, but a finished DFA is just a table, and a
 table can be compiled. `kstar export` writes a machine as one Rust function
 that runs anywhere, with no Kleene Star and no dependencies:
 
 ```bash
-kstar export examples/01_dfa.kstar HasDouble1 -o has_double1.rs
+kstar export examples/01_dfa.kstar HasDouble1
 ```
+
+It writes the file next to the program, named after the machine, and says
+where:
+
+```text
+Wrote C:\Users\me\kleene-star\examples\HasDouble1.rs (Rust, 40 lines)
+```
+
+It never replaces a file that is already there: pass `--force` to replace
+it. `-o` names another file or a folder to write into, and `-o -` prints
+the code instead, for a pipe.
+
+`--format python` writes a Python file instead, with
+`def has_double1(word: str) -> bool` and a self-test that runs when you run
+the file with `python HasDouble1.py`. `--format json` writes the machine in
+[Kleene Star's JSON format](../reference.md#the-json-format), which
+`from_json` reads back.
 
 Any regular language can be exported (a `Dfa`, `Nfa`, `Regex` or `Set[Str]`):
 it is turned into a DFA first, and `--minimize` makes that DFA as small as
 possible. `--fn` names the function; by default it is the machine's name in
-Rust's style, `has_double1`. Grammars, PDAs and Turing machines cannot be
-exported: they can need memory that grows with the input, so they have no
-fixed table.
+snake_case, `has_double1`. Grammars, PDAs and Turing machines cannot be
+exported as code: they can need memory that grows with the input, so they
+have no fixed table. (As JSON they can.)
 
 The same code is available inside a program as `to_rust(lang, "name")`,
 which returns it as a string:

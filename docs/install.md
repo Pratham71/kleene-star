@@ -184,12 +184,30 @@ does and its settings.
 kstar update --check
 ```
 
-says whether a newer stable release exists. `kstar update` says the same
-and prints the command to install it; it does not replace itself, since a
-running program cannot be overwritten on Windows. To update, install again
-the way you installed: run the new `kstar-setup-x64.exe`, run the install
-script again (it replaces the old programs), or run `cargo install` again
-in an updated clone.
+says whether a newer stable release exists, and what it is about.
+`kstar update` says the same and asks:
+
+```text
+installed: kstar 0.5.1
+latest:    kstar 0.5.2
+
+A fix for `kstar update` and `kstar export`: ...
+
+Update to v0.5.2? [Y/n]
+```
+
+On yes it installs the new release into the folder `kstar` is in, with the
+release's install script, whichever way you installed it (the installer,
+the script or `cargo install` all put the programs in a `bin` folder). The
+running `kstar` is moved aside first, since it cannot be overwritten while
+it runs, and put back if anything goes wrong. On no it changes nothing.
+`kstar update --yes` updates without asking; in a script or CI, where
+there is nobody to ask, `kstar update` refuses without `--yes` rather than
+wait.
+
+You can also install again the way you installed: run the new
+`kstar-setup-x64.exe`, run the install script again (it replaces the old
+programs), or run `cargo install` again in an updated clone.
 
 **The VS Code extension** comes with each release as
 `kleene-star-<version>.vsix`, and it should be the one of the same release
@@ -201,9 +219,10 @@ VS Code (its `code` command) is installed:
   install, after checking its checksum like the programs';
 - the Windows installer does the same when its *Install the Kleene Star
   extension in VS Code* box is ticked;
-- `kstar update` checks the installed extension, and if it is missing or
-  from another release than this `kstar`, downloads the matching `.vsix`,
-  checks it and installs it. `kstar update --check` only says so.
+- `kstar update` installs the new release's extension along with it, and
+  when `kstar` is already up to date it checks the installed extension: if
+  it is missing or from another release, it downloads the matching
+  `.vsix`, checks it and installs it. `kstar update --check` only says so.
 
 To leave VS Code alone, set `KSTAR_NO_VSCODE=1` (for the scripts and
 `kstar update`), pass `kstar update --no-vscode`, or untick the installer's

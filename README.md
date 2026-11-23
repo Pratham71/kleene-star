@@ -97,7 +97,7 @@ grammars, are refused before the program runs, with the reason.
 **Seeing how it works.** `trace` runs a machine on a word step by step,
 showing states, sets of states, a PDA's stack or a Turing machine's tape.
 `draw` writes a state diagram for Graphviz. `kstar export` writes a machine
-as a standalone Rust function.
+to a file as a standalone Rust function, a Python file or JSON.
 
 **Programs that grow.** Functions, loops and `test` statements; `import` to
 split a program over several files; a standard library (`std.math`,
@@ -139,7 +139,7 @@ calls, most recent last, like Python.
 | `kstar check file.kstar` | Reports errors and warnings without running |
 | `kstar fmt file.kstar` | Rewrites files in the standard style |
 | `kstar trace file.kstar M 0110` | Runs the file quietly, then traces machine `M` on `0110` |
-| `kstar export file.kstar M` | Writes machine `M` as a Rust function |
+| `kstar export file.kstar M` | Writes machine `M` to `M.rs`, a Rust function (`--format python` or `json` for the others) |
 | `kstar repl` | An interactive prompt |
 | `kstar explain E0404` | Explains an error code |
 
