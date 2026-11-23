@@ -370,6 +370,60 @@ true false
 8 {"0101", "1001", "101"}
 ```
 
+### `std.benchmark`
+
+How much work the algorithms do: counts that are the same on every computer, and times in microseconds.
+
+| Function | What it does |
+|---|---|
+| `equivalence_rounds(m: Lang) -> Int` | The rounds of refinement minimising `m`'s DFA takes: the smallest k for which k-equivalence equals (k+1)-equivalence. |
+| `pda_configs(p: Pda, w: Str) -> Int` | How many configurations the search for an accepting run of `p` on `w` looks at. |
+| `regex_size(m: Lang) -> Int` | The number of symbols and operators in the regex state elimination builds for `m`, as `to_regex` gives it. |
+| `time_accepts_us(m: Acceptor, w: Str) -> Int` | Microseconds to decide whether `m` accepts `w`, the median of 5 runs; 0 with a fixed clock. |
+| `time_us(op: Str, m: Lang) -> Int` | Microseconds the operation `op` (`to_dfa`, `minimize`, `to_regex`, `remove_eps`, `complement` or `reverse`) takes on `m`, the median of 5 runs; 0 with a fixed clock. |
+
+**Counts and times.** The counts are the same on every computer and every
+run, so they can go in a `test` or a table of how the work grows: with
+`states`, they show the subset construction doubling the states of "the
+k-th symbol from the end is 1" for each k, and state elimination growing
+faster still. Times depend on the computer and change from run to run;
+each is the median of 5 runs of the operation alone, after its input has
+been turned into the machine the operation works on (an NFA for `to_dfa`,
+`remove_eps` and `reverse`, a DFA for the others).
+
+**Output that does not change.** `kstar run --fixed-clock` makes every
+time 0, so a program's output is the same on every run; Kleene Star's own
+tests, and the samples on this page, always run that way.
+
+- `equivalence_rounds` counts as in the usual textbook working:
+  0-equivalence splits accepting from non-accepting states, each round
+  splits the groups by where their states go, and the answer is the first
+  `k` whose split is the same as the next one's.
+- `regex_size` counts what `to_regex` builds, and like it stops past
+  100000 parts (E0608).
+- `pda_configs` counts the configurations (state, input read, stack) the
+  breadth-first search for an accepting run finds.
+- `time_us` with any other operation is E0621.
+
+```kstar
+alphabet B = {0, 1}
+let N = nfa over B {
+    start  a
+    accept c
+    a --0,1--> a
+    a --1--> b
+    b --0,1--> c
+}
+let D = to_dfa(N)
+print states(N), states(D), std.benchmark.equivalence_rounds(D)
+print std.benchmark.time_us("to_dfa", N)
+```
+
+```text
+3 4 1
+0
+```
+
 ### `std.binary`
 
 Binary numbers and bit strings over {0, 1}: divisibility and remainders, numerals without leading zeros, fixed widths, parity, runs of equal bits, and converting between Ints and bit strings.
@@ -1700,6 +1754,7 @@ cannot be defined either (E0209).
 | `kstar run --out dir ...` | Writes drawings into `dir`. |
 | `kstar run --watch ...` | Runs again whenever a file changes; Ctrl-C stops. |
 | `kstar run --trace-calls ...` | Prints a line for every function call (with its arguments) and return (with its result). |
+| `kstar run --fixed-clock ...` | Makes every time from `std.benchmark` 0, so the output is the same on every run. |
 | `kstar run --allow-path dir ...` | Lets `std.io` also read and write files in `dir`; without it a program may only use files in its own folder. |
 | `kstar run --eager-imports ...` | Runs each imported module at its `import` line, instead of when one of its names is first used. |
 | `kstar check <files>...` | Reports every error and warning without running. |

@@ -133,6 +133,9 @@ pub struct Interp {
     sources: SourceMap,
     /// The folders `std.io` may use; `None` when the program is not a file.
     pub files: Option<Rc<super::stdlib::io::Files>>,
+    /// Whether `std.benchmark` reports every time as 0, so the output is
+    /// the same on every run (`kstar run --fixed-clock`, and in tests).
+    pub fixed_clock: bool,
 }
 
 type Run<T> = Result<T, Diag>;
@@ -160,6 +163,7 @@ impl Interp {
             explanations: Vec::new(),
             sources: SourceMap::default(),
             files: None,
+            fixed_clock: false,
         }
     }
 
@@ -875,6 +879,8 @@ impl Interp {
             Callee::Std(module, function) => {
                 let result = if module.name == "io" {
                     super::stdlib::io::with_files(self.files.clone(), || (function.run)(&args))
+                } else if module.name == "benchmark" {
+                    super::stdlib::benchmark::with_clock(self.fixed_clock, || (function.run)(&args))
                 } else {
                     (function.run)(&args)
                 };
@@ -891,7 +897,9 @@ impl Interp {
                     let kind = match failure.code {
                         codes::OVERFLOW | codes::MATH_DOMAIN => ErrorKind::Math,
                         codes::NOT_IN_ALPHABET | codes::FOREIGN_WORD | codes::ALPHABET_MISMATCH | codes::DUPLICATE_SYMBOL => ErrorKind::Alphabet,
-                        codes::RESULT_TOO_LARGE | codes::GAVE_UP | codes::STEP_LIMIT | codes::FILE_TOO_LARGE => ErrorKind::Limit,
+                        codes::RESULT_TOO_LARGE | codes::GAVE_UP | codes::STEP_LIMIT | codes::FILE_TOO_LARGE | codes::TOO_LARGE => {
+                            ErrorKind::Limit
+                        }
                         codes::IO | codes::PATH_NOT_ALLOWED => ErrorKind::Io,
                         _ => ErrorKind::Value,
                     };

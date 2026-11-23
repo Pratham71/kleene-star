@@ -71,6 +71,9 @@ pub struct Search {
     /// (an index into `Pda::moves`).
     pub moves: Vec<usize>,
     pub outcome: Outcome,
+    /// How many configurations the search found (and would look at): a
+    /// count of its work that does not depend on the computer.
+    pub explored: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -116,7 +119,7 @@ impl Pda {
         if let Some(position) = word.iter().position(|c| !self.alphabet.contains(c)) {
             let start = Config { state: self.start, read: 0, stack: vec![self.bottom.clone()] };
             let outcome = Outcome::Foreign { position: position + 1, symbol: word[position] };
-            return Search { path: vec![start], moves: Vec::new(), outcome };
+            return Search { path: vec![start], moves: Vec::new(), outcome, explored: 1 };
         }
 
         // Inside the search, stack symbols are small numbers: copying and
@@ -207,7 +210,7 @@ impl Pda {
         }
         path.reverse();
         moves.reverse();
-        Search { path, moves, outcome }
+        Search { path, moves, outcome, explored: found.len() }
     }
 
     /// The standard PDA for a grammar. It keeps the part of a leftmost

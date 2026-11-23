@@ -75,7 +75,7 @@ fn words(args: &[Value], i: usize) -> Vec<&str> {
 
 /// Asks `acceptor` (argument `which`) about `word`; `arg` is the argument
 /// to blame if the word does not fit its alphabet.
-fn accepts(args: &[Value], which: usize, word: &str, arg: Option<usize>) -> Result<bool, Failure> {
+pub(super) fn accepts(args: &[Value], which: usize, word: &str, arg: Option<usize>) -> Result<bool, Failure> {
     langs::accepts(&args[which], word).map_err(|refusal| match refusal {
         Refusal::Foreign { symbol, alphabet } => Failure {
             code: codes::FOREIGN_WORD,

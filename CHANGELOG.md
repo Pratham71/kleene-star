@@ -14,6 +14,14 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Added
 
+- `std.benchmark`: how much work the algorithms do. Counts that are the
+  same on every computer (`equivalence_rounds`, the rounds of
+  k-equivalence minimisation takes; `regex_size`; `pda_configs`, the
+  configurations a PDA's search looks at) and times in microseconds
+  (`time_us` for a conversion, `time_accepts_us`). `kstar run
+  --fixed-clock` makes every time 0, so the output is the same on every
+  run. New error E0621. Example: `examples/24_benchmark.kstar`.
+
 - `draw M on "w"` writes `M.html`, a page that plays the run of a DFA, NFA,
   PDA or Turing machine on a word step by step: the diagram with the
   current states and the move just taken highlighted, the input read so

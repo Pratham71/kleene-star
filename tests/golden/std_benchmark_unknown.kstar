@@ -1,0 +1,2 @@
+alphabet B = {0, 1}
+print std.benchmark.time_us("sort", /0*1/)

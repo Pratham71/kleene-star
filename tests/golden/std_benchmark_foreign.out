@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_benchmark_foreign.kstar, line 1, in <main>
+    print std.benchmark.pda_configs(std.pda.anbn("a", "b"), "abc")
+                                                            ^^^^^
+AlphabetError[E0501]: the word has `c` at position 3, which is not in the alphabet
+  hint: the alphabet is {a, b}
