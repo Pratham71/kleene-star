@@ -12,6 +12,29 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Added
+
+- `std.io`: reading and writing text files next to the program, such as a
+  word list to test a machine on (`read_words`, `read_lines`, `read_text`)
+  or a machine saved with `to_json` (`write_text`, `write_lines`,
+  `append_text`), and `exists` and `files`. A program may only use files in
+  its own folder; `kstar run --allow-path FOLDER` allows another. Hidden
+  files are never touched, only text files can be written, and reads and
+  writes have size limits. New errors E0618 and E0619. Example:
+  `examples/22_io.kstar`.
+
+## [0.5.2] - 2026-11-23
+
+`kstar update` now asks before it updates, and then updates by itself;
+`kstar export` writes a file (Rust, Python or JSON) instead of printing the
+code; highlighting in VS Code colours every part of a program in any theme.
+
+### Upgrading from 0.5.1
+
+Nothing changes for programs. Scripts that read the code `kstar export`
+printed must now pass `-o -`. Scripts that run `kstar update` must pass
+`--yes`, or they stop with a message saying so instead of updating.
+
 ### Changed
 
 - `kstar update` asks before it updates, and then updates: it shows the
@@ -26,31 +49,23 @@ its GitHub release, so write it for people who use Kleene Star.
   given `--force`. **For scripts that read the code from standard output,
   add `-o -`**, which prints it as before.
 
+### Added
+
+- `kstar export --format python`: a dependency-free Python file with a
+  function that runs the DFA, and a self-test on sample words when it is
+  run as a script.
+- Golden tests that check the conversions against the usual textbook
+  worked examples, step for step: removing eps moves, the subset
+  construction with its dead state, minimisation by k-equivalence, state
+  elimination, grammar to PDA, the run of a PDA on a word, and the Turing
+  machine for 0^n 1^n. All of them already agreed.
+
 ### Fixed
 
 - Highlighting in VS Code: names, brackets, commas and the quotes of
   strings and regexes now have scopes too, so every part of a program is
   coloured by any theme, and all scope names are standard ones. Snapshot
   tests over every example keep it that way.
-
-### Added
-
-- `kstar export --format python`: a dependency-free Python file with a
-  function that runs the DFA, and a self-test on sample words when it is
-  run as a script.
-- `std.io`: reading and writing text files next to the program, such as a
-  word list to test a machine on (`read_words`, `read_lines`, `read_text`)
-  or a machine saved with `to_json` (`write_text`, `write_lines`,
-  `append_text`), and `exists` and `files`. A program may only use files in
-  its own folder; `kstar run --allow-path FOLDER` allows another. Hidden
-  files are never touched, only text files can be written, and reads and
-  writes have size limits. New errors E0618 and E0619. Example:
-  `examples/22_io.kstar`.
-- Golden tests that check the conversions against the usual textbook
-  worked examples, step for step: removing eps moves, the subset
-  construction with its dead state, minimisation by k-equivalence, state
-  elimination, grammar to PDA, the run of a PDA on a word, and the Turing
-  machine for 0^n 1^n. All of them already agreed.
 
 ## [0.5.1] - 2026-11-21
 
@@ -466,7 +481,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/Pratham71/kleene-star/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Pratham71/kleene-star/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Pratham71/kleene-star/compare/v0.3.0...v0.4.0
