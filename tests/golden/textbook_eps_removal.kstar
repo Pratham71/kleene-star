@@ -1,0 +1,20 @@
+# Removing eps moves the usual textbook way: the move of q on a is the
+# eps-closure of where the eps-closure of q goes on a, and q is accepting
+# when its eps-closure holds an accepting state.
+alphabet B = {0, 1}
+nfa E over B {
+    start  p
+    accept s
+    p --eps--> q
+    q --eps--> s
+    p --0  --> p
+    q --0  --> r
+    r --1  --> q
+    s --0,1--> s
+}
+let N = remove_eps(E)
+print N
+# p's closure is {p, q, s}; on 0 they reach {p, r, s}, whose closure is
+# all four states. r's closure is {r} alone, so r is not accepting.
+test equivalent(E, N)
+test N accepts "" and N accepts "1" and N accepts "0"

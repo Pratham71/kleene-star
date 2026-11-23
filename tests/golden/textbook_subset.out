@@ -1,0 +1,16 @@
+DFA with 4 states over {a, b}
+            | a       | b
+->  {q0}    | {q1,q2} | {}
+   *{q1,q2} | {q1,q2} | {q2}
+    {}      | {}      | {}
+    {q2}    | {q1,q2} | {q2}
+Input: ab
+
+Step  Symbol  From     To
+0     —       —        {q0}
+1     a       {q0}     {q1,q2}
+2     b       {q1,q2}  {q2}
+Result: REJECTED
+Reason: Ended in non-accepting state {q2}
+
+tests: 2 passed, 0 failed

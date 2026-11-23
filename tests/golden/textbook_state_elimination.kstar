@@ -1,0 +1,20 @@
+# State elimination as usually taught: first a new start state with no
+# edges into it and one new final state with no edges out of it, then the
+# other states are removed one by one. Here the start state has an edge
+# into it and there are two accepting states, so both are needed.
+alphabet AB = {a, b}
+dfa M over AB {
+    start  s
+    accept t, u
+    s --a  --> t
+    s --b  --> s
+    t --a  --> u
+    t --b  --> s
+    u --a,b--> u
+}
+let r = to_regex(M)
+print r
+test equivalent(r, M)
+for w in {"a", "ba", "aa", "aab", "b", "", "abab"} {
+    print w, M accepts w, r accepts w
+}

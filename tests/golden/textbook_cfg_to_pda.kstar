@@ -1,0 +1,14 @@
+# From a grammar to a PDA that simulates leftmost derivations: put the
+# start variable on a bottom marker, replace a variable on top by the right
+# side of one of its rules (its first symbol on top), match terminals
+# against the input, and accept at the marker.
+alphabet B = {0, 1}
+grammar G over B {
+    S -> 0 T S 1 | 1 T 0
+    T -> 1
+}
+let P = to_pda(G)
+print P
+print derive(G, "011101")
+trace P on "011101"
+test not (P accepts "0110")

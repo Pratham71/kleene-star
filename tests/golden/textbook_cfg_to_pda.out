@@ -1,0 +1,35 @@
+PDA with 3 states over {0, 1}, stack starts as Z
+start start, accept accept
+From  | Read | Pop | Push | To
+start | eps  | Z   | SZ   | loop
+loop  | eps  | S   | 0TS1 | loop
+loop  | eps  | S   | 1T0  | loop
+loop  | eps  | T   | 1    | loop
+loop  | 0    | 0   | eps  | loop
+loop  | 1    | 1   | eps  | loop
+loop  | eps  | Z   | Z    | accept
+S
+=> 0 T S 1
+=> 0 1 S 1
+=> 0 1 1 T 0 1
+=> 0 1 1 1 0 1
+Input: 011101
+
+Step  Move         State   Input   Stack
+0     —            start   011101  Z
+1     eps, Z/SZ    loop    011101  SZ
+2     eps, S/0TS1  loop    011101  0TS1Z
+3     0, 0/eps     loop    11101   TS1Z
+4     eps, T/1     loop    11101   1S1Z
+5     1, 1/eps     loop    1101    S1Z
+6     eps, S/1T0   loop    1101    1T01Z
+7     1, 1/eps     loop    101     T01Z
+8     eps, T/1     loop    101     101Z
+9     1, 1/eps     loop    01      01Z
+10    0, 0/eps     loop    1       1Z
+11    1, 1/eps     loop    —       Z
+12    eps, Z/Z     accept  —       Z
+Result: ACCEPTED
+Reason: Read all of the input and reached accepting state accept
+
+tests: 1 passed, 0 failed

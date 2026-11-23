@@ -1,0 +1,22 @@
+# The Turing machine for 0^n 1^n (n at least 1) that crosses out a 0 with
+# X and its matching 1 with Y, sweeping back to the last X each time.
+alphabet B = {0, 1}
+tm M over B {
+    start  q0
+    accept q4
+    q0 --0/X,R--> q1
+    q0 --Y/Y,R--> q3
+    q1 --0/0,R--> q1
+    q1 --Y/Y,R--> q1
+    q1 --1/Y,L--> q2
+    q2 --0/0,L--> q2
+    q2 --Y/Y,L--> q2
+    q2 --X/X,R--> q0
+    q3 --Y/Y,R--> q3
+    q3 --_/_,R--> q4
+}
+trace M on "0011"
+for w in {"01", "0011", "000111", "", "0", "011", "001", "10", "0101"} {
+    print w, M accepts w
+}
+print run(M, "0011"), std.tm.steps(M, "0011")
