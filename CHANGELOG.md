@@ -35,6 +35,10 @@ its GitHub release, so write it for people who use Kleene Star.
   `std.pda.ids(P, "w")` shows a run as instantaneous descriptions,
   `(q, w, γ) ⊢ (q', w', γ')`. PDAs written as before work as before. New
   error E0410. Example: `examples/27_pda_notation.kstar`.
+- Turing machine notation: the blank may be written `□` as well as `_`
+  (and `kstar fmt` keeps it), and `std.tm.ids(M, "w")` shows a run as
+  instantaneous descriptions `u q v` with the head on the first symbol of
+  `v`. Example: `examples/28_tm_notation.kstar`.
 
 ## [0.6.0] - 2026-11-23
 

@@ -165,7 +165,8 @@ tm Name over Alphabet {
 ```
 
 - `read` and `write` are tape symbols: letters, digits, or `_` for the
-  blank. Symbols the machine writes need not be in the alphabet; the alphabet
+  blank, which may also be written `□`, as it is often printed (`kstar fmt`
+  keeps whichever is written). A space may follow the comma: `0/1, R`. Symbols the machine writes need not be in the alphabet; the alphabet
   says only what the input may contain, and it cannot contain `_`.
 - `move` is `L` (left), `R` (right) or `S` (stay).
 - The input starts on the tape with the head on its first symbol.
@@ -175,6 +176,11 @@ tm Name over Alphabet {
 - `accepts` and `run` stop after 100 000 steps with a `LimitError`, since a
   Turing machine may never halt (the halting problem); `trace` shows at most
   100 steps and then reports `UNKNOWN`.
+- `std.tm.ids(M, "w")` shows a run as instantaneous descriptions `u q v`:
+  the tape left of the head, the state, then the tape from the head's cell
+  on, so the head is on the first symbol after the state (`X q1 abb`). Each
+  step is a line after `⊢`, and the last line says how the machine halted.
+  Blanks are shown as `_`.
 
 ## Grammars
 
@@ -1371,6 +1377,7 @@ Ready-made Turing machines (binary increment, unary addition and copying, decide
 | `final_state(m: Tm, w: Str) -> Str` | The state the machine is in when it halts on `w`. |
 | `halts_within(m: Tm, w: Str, n: Int) -> Bool` | Whether the machine halts on `w` within `n` steps, at most 100000. |
 | `tape_symbols(m: Tm) -> Set[Str]` | The symbols that can be on the tape: the alphabet, the blank `_`, and every symbol the machine writes. |
+| `ids(m: Tm, w: Str) -> Str` | The run of `m` on `w` as instantaneous descriptions `u q v` (the head on the first symbol of `v`), one per line after `⊢`, then how it halted; at most 100 steps. |
 
 `tm` is a keyword, so write `std.tm.steps(M, w)`, `from std.tm import
 steps`, or `import std.tm as tms` (see `std.grammar`).
@@ -1856,7 +1863,7 @@ state       := NAME ('[' expr ']')?
 action      := label (',' label)*                  (dfa, nfa)
              | label ',' pop '/' push               (pda)
              | tape '/' tape ',' ('L' | 'R' | 'S')  (tm)
-tape        := symbol | '_'
+tape        := symbol | '_' | '□'
 pop         := stack-symbol | 'eps'
 push        := 'eps' | stack symbols written together, top first
 stack-symbol := one letter, digit or `$`, or the symbol after `stack starts`

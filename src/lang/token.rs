@@ -115,6 +115,7 @@ pub enum Tok {
     Bar,       // |    between grammar alternatives
     Slash,     // /    between pop and push in a PDA move
     Dollar,    // $    a PDA stack symbol, often the bottom marker
+    Blank,     // □    the blank of a Turing machine's tape, like `_`
 
     Eof,
 }
@@ -238,6 +239,7 @@ impl Tok {
             Tok::Bar => "|",
             Tok::Slash => "/",
             Tok::Dollar => "$",
+            Tok::Blank => "□",
             Tok::Int(_) | Tok::Str(_) | Tok::Regex(_) | Tok::Ident(_) | Tok::Eof => "",
         }
     }

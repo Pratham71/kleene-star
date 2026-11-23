@@ -912,7 +912,12 @@ impl<'a> Parser<'a> {
             return Err(self
                 .error("a Turing machine always reads and writes a symbol, so `eps` cannot be used here")
                 .code(codes::BAD_EPS)
-                .hint("write `_` for the blank cell"));
+                .hint("write `_` (or `□`) for the blank cell"));
+        }
+        // `□` is the blank as it is often printed; it means the same as `_`.
+        if *self.peek() == Tok::Blank {
+            let span = self.advance().span;
+            return Ok(Label { symbol: Some(crate::automata::tm::BLANK), span });
         }
         self.label().map_err(|e| e.hint(hint))
     }

@@ -1,0 +1,27 @@
+# Turing machine notation: `□` for the blank, `read/write, move` labels,
+# and runs as instantaneous descriptions.
+alphabet B = {0, 1}
+tm Flip over B {
+    start  s
+    accept done
+    s    --0/1,R--> s
+    s    --1/0,R--> s
+    s    --□/□,L--> back
+    back --0/0,L--> back
+    back --1/1,L--> back
+    back --□/□,R--> done
+}
+print run(Flip, "011")
+print std.tm.ids(Flip, "011")
+print std.tm.ids(Flip, "")
+tm Stuck over B {
+    start  s
+    s --0/_,R--> s
+}
+print std.tm.ids(Stuck, "01")
+tm Forever over B {
+    start  s
+    s --_/_,R--> s
+    s --0/0,R--> s
+}
+print std.tm.ids(Forever, "0")
