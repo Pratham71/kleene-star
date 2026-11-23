@@ -42,6 +42,8 @@ Options:
   --out <dir>        where `draw` writes its files (default: the current folder)
   --allow-path <dir> let std.io also read and write files in <dir> (repeatable);
                      otherwise a program may only use files in its own folder
+  --fixed-clock      std.benchmark reports every time as 0, so the output is
+                     the same on every run
   --watch            run again whenever a file changes; stop with Ctrl-C
   --trace-calls      print every function call and return
   --eager-imports    run each imported module at its import, not at first use
@@ -256,6 +258,7 @@ struct Options {
     out_dir: String,
     /// Folders `std.io` may use besides the program's own.
     allow_paths: Vec<String>,
+    fixed_clock: bool,
     watch: bool,
     trace_calls: bool,
     eager_imports: bool,
@@ -268,6 +271,7 @@ impl Options {
             files: Vec::new(),
             out_dir: ".".into(),
             allow_paths: Vec::new(),
+            fixed_clock: false,
             watch: false,
             trace_calls: false,
             eager_imports: false,
@@ -284,6 +288,7 @@ impl Options {
                     options.allow_paths.push(args.next().ok_or("`--allow-path` needs a folder")?.to_string());
                 }
                 "--watch" if allow_out => options.watch = true,
+                "--fixed-clock" if allow_out => options.fixed_clock = true,
                 "--eager-imports" if allow_out => options.eager_imports = true,
                 "--trace-calls" => options.trace_calls = true,
                 "--color" => color = args.next().ok_or("`--color` needs auto, always or never")?,
@@ -453,6 +458,7 @@ fn run_file(file: &Path, options: &Options, check_only: bool) -> bool {
     let out_dir = PathBuf::from(&options.out_dir);
     let (color, trace_calls, eager) = (options.color, options.trace_calls, options.eager_imports);
     let allow_paths = options.allow_paths.clone();
+    let fixed_clock = options.fixed_clock;
     kstar::with_big_stack(move || {
         let paint = Paint(color);
         let mut session = Session::new(&name, Box::new(std::io::stdout()), out_dir, false);
@@ -461,6 +467,7 @@ fn run_file(file: &Path, options: &Options, check_only: bool) -> bool {
         session.ascii_only(console_needs_ascii());
         session.color(color);
         session.trace_calls(trace_calls);
+        session.fixed_clock(fixed_clock);
         for dir in &allow_paths {
             if let Err(message) = session.allow_path(Path::new(dir)) {
                 eprintln!("kstar: {message}");

@@ -77,6 +77,8 @@ pub fn run_with(shown_name: &str, text: &str, options: Run) -> Outcome {
         let capture = Capture::default();
         let mut session = Session::new(&shown_name, Box::new(capture.clone()), scratch_dir(), false);
         session.eager_imports(options.eager_imports);
+        // Times from `std.benchmark` are 0, so outputs can be compared.
+        session.fixed_clock(true);
         match options.files {
             Files::None => session.set_reader(Box::new(|path| {
                 Err(std::io::Error::new(std::io::ErrorKind::NotFound, path.display().to_string()))

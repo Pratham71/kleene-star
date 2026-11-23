@@ -68,6 +68,12 @@ impl Session {
         }
     }
 
+    /// Makes `std.benchmark` report every time as 0, so a program's output
+    /// is the same on every run (`kstar run --fixed-clock`).
+    pub fn fixed_clock(&mut self, enabled: bool) {
+        self.interp.fixed_clock = enabled;
+    }
+
     /// Lets `std.io` also use the files in `dir` (`kstar run --allow-path`).
     pub fn allow_path(&mut self, dir: &Path) -> Result<(), String> {
         let files = self.interp.files.as_mut().ok_or("this program cannot use files: it is not running from a file")?;

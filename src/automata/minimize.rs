@@ -11,14 +11,29 @@ use std::collections::{BTreeMap, BTreeSet};
 /// The unique smallest complete DFA for the same language (Moore's algorithm).
 pub fn minimize(dfa: &Dfa) -> Dfa {
     let reachable = dfa.reachable(); // unreachable states are simply dropped
+    let (group, count, _) = refine(dfa, &reachable);
+    build(dfa, &reachable, &group, count)
+}
+
+/// How many rounds of refinement minimisation takes: the smallest `k` for
+/// which k-equivalence is the same as (k+1)-equivalence, as in the usual
+/// textbook working (0-equivalence splits accepting from not accepting).
+pub fn equivalence_rounds(dfa: &Dfa) -> usize {
+    refine(dfa, &dfa.reachable()).2
+}
+
+/// Moore's partition refinement over the reachable states: each state's
+/// group, the number of groups, and the `k` at which it settled.
+fn refine(dfa: &Dfa, reachable: &[State]) -> (Vec<usize>, usize, usize) {
     let mut group: Vec<usize> =
         (0..dfa.states.len()).map(|s| usize::from(dfa.accept.contains(&s))).collect();
     let mut count = reachable.iter().map(|&s| group[s]).collect::<BTreeSet<_>>().len();
+    let mut k = 0;
     loop {
         // A state's signature: its own group, and the group each symbol leads to.
         let mut ids: BTreeMap<(usize, Vec<usize>), usize> = BTreeMap::new();
         let mut refined = group.clone();
-        for &s in &reachable {
+        for &s in reachable {
             let signature = (group[s], dfa.delta[s].iter().map(|&t| group[t]).collect());
             let fresh = ids.len();
             refined[s] = *ids.entry(signature).or_insert(fresh);
@@ -28,11 +43,16 @@ pub fn minimize(dfa: &Dfa) -> Dfa {
             break;
         }
         count = ids.len();
+        k += 1;
     }
+    (group, count, k)
+}
 
+/// The DFA whose states are the groups of `refine`.
+fn build(dfa: &Dfa, reachable: &[State], group: &[usize], count: usize) -> Dfa {
     // Groups are numbered in breadth-first order, so the start's group is 0.
     let mut members: Vec<Vec<State>> = vec![Vec::new(); count];
-    for &s in &reachable {
+    for &s in reachable {
         members[group[s]].push(s);
     }
     for m in &mut members {

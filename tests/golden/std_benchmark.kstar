@@ -1,0 +1,24 @@
+# Counts of work, and times, which are 0 in the tests (a fixed clock).
+alphabet B = {0, 1}
+# Minimisation settles at 2-equivalence: {A, C}, {B}, {D}, {E}.
+dfa M over B {
+    start  A
+    accept E
+    A --0--> B
+    A --1--> C
+    B --0--> B
+    B --1--> D
+    C --0--> B
+    C --1--> C
+    D --0--> B
+    D --1--> E
+    E --0--> B
+    E --1--> C
+}
+print std.benchmark.equivalence_rounds(M), states(minimize(M))
+print std.benchmark.regex_size(/(0|1)*1/), std.benchmark.regex_size(M)
+print std.benchmark.pda_configs(std.pda.anbn("a", "b"), "aabb")
+print std.benchmark.time_us("minimize", M), std.benchmark.time_accepts_us(M, "0011")
+for op in {"to_dfa", "minimize", "to_regex", "remove_eps", "complement", "reverse"} {
+    test std.benchmark.time_us(op, M) == 0
+}

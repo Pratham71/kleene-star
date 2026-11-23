@@ -1563,6 +1563,20 @@ print std.visual.trace_text(/0*1/, "01")
 Convert it first: `std.visual.trace_text(to_dfa(/0*1/), "01")`, or for a
 grammar `to_pda(g)`.
 
+## E0621: An operation `std.benchmark.time_us` cannot time
+
+`std.benchmark.time_us` times one of the conversions, named as a string:
+`"to_dfa"`, `"minimize"`, `"to_regex"`, `"remove_eps"`, `"complement"` or
+`"reverse"`. The hint lists them.
+
+```kstar-error
+alphabet B = {0, 1}
+print std.benchmark.time_us("sort", /0*1/)
+```
+
+To time whether a machine accepts a word, use
+`std.benchmark.time_accepts_us(M, "0110")`.
+
 ## W0100: A state that can never be reached
 
 No sequence of moves from the start state leads to this state, so it does

@@ -1,0 +1,40 @@
+# Chapter 18: how the work grows. std.benchmark counts the work the
+# algorithms do, the same on every computer, and times them. Run with
+# `kstar run --fixed-clock` to see every time as 0, as the tests do.
+
+alphabet B = {0, 1}
+
+# "The k-th symbol from the end is 1": an NFA with k + 1 states, whose
+# smallest DFA needs 2^k, because it must remember the last k symbols.
+fn kth_from_end(k: Int) -> Nfa {
+    return nfa over B {
+        start  q[0]
+        accept q[k]
+        q[0] --0,1--> q[0]
+        q[0] --1  --> q[1]
+        for i in 1..k {
+            q[i] --0,1--> q[i + 1]
+        }
+    }
+}
+
+print "k, NFA states, DFA states, rounds, microseconds"
+for k in 1..10 {
+    let N = kth_from_end(k)
+    let D = to_dfa(N)
+    print k, states(N), states(D), std.benchmark.equivalence_rounds(D), std.benchmark.time_us("to_dfa", N)
+    test states(minimize(D)) == std.math.pow(2, k)
+}
+
+# State elimination grows faster still: the regex for k = 5 is already
+# over 100000 parts, which `to_regex` refuses to build.
+for k in 1..5 {
+    print k, std.benchmark.regex_size(kth_from_end(k))
+}
+
+# A PDA's search looks at more configurations as the word grows.
+let AnBn = std.pda.anbn("a", "b")
+for n in 1..6 {
+    let w = std.string.repeat("a", n) + std.string.repeat("b", n)
+    print n, std.benchmark.pda_configs(AnBn, w), std.benchmark.time_accepts_us(AnBn, w)
+}

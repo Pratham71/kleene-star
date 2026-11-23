@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_benchmark_unknown.kstar, line 2, in <main>
+    print std.benchmark.time_us("sort", /0*1/)
+                                ^^^^^^
+ValueError[E0621]: `std.benchmark.time_us` cannot time "sort"
+  hint: it times "complement", "minimize", "remove_eps", "reverse", "to_dfa", "to_regex"

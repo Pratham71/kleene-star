@@ -1,0 +1,1 @@
+print std.benchmark.pda_configs(std.pda.anbn("a", "b"), "abc")

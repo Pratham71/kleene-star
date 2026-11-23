@@ -18,6 +18,7 @@
 //! `docs/internals.md`.
 
 pub mod automata;
+pub mod benchmark;
 pub mod binary;
 pub mod collections;
 pub mod grammar;
@@ -184,7 +185,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[automata::MODULE, binary::MODULE, collections::MODULE, grammar::MODULE, io::MODULE, math::MODULE, pda::MODULE, random::MODULE, regex::MODULE, string::MODULE, testing::MODULE, tm::MODULE, visual::MODULE];
+pub const MODULES: &[Module] = &[automata::MODULE, benchmark::MODULE, binary::MODULE, collections::MODULE, grammar::MODULE, io::MODULE, math::MODULE, pda::MODULE, random::MODULE, regex::MODULE, string::MODULE, testing::MODULE, tm::MODULE, visual::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {

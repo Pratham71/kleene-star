@@ -1,0 +1,309 @@
+> # Chapter 18: how the work grows. std.benchmark counts the work the
+    0 "# Chapter 18: how the work grows. std.benchmark counts the work the" comment.line.number-sign.kstar
+> # algorithms do, the same on every computer, and times them. Run with
+    0 "# algorithms do, the same on every computer, and times them. Run with" comment.line.number-sign.kstar
+> # `kstar run --fixed-clock` to see every time as 0, as the tests do.
+    0 "# `kstar run --fixed-clock` to see every time as 0, as the tests do." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # "The k-th symbol from the end is 1": an NFA with k + 1 states, whose
+    0 "# \"The k-th symbol from the end is 1\": an NFA with k + 1 states, whose" comment.line.number-sign.kstar
+> # smallest DFA needs 2^k, because it must remember the last k symbols.
+    0 "# smallest DFA needs 2^k, because it must remember the last k symbols." comment.line.number-sign.kstar
+> fn kth_from_end(k: Int) -> Nfa {
+    0 "fn" storage.type.function.kstar
+    3 "kth_from_end" entity.name.function.kstar
+   15 "(" punctuation.definition.parameters.begin.kstar
+   16 "k" variable.parameter.kstar
+   17 ":" punctuation.separator.type.kstar
+   19 "Int" support.type.kstar
+   22 ")" punctuation.definition.parameters.end.kstar
+   24 "->" keyword.operator.arrow.kstar
+   27 "Nfa" support.type.kstar
+   31 "{" punctuation.section.braces.begin.kstar
+>     return nfa over B {
+    4 "return" keyword.control.kstar
+   11 "nfa" meta.machine.kstar storage.type.machine.kstar
+   15 "over" meta.machine.kstar keyword.other.over.kstar
+   20 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   22 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>         start  q[0]
+    8 "start" meta.machine.kstar keyword.control.state-role.kstar
+   15 "q" meta.machine.kstar variable.other.state.kstar
+   16 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   17 "0" meta.machine.kstar constant.numeric.integer.kstar
+   18 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         accept q[k]
+    8 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   15 "q" meta.machine.kstar variable.other.state.kstar
+   16 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   17 "k" meta.machine.kstar variable.other.kstar
+   18 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         q[0] --0,1--> q[0]
+    8 "q" meta.machine.kstar variable.other.state.kstar
+    9 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   10 "0" meta.machine.kstar constant.numeric.integer.kstar
+   11 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+   13 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   15 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   16 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   17 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "q" meta.machine.kstar variable.other.state.kstar
+   23 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   24 "0" meta.machine.kstar constant.numeric.integer.kstar
+   25 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         q[0] --1  --> q[1]
+    8 "q" meta.machine.kstar variable.other.state.kstar
+    9 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   10 "0" meta.machine.kstar constant.numeric.integer.kstar
+   11 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+   13 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   15 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   18 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   22 "q" meta.machine.kstar variable.other.state.kstar
+   23 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   24 "1" meta.machine.kstar constant.numeric.integer.kstar
+   25 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         for i in 1..k {
+    8 "for" meta.machine.kstar keyword.control.kstar
+   12 "i" meta.machine.kstar variable.other.kstar
+   14 "in" meta.machine.kstar keyword.control.kstar
+   17 "1" meta.machine.kstar constant.numeric.integer.kstar
+   18 ".." meta.machine.kstar keyword.operator.range.kstar
+   20 "k" meta.machine.kstar variable.other.state.kstar
+   22 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>             q[i] --0,1--> q[i + 1]
+   12 "q" meta.machine.kstar variable.other.state.kstar
+   13 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   14 "i" meta.machine.kstar variable.other.kstar
+   15 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+   17 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+   19 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   20 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   21 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   22 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   26 "q" meta.machine.kstar variable.other.state.kstar
+   27 "[" meta.machine.kstar punctuation.definition.index.begin.kstar
+   28 "i" meta.machine.kstar variable.other.kstar
+   30 "+" meta.machine.kstar keyword.operator.arithmetic.kstar
+   32 "1" meta.machine.kstar constant.numeric.integer.kstar
+   33 "]" meta.machine.kstar punctuation.definition.index.end.kstar
+>         }
+    8 "}" meta.machine.kstar punctuation.section.block.end.kstar
+>     }
+    4 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> print "k, NFA states, DFA states, rounds, microseconds"
+    0 "print" keyword.control.kstar
+    6 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+    7 "k, NFA states, DFA states, rounds, microseconds" string.quoted.double.kstar
+   54 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> for k in 1..10 {
+    0 "for" keyword.control.kstar
+    4 "k" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "1" constant.numeric.integer.kstar
+   10 ".." keyword.operator.range.kstar
+   12 "10" constant.numeric.integer.kstar
+   15 "{" punctuation.section.braces.begin.kstar
+>     let N = kth_from_end(k)
+    4 "let" keyword.control.kstar
+    8 "N" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "kth_from_end" entity.name.function.call.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "k" variable.other.kstar
+   26 ")" punctuation.section.parens.end.kstar
+>     let D = to_dfa(N)
+    4 "let" keyword.control.kstar
+    8 "D" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "to_dfa" support.function.builtin.kstar
+   18 "(" punctuation.section.parens.begin.kstar
+   19 "N" variable.other.kstar
+   20 ")" punctuation.section.parens.end.kstar
+>     print k, states(N), states(D), std.benchmark.equivalence_rounds(D), std.benchmark.time_us("to_dfa", N)
+    4 "print" keyword.control.kstar
+   10 "k" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "states" support.function.builtin.kstar
+   19 "(" punctuation.section.parens.begin.kstar
+   20 "N" variable.other.kstar
+   21 ")" punctuation.section.parens.end.kstar
+   22 "," punctuation.separator.comma.kstar
+   24 "states" support.function.builtin.kstar
+   30 "(" punctuation.section.parens.begin.kstar
+   31 "D" variable.other.kstar
+   32 ")" punctuation.section.parens.end.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "std" entity.name.namespace.kstar
+   38 "." punctuation.accessor.kstar
+   39 "benchmark" entity.name.namespace.kstar
+   48 "." punctuation.accessor.kstar
+   49 "equivalence_rounds" entity.name.function.call.kstar
+   67 "(" punctuation.section.parens.begin.kstar
+   68 "D" variable.other.kstar
+   69 ")" punctuation.section.parens.end.kstar
+   70 "," punctuation.separator.comma.kstar
+   72 "std" entity.name.namespace.kstar
+   75 "." punctuation.accessor.kstar
+   76 "benchmark" entity.name.namespace.kstar
+   85 "." punctuation.accessor.kstar
+   86 "time_us" entity.name.function.call.kstar
+   93 "(" punctuation.section.parens.begin.kstar
+   94 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   95 "to_dfa" string.quoted.double.kstar
+  101 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+  102 "," punctuation.separator.comma.kstar
+  104 "N" variable.other.kstar
+  105 ")" punctuation.section.parens.end.kstar
+>     test states(minimize(D)) == std.math.pow(2, k)
+    4 "test" keyword.control.kstar
+    9 "states" support.function.builtin.kstar
+   15 "(" punctuation.section.parens.begin.kstar
+   16 "minimize" support.function.builtin.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "D" variable.other.kstar
+   26 ")" punctuation.section.parens.end.kstar
+   27 ")" punctuation.section.parens.end.kstar
+   29 "==" keyword.operator.comparison.kstar
+   32 "std" entity.name.namespace.kstar
+   35 "." punctuation.accessor.kstar
+   36 "math" entity.name.namespace.kstar
+   40 "." punctuation.accessor.kstar
+   41 "pow" entity.name.function.call.kstar
+   44 "(" punctuation.section.parens.begin.kstar
+   45 "2" constant.numeric.integer.kstar
+   46 "," punctuation.separator.comma.kstar
+   48 "k" variable.other.kstar
+   49 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # State elimination grows faster still: the regex for k = 5 is already
+    0 "# State elimination grows faster still: the regex for k = 5 is already" comment.line.number-sign.kstar
+> # over 100000 parts, which `to_regex` refuses to build.
+    0 "# over 100000 parts, which `to_regex` refuses to build." comment.line.number-sign.kstar
+> for k in 1..5 {
+    0 "for" keyword.control.kstar
+    4 "k" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "1" constant.numeric.integer.kstar
+   10 ".." keyword.operator.range.kstar
+   12 "5" constant.numeric.integer.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+>     print k, std.benchmark.regex_size(kth_from_end(k))
+    4 "print" keyword.control.kstar
+   10 "k" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "std" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "benchmark" entity.name.namespace.kstar
+   26 "." punctuation.accessor.kstar
+   27 "regex_size" entity.name.function.call.kstar
+   37 "(" punctuation.section.parens.begin.kstar
+   38 "kth_from_end" entity.name.function.call.kstar
+   50 "(" punctuation.section.parens.begin.kstar
+   51 "k" variable.other.kstar
+   52 ")" punctuation.section.parens.end.kstar
+   53 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
+> # A PDA's search looks at more configurations as the word grows.
+    0 "# A PDA's search looks at more configurations as the word grows." comment.line.number-sign.kstar
+> let AnBn = std.pda.anbn("a", "b")
+    0 "let" keyword.control.kstar
+    4 "AnBn" variable.other.kstar
+    9 "=" keyword.operator.assignment.kstar
+   11 "std" entity.name.namespace.kstar
+   14 "." punctuation.accessor.kstar
+   15 "pda" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "anbn" entity.name.function.call.kstar
+   23 "(" punctuation.section.parens.begin.kstar
+   24 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   25 "a" string.quoted.double.kstar
+   26 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   27 "," punctuation.separator.comma.kstar
+   29 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   30 "b" string.quoted.double.kstar
+   31 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   32 ")" punctuation.section.parens.end.kstar
+> for n in 1..6 {
+    0 "for" keyword.control.kstar
+    4 "n" variable.other.kstar
+    6 "in" keyword.control.kstar
+    9 "1" constant.numeric.integer.kstar
+   10 ".." keyword.operator.range.kstar
+   12 "6" constant.numeric.integer.kstar
+   14 "{" punctuation.section.braces.begin.kstar
+>     let w = std.string.repeat("a", n) + std.string.repeat("b", n)
+    4 "let" keyword.control.kstar
+    8 "w" variable.other.kstar
+   10 "=" keyword.operator.assignment.kstar
+   12 "std" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "string" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "repeat" entity.name.function.call.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "a" string.quoted.double.kstar
+   32 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "n" variable.other.kstar
+   36 ")" punctuation.section.parens.end.kstar
+   38 "+" keyword.operator.arithmetic.kstar
+   40 "std" entity.name.namespace.kstar
+   43 "." punctuation.accessor.kstar
+   44 "string" entity.name.namespace.kstar
+   50 "." punctuation.accessor.kstar
+   51 "repeat" entity.name.function.call.kstar
+   57 "(" punctuation.section.parens.begin.kstar
+   58 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   59 "b" string.quoted.double.kstar
+   60 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   61 "," punctuation.separator.comma.kstar
+   63 "n" variable.other.kstar
+   64 ")" punctuation.section.parens.end.kstar
+>     print n, std.benchmark.pda_configs(AnBn, w), std.benchmark.time_accepts_us(AnBn, w)
+    4 "print" keyword.control.kstar
+   10 "n" variable.other.kstar
+   11 "," punctuation.separator.comma.kstar
+   13 "std" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "benchmark" entity.name.namespace.kstar
+   26 "." punctuation.accessor.kstar
+   27 "pda_configs" entity.name.function.call.kstar
+   38 "(" punctuation.section.parens.begin.kstar
+   39 "AnBn" variable.other.kstar
+   43 "," punctuation.separator.comma.kstar
+   45 "w" variable.other.kstar
+   46 ")" punctuation.section.parens.end.kstar
+   47 "," punctuation.separator.comma.kstar
+   49 "std" entity.name.namespace.kstar
+   52 "." punctuation.accessor.kstar
+   53 "benchmark" entity.name.namespace.kstar
+   62 "." punctuation.accessor.kstar
+   63 "time_accepts_us" entity.name.function.call.kstar
+   78 "(" punctuation.section.parens.begin.kstar
+   79 "AnBn" variable.other.kstar
+   83 "," punctuation.separator.comma.kstar
+   85 "w" variable.other.kstar
+   86 ")" punctuation.section.parens.end.kstar
+> }
+    0 "}" punctuation.section.braces.end.kstar
+> 
