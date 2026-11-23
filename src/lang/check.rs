@@ -735,7 +735,9 @@ impl Checker {
     /// to show, and `w` a Str.
     fn machine_and_word(&mut self, machine: &Expr, word: &Expr, statement: &str) -> Check<()> {
         let ty = self.expr(machine)?;
-        if !matches!(ty, Type::Dfa | Type::Nfa | Type::Pda | Type::Tm) {
+        // `draw g on "w"` draws the parse trees of a grammar.
+        let grammar_ok = statement == "draw" && ty == Type::Grammar;
+        if !matches!(ty, Type::Dfa | Type::Nfa | Type::Pda | Type::Tm) && !grammar_ok {
             let mut err = type_error(
                 machine.span,
                 format!("`{statement}` needs a machine (Dfa, Nfa, Pda or Tm), but this is {}", article(&ty)),

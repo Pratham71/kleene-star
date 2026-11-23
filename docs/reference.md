@@ -27,6 +27,7 @@ comment that runs to the end of the line.
 | `print a, b, c` | Prints the values on one line, separated by spaces. |
 | `test cond` | Checks a condition. Failures are reported and counted. |
 | `draw machine` | Writes a Graphviz `.dot` file (and `.svg` if Graphviz is installed). |
+| `draw grammar on word` | Writes a `.dot` file (and `.svg` if Graphviz is installed) of the parse trees of the word, side by side, at most 4. |
 | `draw machine on word` | Writes an `.html` page that plays the run of the machine on the word step by step (see [Playing a run](#playing-a-run)). |
 | `trace machine on word` | Runs a `Dfa`, `Nfa`, `Pda` or `Tm` on a `Str` and prints every step. See [tracing](#tracing). |
 | `import "file.kstar" as m` | Binds another file as a module; its names are written `m.Name`. See [modules](#modules). |
@@ -624,10 +625,56 @@ Helpers for context-free grammars: the steps of the CNF construction one at a ti
 | `follow(g: Grammar, variable: Str) -> Set[Str]` | The terminals that can come right after `variable`, and `""` if it can come last. |
 | `is_ll1(g: Grammar) -> Bool` | Whether a parser can always choose the rule to use by looking at the next symbol only. |
 | `words_up_to(g: Grammar, n: Int) -> Set[Str]` | The words of the grammar's language of length at most `n`, as a set. |
+| `parse_trees(g: Grammar, w: Str) -> Set[Str]` | The parse trees of `w`, each written with brackets as `S(a S(eps) b)`; at most 100, leaving out trees that go round a cycle of unit rules. |
+| `is_ambiguous_on(g: Grammar, w: Str) -> Bool` | Whether `w` has two different parse trees (two different leftmost derivations) in the grammar. |
+| `two_derivations(g: Grammar, w: Str) -> Str` | Two different leftmost derivations of `w`, showing that the grammar is ambiguous; `w` must have two parse trees. |
 | `balanced(open: Str, close: Str) -> Grammar` | Balanced brackets: `S -> open S close S` or eps. |
 | `anbn(a: Str, b: Str) -> Grammar` | `n` copies of `a` then `n` copies of `b`: `S -> a S b` or eps. |
 | `palindromes(alphabet: Alphabet) -> Grammar` | The words over `alphabet` that read the same backwards. |
 | `equal_count(a: Str, b: Str) -> Grammar` | The words over `a` and `b` with as many of one as of the other. |
+
+**Ambiguity.** A grammar is ambiguous when some word has two different
+parse trees, or, what is the same, two different leftmost derivations.
+
+- `parse_trees(g, w)` writes each tree with brackets: a variable, then its
+  children in brackets, `eps` for a rule `A -> eps`. `S(a S(eps) b)` is
+  `S -> a S b` with `S -> eps` below it. The word may be at most 40
+  symbols long, and past 100 trees it is a `LimitError` (E0612).
+- A grammar with a cycle, a variable that derives itself through unit
+  rules and variables that vanish (`A -> B`, `B -> A`), gives a word
+  infinitely many trees, going round the cycle any number of times; those
+  are left out of `parse_trees`, but `is_ambiguous_on` counts them.
+- `two_derivations(g, w)` shows two leftmost derivations, one sentential
+  form per line as `derive` does, each with its tree; it is a `ValueError`
+  (E0615) when the word has only one tree, or none.
+- `draw g on "w"` draws the trees of `w` side by side (at most 4).
+
+```kstar
+alphabet E = {a, p, m}
+grammar Expr over E {
+    S -> S p S | S m S | a
+}
+print std.grammar.is_ambiguous_on(Expr, "apa"), std.grammar.is_ambiguous_on(Expr, "apama")
+print std.grammar.two_derivations(Expr, "apama")
+```
+
+```text
+false true
+Derivation 1, for the tree S(S(a) p S(S(a) m S(a))):
+   S
+=> S p S
+=> a p S
+=> a p S m S
+=> a p a m S
+=> a p a m a
+Derivation 2, for the tree S(S(S(a) p S(a)) m S(a)):
+   S
+=> S m S
+=> S p S m S
+=> a p S m S
+=> a p a m S
+=> a p a m a
+```
 
 `grammar` is a keyword (it begins a grammar), so the module has no name of
 its own: write `std.grammar.first(G, "S")`, `from std.grammar import first`,

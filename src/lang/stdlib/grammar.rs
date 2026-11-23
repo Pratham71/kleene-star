@@ -11,7 +11,8 @@
 //!   `remove_eps`, `remove_units`, and the sets they are based on,
 //!   `nullable`, `generating` and `reachable`.
 //! * **Parsing questions**: `first`, `follow`, `is_ll1`, `is_cnf`, and
-//!   `words_up_to` to look at a language.
+//!   `words_up_to` to look at a language; and ambiguity, from
+//!   `automata::trees`: `parse_trees`, `is_ambiguous_on`, `two_derivations`.
 //! * **Ready-made grammars**: `balanced`, `anbn`, `palindromes`,
 //!   `equal_count`.
 //!
@@ -22,6 +23,7 @@
 use super::{alphabet_arg, int_arg as int, str_arg as text, Failure, Function, Module, Ty};
 use crate::automata::cfg;
 use crate::automata::grammar::Grammar;
+use crate::automata::{fmt_alphabet, trees};
 use crate::lang::codes;
 use crate::lang::value::Value;
 use std::collections::BTreeSet;
@@ -45,6 +47,9 @@ pub const MODULE: Module = Module {
         Function { name: "follow", params: &[("g", GRAMMAR), ("variable", Ty::Str)], ret: NAMES, doc: "The terminals that can come right after `variable`, and `\"\"` if it can come last.", run: follow },
         Function { name: "is_ll1", params: &[("g", GRAMMAR)], ret: Ty::Bool, doc: "Whether a parser can always choose the rule to use by looking at the next symbol only.", run: is_ll1 },
         Function { name: "words_up_to", params: &[("g", GRAMMAR), ("n", Ty::Int)], ret: NAMES, doc: "The words of the grammar's language of length at most `n`, as a set.", run: words_up_to },
+        Function { name: "parse_trees", params: &[("g", GRAMMAR), ("w", Ty::Str)], ret: NAMES, doc: "The parse trees of `w`, each written with brackets as `S(a S(eps) b)`; at most 100, leaving out trees that go round a cycle of unit rules.", run: parse_trees },
+        Function { name: "is_ambiguous_on", params: &[("g", GRAMMAR), ("w", Ty::Str)], ret: Ty::Bool, doc: "Whether `w` has two different parse trees (two different leftmost derivations) in the grammar.", run: is_ambiguous_on },
+        Function { name: "two_derivations", params: &[("g", GRAMMAR), ("w", Ty::Str)], ret: Ty::Str, doc: "Two different leftmost derivations of `w`, showing that the grammar is ambiguous; `w` must have two parse trees.", run: two_derivations },
         Function { name: "balanced", params: &[("open", Ty::Str), ("close", Ty::Str)], ret: GRAMMAR, doc: "Balanced brackets: `S -> open S close S` or eps.", run: balanced },
         Function { name: "anbn", params: &[("a", Ty::Str), ("b", Ty::Str)], ret: GRAMMAR, doc: "`n` copies of `a` then `n` copies of `b`: `S -> a S b` or eps.", run: anbn },
         Function { name: "palindromes", params: &[("alphabet", Ty::Alphabet)], ret: GRAMMAR, doc: "The words over `alphabet` that read the same backwards.", run: palindromes },
@@ -236,6 +241,80 @@ pub(super) fn list_words(g: &Grammar, n: usize) -> Result<Value, Failure> {
         return Err(too_many());
     }
     Ok(strings(words))
+}
+
+/// The most parse trees `parse_trees` lists.
+pub const MAX_TREES: usize = 100;
+/// The longest word whose parse trees are looked for.
+pub const MAX_TREE_WORD: usize = 40;
+
+/// The parse trees of argument 1 in the grammar, at most `limit`, after
+/// checking the word.
+pub(crate) fn trees_of(args: &[Value], limit: usize) -> Result<trees::Trees, Failure> {
+    let (g, w) = (grammar(args, 0), text(args, 1));
+    if let Some(c) = w.chars().find(|c| !g.alphabet.contains(c)) {
+        return Err(Failure {
+            code: codes::FOREIGN_WORD,
+            arg: Some(1),
+            message: format!("the word contains `{c}`, which is not in the grammar's alphabet"),
+            hint: format!("the alphabet is {}", fmt_alphabet(&g.alphabet)),
+        });
+    }
+    let n = w.chars().count();
+    if n > MAX_TREE_WORD {
+        return Err(Failure {
+            code: codes::RESULT_TOO_LARGE,
+            arg: Some(1),
+            message: format!("the word has {n} symbols; parse trees are looked for in words of at most {MAX_TREE_WORD}"),
+            hint: "a long word can have very many parse trees; try a shorter one".into(),
+        });
+    }
+    Ok(trees::parse_trees(g, w, limit))
+}
+
+fn parse_trees(args: &[Value]) -> Result<Value, Failure> {
+    let found = trees_of(args, MAX_TREES)?;
+    if found.more {
+        return Err(Failure {
+            code: codes::RESULT_TOO_LARGE,
+            arg: Some(1),
+            message: format!("the word has more than {MAX_TREES} parse trees"),
+            hint: "`std.grammar.is_ambiguous_on` says whether there are two; a shorter word has fewer".into(),
+        });
+    }
+    let g = grammar(args, 0);
+    Ok(strings(found.trees.iter().map(|t| t.show(g))))
+}
+
+fn is_ambiguous_on(args: &[Value]) -> Result<Value, Failure> {
+    let found = trees_of(args, 2)?;
+    Ok(Value::Bool(found.trees.len() >= 2 || found.cyclic))
+}
+
+fn two_derivations(args: &[Value]) -> Result<Value, Failure> {
+    let found = trees_of(args, 2)?;
+    let (g, w) = (grammar(args, 0), text(args, 1));
+    if found.trees.len() < 2 {
+        let shown = if w.is_empty() { "the empty string".to_string() } else { format!("{w:?}") };
+        let (message, hint) = match found.trees.len() {
+            0 => (format!("the grammar cannot derive {shown}"), "only a word of the language has derivations".to_string()),
+            _ if found.cyclic => (
+                format!("{shown} has more than one parse tree only by going round a cycle of unit rules"),
+                "a variable derives itself (as in `A -> A`), so the word has infinitely many trees that differ only in that".to_string(),
+            ),
+            _ => (format!("{shown} has only one parse tree, so only one leftmost derivation"), "`std.grammar.is_ambiguous_on` asks first".to_string()),
+        };
+        return Err(Failure { code: codes::NO_SUCH_WORD, arg: Some(1), message, hint });
+    }
+    let mut lines = Vec::new();
+    for (k, tree) in found.trees.iter().take(2).enumerate() {
+        lines.push(format!("Derivation {}, for the tree {}:", k + 1, tree.show(g)));
+        for (i, form) in tree.leftmost().iter().enumerate() {
+            lines.push(format!("{}{}", if i == 0 { "   " } else { "=> " }, g.show(form)));
+        }
+    }
+    Ok(Value::str(&lines.join("
+")))
 }
 
 fn balanced(args: &[Value]) -> Result<Value, Failure> {

@@ -1,0 +1,189 @@
+> # Chapter 24: ambiguity. A grammar is ambiguous when some word has two
+    0 "# Chapter 24: ambiguity. A grammar is ambiguous when some word has two" comment.line.number-sign.kstar
+> # different parse trees, or, what is the same, two different leftmost
+    0 "# different parse trees, or, what is the same, two different leftmost" comment.line.number-sign.kstar
+> # derivations. Here: sums and products of a's, with no precedence.
+    0 "# derivations. Here: sums and products of a's, with no precedence." comment.line.number-sign.kstar
+> 
+> alphabet E = {a, p, m}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "E" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "a" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "p" constant.character.symbol.kstar
+   18 "," punctuation.separator.kstar
+   20 "m" constant.character.symbol.kstar
+   21 "}" punctuation.section.braces.end.kstar
+> 
+> # p stands for +, m for *.
+    0 "# p stands for +, m for *." comment.line.number-sign.kstar
+> grammar Expr over E {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "Expr" meta.grammar.kstar entity.name.type.grammar.kstar
+   13 "over" meta.grammar.kstar keyword.other.over.kstar
+   18 "E" meta.grammar.kstar entity.name.type.alphabet.kstar
+   20 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> S p S | S m S | a
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   11 "p" meta.grammar.kstar constant.character.terminal.kstar
+   13 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   15 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   17 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   19 "m" meta.grammar.kstar constant.character.terminal.kstar
+   21 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   23 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   25 "a" meta.grammar.kstar constant.character.terminal.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> 
+> print std.grammar.is_ambiguous_on(Expr, "apa"), std.grammar.is_ambiguous_on(Expr, "apama")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "grammar" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "is_ambiguous_on" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "Expr" variable.other.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   41 "apa" string.quoted.double.kstar
+   44 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   45 ")" punctuation.section.parens.end.kstar
+   46 "," punctuation.separator.comma.kstar
+   48 "std" entity.name.namespace.kstar
+   51 "." punctuation.accessor.kstar
+   52 "grammar" entity.name.namespace.kstar
+   59 "." punctuation.accessor.kstar
+   60 "is_ambiguous_on" entity.name.function.call.kstar
+   75 "(" punctuation.section.parens.begin.kstar
+   76 "Expr" variable.other.kstar
+   80 "," punctuation.separator.comma.kstar
+   82 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   83 "apama" string.quoted.double.kstar
+   88 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   89 ")" punctuation.section.parens.end.kstar
+> print std.grammar.parse_trees(Expr, "apama")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "grammar" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "parse_trees" entity.name.function.call.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "Expr" variable.other.kstar
+   34 "," punctuation.separator.comma.kstar
+   36 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   37 "apama" string.quoted.double.kstar
+   42 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   43 ")" punctuation.section.parens.end.kstar
+> print std.grammar.two_derivations(Expr, "apama")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "grammar" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "two_derivations" entity.name.function.call.kstar
+   33 "(" punctuation.section.parens.begin.kstar
+   34 "Expr" variable.other.kstar
+   38 "," punctuation.separator.comma.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   41 "apama" string.quoted.double.kstar
+   46 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   47 ")" punctuation.section.parens.end.kstar
+> 
+> # Precedence removes the ambiguity: a sum of products of a's.
+    0 "# Precedence removes the ambiguity: a sum of products of a's." comment.line.number-sign.kstar
+> grammar Layered over E {
+    0 "grammar" meta.grammar.kstar storage.type.grammar.kstar
+    8 "Layered" meta.grammar.kstar entity.name.type.grammar.kstar
+   16 "over" meta.grammar.kstar keyword.other.over.kstar
+   21 "E" meta.grammar.kstar entity.name.type.alphabet.kstar
+   23 "{" meta.grammar.kstar punctuation.section.block.begin.kstar
+>     S -> S p T | T
+    4 "S" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "S" meta.grammar.kstar variable.other.nonterminal.kstar
+   11 "p" meta.grammar.kstar constant.character.terminal.kstar
+   13 "T" meta.grammar.kstar variable.other.nonterminal.kstar
+   15 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   17 "T" meta.grammar.kstar variable.other.nonterminal.kstar
+>     T -> T m a | a
+    4 "T" meta.grammar.kstar entity.name.function.rule.kstar
+    6 "->" meta.grammar.kstar keyword.operator.produces.kstar
+    9 "T" meta.grammar.kstar variable.other.nonterminal.kstar
+   11 "m" meta.grammar.kstar constant.character.terminal.kstar
+   13 "a" meta.grammar.kstar constant.character.terminal.kstar
+   15 "|" meta.grammar.kstar keyword.operator.alternative.kstar
+   17 "a" meta.grammar.kstar constant.character.terminal.kstar
+> }
+    0 "}" meta.grammar.kstar punctuation.section.block.end.kstar
+> print std.grammar.parse_trees(Layered, "apama")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "grammar" entity.name.namespace.kstar
+   17 "." punctuation.accessor.kstar
+   18 "parse_trees" entity.name.function.call.kstar
+   29 "(" punctuation.section.parens.begin.kstar
+   30 "Layered" variable.other.kstar
+   37 "," punctuation.separator.comma.kstar
+   39 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   40 "apama" string.quoted.double.kstar
+   45 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   46 ")" punctuation.section.parens.end.kstar
+> test not std.grammar.is_ambiguous_on(Layered, "apamapa")
+    0 "test" keyword.control.kstar
+    5 "not" keyword.operator.word.kstar
+    9 "std" entity.name.namespace.kstar
+   12 "." punctuation.accessor.kstar
+   13 "grammar" entity.name.namespace.kstar
+   20 "." punctuation.accessor.kstar
+   21 "is_ambiguous_on" entity.name.function.call.kstar
+   36 "(" punctuation.section.parens.begin.kstar
+   37 "Layered" variable.other.kstar
+   44 "," punctuation.separator.comma.kstar
+   46 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   47 "apamapa" string.quoted.double.kstar
+   54 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   55 ")" punctuation.section.parens.end.kstar
+> test std.grammar.words_up_to(Expr, 5) == std.grammar.words_up_to(Layered, 5)
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "grammar" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "words_up_to" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Expr" variable.other.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "5" constant.numeric.integer.kstar
+   36 ")" punctuation.section.parens.end.kstar
+   38 "==" keyword.operator.comparison.kstar
+   41 "std" entity.name.namespace.kstar
+   44 "." punctuation.accessor.kstar
+   45 "grammar" entity.name.namespace.kstar
+   52 "." punctuation.accessor.kstar
+   53 "words_up_to" entity.name.function.call.kstar
+   64 "(" punctuation.section.parens.begin.kstar
+   65 "Layered" variable.other.kstar
+   72 "," punctuation.separator.comma.kstar
+   74 "5" constant.numeric.integer.kstar
+   75 ")" punctuation.section.parens.end.kstar
+> 
+> # Draw the two trees side by side: writes Expr.dot (and Expr.svg if
+    0 "# Draw the two trees side by side: writes Expr.dot (and Expr.svg if" comment.line.number-sign.kstar
+> # Graphviz is installed).
+    0 "# Graphviz is installed)." comment.line.number-sign.kstar
+> draw Expr on "apama"
+    0 "draw" keyword.control.kstar
+    5 "Expr" variable.other.kstar
+   10 "on" keyword.control.kstar
+   13 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   14 "apama" string.quoted.double.kstar
+   19 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 

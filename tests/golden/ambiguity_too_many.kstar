@@ -1,0 +1,5 @@
+alphabet AB = {a, b}
+grammar Many over AB {
+    S -> S S | a
+}
+print std.grammar.parse_trees(Many, "aaaaaaa")

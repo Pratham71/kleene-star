@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  ambiguity_errors.kstar, line 5, in <main>
+    print std.grammar.two_derivations(G, "ab")
+                                         ^^^^
+ValueError[E0615]: "ab" has only one parse tree, so only one leftmost derivation
+  hint: `std.grammar.is_ambiguous_on` asks first

@@ -45,6 +45,11 @@ its GitHub release, so write it for people who use Kleene Star.
   a row `δ(q, a, X) = {(p, γ), ...}` for each choice, and
   (Q, Σ, Γ, δ, q0, q_accept, q_reject) for a Turing machine. Example:
   `examples/29_tuple.kstar`.
+- Ambiguity: `std.grammar.parse_trees(G, w)` lists the parse trees of a
+  word (at most 100, written `S(a S(eps) b)`), `is_ambiguous_on(G, w)`
+  says whether it has two, `two_derivations(G, w)` shows two different
+  leftmost derivations, and `draw G on "w"` draws the trees side by side.
+  Example: `examples/30_ambiguity.kstar`.
 
 ## [0.6.0] - 2026-11-23
 

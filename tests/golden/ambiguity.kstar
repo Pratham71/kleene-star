@@ -1,0 +1,23 @@
+# Parse trees and ambiguity, with eps rules and a cycle.
+alphabet AB = {a, b}
+grammar Bal over AB {
+    S -> a S b S | eps
+}
+print std.grammar.parse_trees(Bal, "abab")
+print std.grammar.parse_trees(Bal, "")
+print std.grammar.parse_trees(Bal, "ba")
+print std.grammar.is_ambiguous_on(Bal, "aabbab")
+grammar Two over AB {
+    S -> A b | a B
+    A -> a
+    B -> b
+}
+print std.grammar.two_derivations(Two, "ab")
+grammar Cycle over AB {
+    S -> S | a
+}
+print std.grammar.parse_trees(Cycle, "a"), std.grammar.is_ambiguous_on(Cycle, "a")
+grammar Many over AB {
+    S -> S S | a
+}
+print len(std.grammar.parse_trees(Many, "aaaaa"))

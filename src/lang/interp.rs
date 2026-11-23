@@ -35,6 +35,8 @@ use std::rc::Rc;
 const MAX_DEPTH: usize = 500;
 /// How many sentential forms `derive` looks at before giving up.
 const DERIVE_LIMIT: usize = 200_000;
+/// The most parse trees `draw g on "w"` draws side by side.
+const MAX_DRAWN_TREES: usize = 4;
 /// The largest range `a..b` we are willing to build.
 const MAX_RANGE: i64 = 1_000_000;
 /// The largest regex `to_regex` builds, in nodes of its syntax tree.
@@ -467,9 +469,14 @@ impl Interp {
             other => dot::nfa_to_dot(&to_nfa(&other, &symbols_of(&other))),
         };
         let base = self.drawing_name(expr);
+        self.write_dot(&base, &dot, expr.span)
+    }
+
+    /// Writes `base.dot`, and `base.svg` if Graphviz is installed.
+    fn write_dot(&mut self, base: &str, dot: &str, span: Span) -> Run<()> {
         let path = self.out_dir.join(format!("{base}.dot"));
         std::fs::write(&path, dot).map_err(|e| {
-            self.error(ErrorKind::Io, expr.span, format!("cannot write {}: {e}", path.display()))
+            self.error(ErrorKind::Io, span, format!("cannot write {}: {e}", path.display()))
         })?;
         let _ = writeln!(self.out, "wrote {base}.dot");
         if self.render_svg {
@@ -505,6 +512,9 @@ impl Interp {
     fn draw_run(&mut self, machine: &Expr, word: &Expr) -> Run<()> {
         let value = self.eval(machine)?;
         let Value::Str(w) = self.eval(word)? else { unreachable!("checker ensures the word is a Str") };
+        if let Value::Grammar(g) = &value {
+            return self.draw_trees(g, &w, machine, word.span);
+        }
         let play = super::player::play(&value, &w).expect("checker ensures a machine with states");
         if play.diagram.states.len() > super::player::MAX_STATES {
             return Err(self
@@ -527,6 +537,24 @@ impl Interp {
         })?;
         let _ = writeln!(self.out, "wrote {base}.html");
         Ok(())
+    }
+
+    /// `draw g on word`: the parse trees of the word, side by side in one
+    /// drawing (at most `MAX_DRAWN_TREES`).
+    fn draw_trees(&mut self, g: &Rc<Grammar>, word: &str, expr: &Expr, word_span: Span) -> Run<()> {
+        let args = [Value::Grammar(g.clone()), Value::str(word)];
+        let found = super::stdlib::grammar::trees_of(&args, MAX_DRAWN_TREES).map_err(|f| {
+            self.error(ErrorKind::Value, word_span, f.message).code(f.code).hint(f.hint)
+        })?;
+        if found.trees.is_empty() {
+            let shown = if word.is_empty() { "the empty string".to_string() } else { format!("\"{word}\"") };
+            return Err(self
+                .error(ErrorKind::Value, word_span, format!("the grammar cannot derive {shown}, so it has no parse tree"))
+                .code(codes::NO_SUCH_WORD)
+                .hint("check first with `g accepts \"...\"`"));
+        }
+        let base = self.drawing_name(expr);
+        self.write_dot(&base, &crate::automata::trees::to_dot(g, &found.trees), expr.span)
     }
 
     /// `trace machine on word`: runs the machine and prints every step.
