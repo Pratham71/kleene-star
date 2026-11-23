@@ -1,0 +1,27 @@
+# Chapter 24: ambiguity. A grammar is ambiguous when some word has two
+# different parse trees, or, what is the same, two different leftmost
+# derivations. Here: sums and products of a's, with no precedence.
+
+alphabet E = {a, p, m}
+
+# p stands for +, m for *.
+grammar Expr over E {
+    S -> S p S | S m S | a
+}
+
+print std.grammar.is_ambiguous_on(Expr, "apa"), std.grammar.is_ambiguous_on(Expr, "apama")
+print std.grammar.parse_trees(Expr, "apama")
+print std.grammar.two_derivations(Expr, "apama")
+
+# Precedence removes the ambiguity: a sum of products of a's.
+grammar Layered over E {
+    S -> S p T | T
+    T -> T m a | a
+}
+print std.grammar.parse_trees(Layered, "apama")
+test not std.grammar.is_ambiguous_on(Layered, "apamapa")
+test std.grammar.words_up_to(Expr, 5) == std.grammar.words_up_to(Layered, 5)
+
+# Draw the two trees side by side: writes Expr.dot (and Expr.svg if
+# Graphviz is installed).
+draw Expr on "apama"

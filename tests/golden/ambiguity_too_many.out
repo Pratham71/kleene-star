@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  ambiguity_too_many.kstar, line 5, in <main>
+    print std.grammar.parse_trees(Many, "aaaaaaa")
+                                        ^^^^^^^^^
+LimitError[E0612]: the word has more than 100 parse trees
+  hint: `std.grammar.is_ambiguous_on` says whether there are two; a shorter word has fewer

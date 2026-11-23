@@ -1,0 +1,6 @@
+alphabet AB = {a, b}
+grammar G over AB {
+    S -> a S b | eps
+}
+draw G on "ab"
+draw G on "ba"

@@ -1,0 +1,7 @@
+wrote G.dot
+Traceback (most recent call last):
+  draw_trees.kstar, line 6, in <main>
+    draw G on "ba"
+              ^^^^
+ValueError[E0615]: the grammar cannot derive "ba", so it has no parse tree
+  hint: check first with `g accepts "..."`

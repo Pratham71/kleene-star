@@ -1,0 +1,14 @@
+{"S(a S(eps) b S(a S(eps) b S(eps)))"}
+{"S(eps)"}
+{}
+false
+Derivation 1, for the tree S(a B(b)):
+   S
+=> a B
+=> a b
+Derivation 2, for the tree S(A(a) b):
+   S
+=> A b
+=> a b
+{"S(a)"} true
+14

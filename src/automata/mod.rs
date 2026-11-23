@@ -23,6 +23,7 @@ pub mod questions;
 pub mod random;
 pub mod tm;
 pub mod tms;
+pub mod trees;
 pub mod regex;
 pub mod steps;
 pub mod trace;
