@@ -21,6 +21,11 @@ its GitHub release, so write it for people who use Kleene Star.
   k-equivalence, P0, P1, ... until they settle) and `elimination` (state
   elimination, one state removed at a time). Each ends where `to_dfa`,
   `minimize` or `to_regex` does. Example: `examples/25_steps.kstar`.
+- From a finite automaton to a regex by Arden's theorem:
+  `std.steps.arden` shows the working (an equation for each state, each
+  solved with R = Q + RP giving R = QP* and put into the others) and
+  `std.regex.by_arden` gives the regex, the same language as `to_regex`'s.
+  Example: `examples/26_arden.kstar`.
 
 ## [0.6.0] - 2026-11-23
 

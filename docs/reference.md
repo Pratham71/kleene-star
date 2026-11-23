@@ -1028,6 +1028,7 @@ Regular expressions built at run time and put together from pieces: from text, f
 | `contains(alphabet: Alphabet, part: Str) -> Regex` | The regex for the strings over `alphabet` that contain `part` somewhere. |
 | `size(r: Regex) -> Int` | The number of parts of the regex: its symbols, operators and joins. |
 | `text(r: Regex) -> Str` | The regex written out as a string, without the slashes. |
+| `by_arden(m: Lang) -> Regex` | A regex for the language of `m` found by Arden's theorem, as `std.steps.arden` shows; the same language as `to_regex(m)`, often written differently. |
 
 **Why a library for regexes.** The built-ins already combine languages,
 but they hand back machines: `concat(/a/, /b/)` and `star(/a/)` are `Nfa`s.
@@ -1075,10 +1076,11 @@ true false
 
 ### `std.steps`
 
-The working of the conversions, step by step: eps-closures, the subset construction table, the k-equivalence partitions and state elimination.
+The working of the conversions, step by step: eps-closures, the subset construction table, the k-equivalence partitions, state elimination and Arden's theorem.
 
 | Function | What it does |
 |---|---|
+| `arden(m: Lang) -> Str` | From a finite automaton to a regex by Arden's theorem: an equation for each state, then each solved with R = Q + RP giving R = QP* and put into the others, then the regex. |
 | `elimination(m: Lang) -> Str` | State elimination, as `to_regex` does it: the new start and final states, then each state removed and the edges that replace the paths through it, then the regex. |
 | `eps_closures(m: Lang) -> Str` | A table of each state of `m`'s NFA and its eps-closure, the states it reaches by eps moves alone. |
 | `partitions(m: Lang) -> Str` | Minimisation of `m`'s DFA by k-equivalence: the partitions P0, P1, ... until one is the same as the one before. |
@@ -1112,6 +1114,21 @@ DFA, as `minimize` and `to_regex` do.
   there. An `eps` label is the empty string. The regex at the end is the
   one `to_regex` gives. When the working would build a regex of over 5000
   parts it is a `LimitError` (E0608).
+- `arden` writes an equation for each state: the words that lead to it
+  are, for each move `p --a--> q` into it, the words that lead to `p`
+  followed by `a`, and the empty string `eps` for the start state. Arden's
+  theorem says that when `P` does not match the empty string, `R = Q + RP`
+  has the one solution `R = QP*`. Each state is solved this way in turn
+  and put into the equations that use it, until no equation mentions a
+  state; the regex is the sum (`|`) of the accepting states' regexes.
+  A `Dfa` or `Nfa` is used as it is, after removing its eps moves if it
+  has any (so that no `P` matches the empty string); a regex or set is
+  first made into its minimal DFA, with states `q0`, `q1`, .... States that
+  are not on a path from the start to an accepting state are left out.
+  The states are solved in the order that keeps the equations shortest,
+  the earliest first when two cost the same. The answer is the same
+  language as `to_regex`'s, though often written differently;
+  `std.regex.by_arden` gives it as a `Regex`. Past 5000 parts it is E0608.
 
 ```kstar
 alphabet B = {0, 1}

@@ -34,6 +34,7 @@ pub const MODULE: Module = Module {
         Function { name: "contains", params: &[("alphabet", Ty::Alphabet), ("part", Ty::Str)], ret: Ty::Regex, doc: "The regex for the strings over `alphabet` that contain `part` somewhere.", run: contains },
         Function { name: "size", params: &[("r", Ty::Regex)], ret: Ty::Int, doc: "The number of parts of the regex: its symbols, operators and joins.", run: size },
         Function { name: "text", params: &[("r", Ty::Regex)], ret: Ty::Str, doc: "The regex written out as a string, without the slashes.", run: text },
+        Function { name: "by_arden", params: &[("m", Ty::Lang)], ret: Ty::Regex, doc: "A regex for the language of `m` found by Arden's theorem, as `std.steps.arden` shows; the same language as `to_regex(m)`, often written differently.", run: by_arden },
     ],
     explain: None,
 };
@@ -193,6 +194,14 @@ fn contains(args: &[Value]) -> Result<Value, Failure> {
 fn size(args: &[Value]) -> Result<Value, Failure> {
     Ok(Value::Int(re(args, 0).size() as i64))
 }
+
+fn by_arden(args: &[Value]) -> Result<Value, Failure> {
+    let working = super::steps::arden_solve(&args[0], MAX_ARDEN_SIZE)?;
+    Ok(Value::Regex(Rc::new(working.regex)))
+}
+
+/// The largest regex `by_arden` builds, in parts, as for `to_regex`.
+const MAX_ARDEN_SIZE: usize = 100_000;
 
 fn text(args: &[Value]) -> Result<Value, Failure> {
     Ok(Value::str(&re(args, 0).to_string()))
