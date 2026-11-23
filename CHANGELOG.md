@@ -12,6 +12,25 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-23
+
+The notation and the working of the usual textbook course. The conversions
+can show their working step by step (eps-closures, the subset table,
+k-equivalence partitions, state elimination and Arden's theorem); PDAs and
+Turing machines are written and traced the textbook way; `tuple(M)` shows a
+machine's formal definition; grammars can be checked for ambiguity; and
+the basics of strings and languages, with sets of sets and the power set,
+are in `std.collections`.
+
+### Upgrading from 0.6.0
+
+Existing programs keep working: a PDA written as before still starts with
+`Z` and accepts by final state. A few things are new names, so a program
+that used them for its own things must rename them: `tuple` is a built-in,
+and `steps` is a module under `std`. `$` (a PDA stack symbol) and `□` (the
+blank) were not allowed in a program before. `std.testing.equal` now takes
+two sets as well. E0410 is a new error code.
+
 ### Added
 
 - `std.steps`: the working of the conversions, step by step, as it is
@@ -563,7 +582,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Pratham71/kleene-star/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Pratham71/kleene-star/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/Pratham71/kleene-star/compare/v0.5.0...v0.5.1

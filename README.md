@@ -192,11 +192,10 @@ which is installed next to `kstar`; see
 
 | | Version | What it has |
 |---|---|---|
-| Stable | **0.6.0** | Everything above: imports between files, `kstar export` to Rust, Python and JSON, and the standard library (`std.math`, `std.string`, `std.collections`, `std.automata`, `std.regex`, `std.binary`, `std.testing`, `std.grammar`, `std.pda`, `std.tm`, `std.random`, `std.io`, `std.visual`, `std.benchmark`), and `draw M on "w"`, which writes a page that plays a run. The install scripts and `kstar update` use it. |
+| Stable | **0.7.0** | Everything above: imports between files, `kstar export` to Rust, Python and JSON, and the standard library (`std.math`, `std.string`, `std.collections`, `std.automata`, `std.regex`, `std.binary`, `std.testing`, `std.grammar`, `std.pda`, `std.tm`, `std.random`, `std.io`, `std.visual`, `std.benchmark`, `std.steps`), `draw M on "w"`, which writes a page that plays a run, and the textbook notation: step-by-step working of the conversions, PDA and Turing machine notation with ID traces, `tuple(M)`, and ambiguity of grammars. The install scripts and `kstar update` use it. |
 
 What changed in each version, and how to upgrade, is in the
-[changelog](CHANGELOG.md). Next are a list type and reading files from a program,
-and later packages; see [the design](docs/design.md).
+[changelog](CHANGELOG.md). Next is a list type, and later packages; see [the design](docs/design.md).
 
 Until version 0.2 the project was called TOC-Lang, with `.toc` files and a
 `toc` command.
