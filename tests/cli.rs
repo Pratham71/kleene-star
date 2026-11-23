@@ -72,8 +72,8 @@ fn every_option_the_parsers_take_is_in_the_help() {
     let documented: Vec<&str> =
         COMMANDS.iter().flat_map(|c| c.flags.iter()).chain(GLOBAL_FLAGS).flat_map(|f| f.spellings()).collect();
     // Every option spelled out in the command line code. In update.rs only
-    // `kstar update`'s own parser counts: the rest are arguments to `gh`,
-    // `curl`, `code` and the install scripts.
+    // `kstar update`'s own parser counts: the rest are arguments to VS
+    // Code's `code` command.
     let main = include_str!("../src/main.rs");
     let update = include_str!("../src/update.rs");
     let start = update.find("pub fn update(").unwrap();
@@ -523,8 +523,8 @@ fn std_io_uses_the_program_folder_and_allowed_ones() {
 }
 
 /// Runs `kstar update` with GitHub replaced by `KSTAR_LATEST`, VS Code left
-/// alone and no standard input.
-fn update(program: &Path, dir: &Path, latest: &str, args: &[&str], script: Option<&Path>) -> Output {
+/// alone and no standard input; release files come from `base`, if given.
+fn update(program: &Path, dir: &Path, latest: &str, args: &[&str], base: Option<&str>) -> Output {
     let mut command = Command::new(program);
     command
         .arg("update")
@@ -534,10 +534,106 @@ fn update(program: &Path, dir: &Path, latest: &str, args: &[&str], script: Optio
         .env("KSTAR_LATEST_NOTES", "## v9\n\nBetter things, in one paragraph.\n\n### Added\n- more")
         .env("KSTAR_NO_VSCODE", "1")
         .stdin(Stdio::null());
-    if let Some(script) = script {
-        command.env("KSTAR_INSTALL_SCRIPT", script);
+    if let Some(base) = base {
+        command.env("KSTAR_UPDATE_BASE_URL", base);
     }
     command.output().unwrap()
+}
+
+/// A web server on this machine that serves the files under `root` (as
+/// `/<path>`) and answers 404 for anything else, until the test ends.
+/// Returns its address.
+fn serve(root: PathBuf) -> String {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let root = root.clone();
+            std::thread::spawn(move || {
+                use std::io::{BufRead, Write};
+                let mut reader = std::io::BufReader::new(stream.try_clone().unwrap());
+                let mut request = String::new();
+                if reader.read_line(&mut request).is_err() {
+                    return;
+                }
+                loop {
+                    let mut header = String::new();
+                    if reader.read_line(&mut header).unwrap_or(0) == 0 || header.trim().is_empty() {
+                        break;
+                    }
+                }
+                let path = request.split_whitespace().nth(1).unwrap_or("/").trim_start_matches('/').to_string();
+                let found = if path.contains("..") { None } else { std::fs::read(root.join(&path)).ok() };
+                let (status, body) = match found {
+                    Some(body) => ("200 OK", body),
+                    None => ("404 Not Found", b"not here".to_vec()),
+                };
+                let _ = write!(stream, "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len());
+                let _ = stream.write_all(&body);
+            });
+        }
+    });
+    format!("http://{address}")
+}
+
+/// SHA-256 of `bytes`, in hex, with the system's own tool, so the test does
+/// not check kstar's checksums with kstar's code.
+fn sha256(dir: &Path, bytes: &[u8]) -> String {
+    let file = dir.join("to-sum");
+    std::fs::write(&file, bytes).unwrap();
+    let out = if cfg!(windows) {
+        Command::new("certutil").arg("-hashfile").arg(&file).arg("SHA256").output().unwrap()
+    } else if Command::new("sha256sum").arg("--version").output().is_ok() {
+        Command::new("sha256sum").arg(&file).output().unwrap()
+    } else {
+        Command::new("shasum").args(["-a", "256"]).arg(&file).output().unwrap()
+    };
+    let text = String::from_utf8_lossy(&out.stdout);
+    let hex = text.split_whitespace().find(|w| w.len() == 64 && w.chars().all(|c| c.is_ascii_hexdigit())).unwrap();
+    hex.to_ascii_lowercase()
+}
+
+/// A release `tag` under `root/<tag>/` as the release workflow makes it:
+/// this platform's archive with the given programs (and a man page), its
+/// `.sha256` file and `SHA256SUMS`. `own_sum` replaces the archive's
+/// `.sha256` file, to make it wrong.
+fn fake_release(root: &Path, tag: &str, kstar: &[u8], lsp: &[u8], own_sum: Option<&str>) {
+    let dir = root.join(tag);
+    std::fs::create_dir_all(&dir).unwrap();
+    let version = Command::new(env!("CARGO_BIN_EXE_kstar")).arg("version").output().unwrap();
+    let target = stdout(&version).lines().find_map(|l| l.strip_prefix("target ")).unwrap().trim().to_string();
+    let exe = if cfg!(windows) { ".exe" } else { "" };
+    let files: [(String, &[u8]); 4] = [
+        (format!("kstar{exe}"), kstar),
+        (format!("kstar-lsp{exe}"), lsp),
+        ("README.md".into(), b"readme"),
+        ("man/kstar.1".into(), b".TH KSTAR 1 new"),
+    ];
+    let (name, archive) = if cfg!(windows) {
+        use std::io::Write;
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        for (path, body) in &files {
+            zip.start_file(path.as_str(), zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(body).unwrap();
+        }
+        (format!("kstar-{target}.zip"), zip.finish().unwrap().into_inner())
+    } else {
+        let mut tar = tar::Builder::new(flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast()));
+        for (path, body) in &files {
+            let mut header = tar::Header::new_gnu();
+            header.set_size(body.len() as u64);
+            header.set_mode(0o755);
+            header.set_cksum();
+            tar.append_data(&mut header, format!("./{path}"), *body).unwrap();
+        }
+        (format!("kstar-{target}.tar.gz"), tar.into_inner().unwrap().finish().unwrap())
+    };
+    let sum = sha256(root, &archive);
+    std::fs::write(dir.join(&name), &archive).unwrap();
+    let own = own_sum.map_or(format!("{sum}  {name}\n"), |s| format!("{s}  {name}\n"));
+    std::fs::write(dir.join(format!("{name}.sha256")), own).unwrap();
+    std::fs::write(dir.join("SHA256SUMS"), format!("{}  other.zip\n{sum}  {name}\n", "0".repeat(64))).unwrap();
 }
 
 #[test]
@@ -603,39 +699,101 @@ fn tui_needs_a_terminal() {
 #[test]
 fn update_yes_replaces_the_programs_or_leaves_them() {
     let dir = scratch("update-yes");
-    let bin = dir.join("home").join("bin");
+    let home = dir.join("home");
+    let bin = home.join("bin");
     std::fs::create_dir_all(&bin).unwrap();
     let exe = if cfg!(windows) { ".exe" } else { "" };
     let (kstar, lsp) = (bin.join(format!("kstar{exe}")), bin.join(format!("kstar-lsp{exe}")));
     std::fs::copy(env!("CARGO_BIN_EXE_kstar"), &kstar).unwrap();
     std::fs::write(&lsp, "old lsp").unwrap();
-    // A stand-in for the install script: it writes new programs where it is
-    // told, or fails.
-    let (good, bad) = if cfg!(windows) {
-        let good = dir.join("good.ps1");
-        std::fs::write(&good, "$b = Join-Path $env:KSTAR_INSTALL_DIR 'bin'\nSet-Content (Join-Path $b 'kstar.exe') \"new $env:KSTAR_VERSION\"\nSet-Content (Join-Path $b 'kstar-lsp.exe') 'new lsp'\n").unwrap();
-        let bad = dir.join("bad.ps1");
-        std::fs::write(&bad, "Set-Content (Join-Path $env:KSTAR_INSTALL_DIR 'bin/kstar.exe') 'half'\nexit 1\n").unwrap();
-        (good, bad)
-    } else {
-        let good = dir.join("good.sh");
-        std::fs::write(&good, "printf 'new %s' \"$KSTAR_VERSION\" > \"$KSTAR_INSTALL_DIR/bin/kstar\"\nprintf 'new lsp' > \"$KSTAR_INSTALL_DIR/bin/kstar-lsp\"\n").unwrap();
-        let bad = dir.join("bad.sh");
-        std::fs::write(&bad, "printf half > \"$KSTAR_INSTALL_DIR/bin/kstar\"\nexit 1\n").unwrap();
-        (good, bad)
+    // The install script put a man page here, so the update refreshes it.
+    let man = home.join("share/man/man1/kstar.1");
+    std::fs::create_dir_all(man.parent().unwrap()).unwrap();
+    std::fs::write(&man, "old man page").unwrap();
+
+    let releases = dir.join("releases");
+    fake_release(&releases, "v99.0.0", b"new kstar", b"new lsp", None);
+    fake_release(&releases, "v98.0.0", b"bad kstar", b"bad lsp", Some(&"0".repeat(64)));
+    let base = serve(releases);
+    let unchanged = |what: &str| {
+        assert_eq!(std::fs::read_to_string(&lsp).unwrap(), "old lsp", "{what}");
+        assert!(Command::new(&kstar).arg("version").output().unwrap().status.success(), "{what}: kstar was not put back");
+        assert_eq!(std::fs::read_to_string(&man).unwrap(), "old man page", "{what}");
     };
 
-    let failed = update(&kstar, &dir, "v99.0.0", &["--yes"], Some(&bad));
-    assert!(!failed.status.success());
-    assert!(stderr(&failed).contains("left as it was"), "{}", stderr(&failed));
-    assert_eq!(std::fs::read_to_string(&lsp).unwrap(), "old lsp");
-    assert!(Command::new(&kstar).arg("version").output().unwrap().status.success(), "kstar was not put back");
+    // A release that is not there: the HTTP status is named.
+    let missing = update(&kstar, &dir, "v97.0.0", &["--yes"], Some(&base));
+    assert!(!missing.status.success());
+    let err = stderr(&missing);
+    assert!(err.contains("step 1 of 4 (Download and check the release)") && err.contains("HTTP 404"), "{err}");
+    assert!(err.contains("kstar was left as it was"), "{err}");
+    unchanged("missing release");
 
-    let done = update(&kstar, &dir, "v99.0.0", &["-y"], Some(&good));
+    // A wrong checksum: refused, and nothing changes.
+    let bad = update(&kstar, &dir, "v98.0.0", &["--yes"], Some(&base));
+    assert!(!bad.status.success());
+    let err = stderr(&bad);
+    assert!(err.contains("checksum") && err.contains("does not match") && err.contains(".sha256"), "{err}");
+    unchanged("bad checksum");
+
+    // The real thing: both programs are swapped and the old ones go.
+    let done = update(&kstar, &dir, "v99.0.0", &["-y"], Some(&base));
     assert!(done.status.success(), "{}{}", stdout(&done), stderr(&done));
-    assert!(stdout(&done).contains("Updated kstar to v99.0.0"), "{}", stdout(&done));
-    assert_eq!(std::fs::read_to_string(&kstar).unwrap().trim(), "new v99.0.0");
-    assert_eq!(std::fs::read_to_string(&lsp).unwrap().trim(), "new lsp");
+    let out = stdout(&done);
+    assert!(out.contains("Updated kstar to v99.0.0"), "{out}");
+    assert!(out.contains("SHA256SUMS"), "{out}");
+    assert_eq!(std::fs::read_to_string(&kstar).unwrap(), "new kstar");
+    assert_eq!(std::fs::read_to_string(&lsp).unwrap(), "new lsp");
+    assert!(!bin.join("kstar-lsp.old").exists());
+    if cfg!(unix) {
+        // The running kstar was renamed, so it could be removed too.
+        assert!(!bin.join("kstar.old").exists());
+        assert_eq!(std::fs::read_to_string(&man).unwrap(), ".TH KSTAR 1 new");
+    }
+    // The folder it unpacked into is gone.
+    let left: Vec<_> = std::fs::read_dir(&home).unwrap().flatten().map(|e| e.file_name()).collect();
+    assert!(left.iter().all(|n| !n.to_string_lossy().starts_with(".kstar-update-")), "{left:?}");
+}
+
+/// `kstar update` installs by itself: it never starts PowerShell, a shell,
+/// curl or gh, and never pipes a downloaded script into one. Virus scanners
+/// (Windows Defender among them) stop and quarantine programs that do.
+#[test]
+fn updating_starts_no_shell() {
+    let mut sources = Vec::new();
+    let mut folders = vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src")];
+    while let Some(folder) = folders.pop() {
+        for entry in std::fs::read_dir(folder).unwrap().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                folders.push(path);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                sources.push(path);
+            }
+        }
+    }
+    assert!(sources.len() > 10);
+    let banned = [
+        "ExecutionPolicy",
+        "| iex",
+        "|iex",
+        "Invoke-Expression",
+        "irm http",
+        "Command::new(\"powershell",
+        "Command::new(\"pwsh",
+        "Command::new(\"sh\")",
+        "Command::new(\"bash",
+        "Command::new(\"cmd",
+        "Command::new(\"curl",
+        "Command::new(\"wget",
+        "Command::new(\"gh\")",
+    ];
+    for path in sources {
+        let text = std::fs::read_to_string(&path).unwrap();
+        for word in banned {
+            assert!(!text.contains(word), "{} contains `{word}`", path.display());
+        }
+    }
 }
 
 #[test]

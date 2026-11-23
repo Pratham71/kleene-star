@@ -394,6 +394,19 @@ reads `main.rs` and `update.rs` for option strings and dispatched commands,
 and tries every option on every command, so the table and the parsers
 cannot drift apart.
 
+**`kstar update`** (`src/update.rs`) asks GitHub's API for the latest
+release and installs it with `src/selfupdate.rs`, in the program itself:
+ureq (rustls) downloads the archive, which is checked against its
+`.sha256` file and `SHA256SUMS`, the zip and tar crates unpack it into a
+new folder next to `bin`, and the programs are swapped by renaming the old
+ones to `.old` and the new ones in, with every rename undone on failure.
+It never starts PowerShell, a shell, `curl` or `gh`: Windows Defender
+quarantined kstar 0.8.0 for running `irm | iex`, and a test in
+`tests/cli.rs` fails if `src/` spawns any of them. The same test file
+updates against a release served from `127.0.0.1` through
+`KSTAR_UPDATE_BASE_URL` (testing only: it takes `https://` or this
+machine), with `KSTAR_LATEST` standing in for the API.
+
 `src/manual.rs` makes the man pages (`kstar.1`, one `kstar-<command>.1`
 per command, `kstar-lsp.1`) and the info manual (`kstar.info`) from the
 same table, so they say what `kstar help` says. They are kept in `man/`,
@@ -733,8 +746,6 @@ UPDATE_GOLDEN=1 cargo test --test golden --test format
 
 Ideas that fit the current design, roughly in order of size:
 
-- A terminal UI around `kstar update` and other commands. `kstar update`
-  asks a plain `[Y/n]` question today, so a TUI can wrap it.
 - Publishing the VS Code extension on the marketplace and the crate on
   crates.io.
 

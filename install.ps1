@@ -1,12 +1,18 @@
 # Installs Kleene Star (kstar and kstar-lsp) on Windows for the current user,
-# without administrator rights:
+# without administrator rights. The installer, kstar-setup-x64.exe from the
+# releases page, is the recommended way; this script is for those who would
+# rather not run one. In a PowerShell window:
 #
-#   powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex"
+#   irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex
 #
 # Or through the GitHub CLI, which also works for a private fork (after
 # `gh auth login`):
 #
-#   powershell -c "gh api repos/Pratham71/kleene-star/contents/install.ps1 -H 'Accept: application/vnd.github.raw' | Out-String | iex"
+#   gh api repos/Pratham71/kleene-star/contents/install.ps1 -H 'Accept: application/vnd.github.raw' | Out-String | iex
+#
+# It runs in the PowerShell it is given: it starts no other PowerShell, no
+# hidden windows and changes no execution policy. `kstar update` does not
+# use it; it installs by itself.
 #
 # It downloads the latest release for this machine, checks its SHA-256
 # checksum, puts the programs in %LOCALAPPDATA%\Programs\Kleene Star\bin and

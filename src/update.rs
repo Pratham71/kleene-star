@@ -3,15 +3,12 @@
 //! `kstar update --check` asks GitHub for the latest release and compares it
 //! with this build. `kstar update` shows the same, with the first paragraph
 //! of the release's notes, and asks before it installs anything. On yes it
-//! runs the release's install script into the folder this `kstar` is in
-//! (every way of installing puts the programs in a `bin` folder), which also
-//! updates the VS Code extension.
-//!
-//! A running program cannot be overwritten on Windows, and on Linux not
-//! while it runs. It can be renamed, though, so the programs are first moved
-//! aside as `kstar.old` (and `kstar-lsp.old`), put back if the install
-//! fails, and the old files are removed the next time `kstar` starts.
+//! downloads the release, checks it and swaps the new programs into the
+//! folder this `kstar` is in (every way of installing puts them in a `bin`
+//! folder), all in this program (see `selfupdate`), then updates the VS
+//! Code extension to match.
 
+use crate::selfupdate::{self, check_sum, program_files, Failure};
 use std::process::{Command, ExitCode};
 
 /// The repository releases come from; `KSTAR_REPO` overrides it.
@@ -35,40 +32,23 @@ pub fn version() -> String {
 pub use kstar::tui::update::{is_newer, Release};
 use kstar::tui::update::{Channel, Outcome, Progress, StepState, UpdateScreen};
 
-/// The latest release, asked through the `gh` command (which handles
-/// signing in, needed if the repository is private) or, failing that,
-/// `curl` with `GITHUB_TOKEN` if it is set. `KSTAR_LATEST` (a tag) stands in
-/// for GitHub, for testing.
+/// The latest release, from GitHub's API (with `GITHUB_TOKEN` if it is
+/// set, needed if the repository is private). `KSTAR_LATEST` (a tag) stands
+/// in for GitHub, for testing.
 fn latest_release() -> Result<Release, String> {
     if let Ok(tag) = std::env::var("KSTAR_LATEST") {
         return Ok(Release { tag, notes: std::env::var("KSTAR_LATEST_NOTES").unwrap_or_default() });
     }
     let repo = repository();
-    let gh = Command::new("gh").args(["api", &format!("repos/{repo}/releases/latest")]).output();
-    if let Ok(output) = &gh {
-        if output.status.success() {
-            return parse_release(&String::from_utf8_lossy(&output.stdout));
+    match selfupdate::github_api(&format!("repos/{repo}/releases/latest")) {
+        Ok(body) => parse_release(&String::from_utf8_lossy(&body)),
+        Err(Failure::Status(404, _)) => {
+            Err(format!("{repo} has no releases yet, or it is private and GITHUB_TOKEN is not set to a token that can see it"))
         }
-        if String::from_utf8_lossy(&output.stderr).contains("404") {
-            return Err(format!("{repo} has no releases yet, or this GitHub account cannot see it"));
-        }
+        Err(e) => Err(format!(
+            "could not ask GitHub about the latest release of {repo}: {e}. If the repository is private, set GITHUB_TOKEN and try again"
+        )),
     }
-    let mut curl = Command::new("curl");
-    curl.args(["-fsSL", "-H", "Accept: application/vnd.github+json"]);
-    if let Ok(token) = std::env::var("GITHUB_TOKEN") {
-        curl.args(["-H", &format!("Authorization: Bearer {token}")]);
-    }
-    let output = curl
-        .arg(format!("https://api.github.com/repos/{repo}/releases/latest"))
-        .output()
-        .map_err(|e| format!("could not run gh or curl: {e}"))?;
-    if !output.status.success() {
-        return Err(format!(
-            "could not ask GitHub about the latest release of {repo}. If the repository is private, \
-             sign in with `gh auth login` (or set GITHUB_TOKEN) and try again"
-        ));
-    }
-    parse_release(&String::from_utf8_lossy(&output.stdout))
 }
 
 /// A release from GitHub's JSON for it.
@@ -92,23 +72,8 @@ fn latest_beta() -> Option<Release> {
     if std::env::var_os("KSTAR_LATEST").is_some() {
         return None;
     }
-    let path = format!("repos/{}/releases?per_page=30", repository());
-    let json = match Command::new("gh").args(["api", &path]).output() {
-        Ok(out) if out.status.success() => String::from_utf8_lossy(&out.stdout).to_string(),
-        _ => {
-            let mut curl = Command::new("curl");
-            curl.args(["-fsSL", "-H", "Accept: application/vnd.github+json"]);
-            if let Ok(token) = std::env::var("GITHUB_TOKEN") {
-                curl.args(["-H", &format!("Authorization: Bearer {token}")]);
-            }
-            let out = curl.arg(format!("https://api.github.com/{path}")).output().ok()?;
-            if !out.status.success() {
-                return None;
-            }
-            String::from_utf8_lossy(&out.stdout).to_string()
-        }
-    };
-    newest_beta(&json)
+    let json = selfupdate::github_api(&format!("repos/{}/releases?per_page=30", repository())).ok()?;
+    newest_beta(&String::from_utf8_lossy(&json))
 }
 
 /// The newest pre-release in GitHub's JSON list of releases.
@@ -144,14 +109,14 @@ pub fn is_yes(answer: &str) -> bool {
     matches!(answer.trim().to_ascii_lowercase().as_str(), "" | "y" | "yes")
 }
 
-/// The command that installs the latest release on this system: the same
-/// one-liner as in the README, which needs only PowerShell or curl.
-fn install_command() -> String {
+/// How to install a release by hand, for when `kstar update` cannot: the
+/// installer on Windows, the install script elsewhere. Shown, never run.
+fn reinstall_hint() -> String {
     let repo = repository();
     if cfg!(windows) {
-        format!("powershell -c \"irm https://raw.githubusercontent.com/{repo}/main/install.ps1 | iex\"")
+        format!("download and run kstar-setup-x64.exe from https://github.com/{repo}/releases/latest")
     } else {
-        format!("curl -fsSL https://raw.githubusercontent.com/{repo}/main/install.sh | sh")
+        format!("run the install script again: curl -fsSL https://raw.githubusercontent.com/{repo}/main/install.sh | sh")
     }
 }
 
@@ -209,7 +174,7 @@ pub fn update(args: &[&str]) -> ExitCode {
         println!("kstar {current} is up to date (the {which} is {latest})");
         // The extension may still be from another release.
         if vscode {
-            if let Err(message) = match_extension(current, check_only) {
+            if let Err(message) = match_extension(current, check_only, &mut |line| println!("{line}")) {
                 eprintln!("kstar: {message}");
                 return ExitCode::FAILURE;
             }
@@ -225,7 +190,7 @@ pub fn update(args: &[&str]) -> ExitCode {
     if check_only {
         println!("run `kstar update{}` to install it", if beta { " --beta" } else { "" });
         if vscode {
-            if let Err(message) = match_extension(current, true) {
+            if let Err(message) = match_extension(current, true, &mut |line| println!("{line}")) {
                 eprintln!("kstar: {message}");
                 return ExitCode::FAILURE;
             }
@@ -246,7 +211,7 @@ pub fn update(args: &[&str]) -> ExitCode {
             return ExitCode::SUCCESS;
         }
     }
-    // Without the screen, the install script's output is shown as it comes.
+    // Without the screen, what it does is shown as it goes.
     let mut show = |progress: Progress| {
         if let Progress::Log(line) = progress {
             println!("{line}");
@@ -315,36 +280,22 @@ fn update_screen(current: &str, stable: Release, beta: Option<Release>, channel:
 
 // ---- installing ----
 
-/// The programs this release installs, as file names in the `bin` folder.
-fn program_files() -> [&'static str; 2] {
-    if cfg!(windows) { ["kstar.exe", "kstar-lsp.exe"] } else { ["kstar", "kstar-lsp"] }
-}
-
-/// What a program is renamed to while it is replaced: `kstar.exe` ->
-/// `kstar.old`.
-fn old_name(file: &str) -> String {
-    format!("{}.old", file.trim_end_matches(".exe"))
-}
-
 /// Removes the programs a previous `kstar update` set aside. Called when
 /// `kstar` starts; quietly does nothing if they are still running or gone.
 pub fn remove_old_programs() {
     if let Some(bin) = std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())) {
-        for file in program_files() {
-            let old = bin.join(old_name(file));
-            if old.exists() {
-                let _ = std::fs::remove_file(old);
-            }
-        }
+        selfupdate::remove_old_programs_in(&bin);
     }
 }
 
-/// Installs release `tag` into the folder above this program's `bin`
-/// folder, with the release's install script (`KSTAR_INSTALL_SCRIPT`, a
-/// local copy of it, for testing).
+/// Installs release `tag` into the `bin` folder this program is in:
+/// downloads this platform's archive (from `KSTAR_UPDATE_BASE_URL`, for
+/// testing), checks it, unpacks it next to `bin` and swaps the programs in,
+/// putting the old ones back if anything fails; then updates the VS Code
+/// extension. Nothing else is started to do it, apart from VS Code's `code`.
 ///
-/// It reports each of `kstar::tui::update::STEPS` and every line the
-/// script prints to `report`.
+/// It reports each of `kstar::tui::update::STEPS` and what it does to
+/// `report`. An error says which step failed and why.
 fn install(tag: &str, vscode: bool, report: &mut dyn FnMut(Progress)) -> Result<(), String> {
     report(Progress::Step(0, StepState::Running));
     let exe = std::env::current_exe().map_err(|e| format!("cannot tell where kstar is: {e}"))?;
@@ -353,141 +304,92 @@ fn install(tag: &str, vscode: bool, report: &mut dyn FnMut(Progress)) -> Result<
         report(Progress::Step(0, StepState::Failed));
         return Err(format!(
             "kstar is in {}, not in a `bin` folder, so it was not installed by the installer, the install \
-             script or cargo. Install {tag} the way you installed this one:\n\n    {}",
+             script or cargo. To install {tag}, {}",
             bin.display(),
-            install_command()
+            reinstall_hint()
         ));
     };
-    let moved = match set_aside(&bin) {
-        Ok(moved) => moved,
-        Err(message) => {
-            report(Progress::Step(0, StepState::Failed));
-            return Err(message);
-        }
-    };
-    report(Progress::Step(0, StepState::Done));
+    let name = selfupdate::archive_name();
+    let downloaded = download(tag, &name, report);
+    let archive = step(report, 0, downloaded)?;
+
     report(Progress::Step(1, StepState::Running));
-    let mut command = match std::env::var_os("KSTAR_INSTALL_SCRIPT") {
-        Some(script) if cfg!(windows) => {
-            let mut c = Command::new("powershell");
-            c.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]).arg(script);
-            c
-        }
-        Some(script) => {
-            let mut c = Command::new("sh");
-            c.arg(script);
-            c
-        }
-        None if cfg!(windows) => {
-            let mut c = Command::new("powershell");
-            c.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
-                .arg(format!("irm https://raw.githubusercontent.com/{}/main/install.ps1 | iex", repository()));
-            c
-        }
-        None => {
-            let mut c = Command::new("sh");
-            c.arg("-c").arg(format!("curl -fsSL https://raw.githubusercontent.com/{}/main/install.sh | sh", repository()));
-            c
-        }
+    // A new folder next to `bin`, on the same drive, so the programs can be
+    // renamed into place.
+    let work = match selfupdate::private_dir_in(home, ".kstar-update-") {
+        Ok(work) => work,
+        Err(why) => return step::<()>(report, 1, Err(why)).map(|_| ()),
     };
-    command.env("KSTAR_VERSION", tag).env("KSTAR_INSTALL_DIR", home).env("KSTAR_NO_PATH", "1");
-    if !vscode {
-        command.env("KSTAR_NO_VSCODE", "1");
-    }
-    let ran = run_reporting(&mut command, report);
-    report(Progress::Step(1, if ran { StepState::Done } else { StepState::Failed }));
-    let ok = ran && program_files().iter().all(|f| bin.join(f).is_file());
-    if ran {
-        report(Progress::Step(2, if ok { StepState::Done } else { StepState::Failed }));
-    }
-    if !ok {
-        put_back(&bin, &moved);
-        return Err(format!("the install script could not install {tag}; kstar was left as it was"));
-    }
-    // The script installs the extension when VS Code is there.
-    let extension = vscode && code_command().is_some();
-    report(Progress::Step(3, if extension { StepState::Done } else { StepState::Skipped }));
-    for old in &moved {
+    let mut swap = || {
+        let unpacked = step(report, 1, selfupdate::unpack(&archive, &name, &work))?;
+        report(Progress::Log(format!("Unpacked {} and {} into {}", program_files()[0], program_files()[1], work.display())));
+
+        report(Progress::Step(2, StepState::Running));
+        step(report, 2, selfupdate::replace_programs(&bin, &work, &program_files()))?;
+        report(Progress::Log(format!("Replaced {} and {} in {}", program_files()[0], program_files()[1], bin.display())));
+        match selfupdate::refresh_manual(home, &work, &unpacked.manual) {
+            Ok(Some(line)) => report(Progress::Log(line)),
+            Ok(None) => {}
+            Err(e) => report(Progress::Log(format!("The man pages were not updated: {e}"))),
+        }
+        Ok::<(), String>(())
+    };
+    let result = swap();
+    let _ = std::fs::remove_dir_all(&work);
+    result?;
+    for file in program_files() {
         // On Windows the running kstar cannot be deleted; the next start does it.
-        let _ = std::fs::remove_file(bin.join(old_name(old)));
+        let _ = std::fs::remove_file(bin.join(selfupdate::old_name(file)));
+    }
+
+    match code_command().filter(|_| vscode) {
+        None => report(Progress::Step(3, StepState::Skipped)),
+        Some(code) => {
+            report(Progress::Step(3, StepState::Running));
+            let version = tag.trim_start_matches('v');
+            let mut say = |line: String| report(Progress::Log(line));
+            let result = match_extension_with(&code, version, false, download_vsix, &mut say);
+            // kstar is installed already: a problem here is only a warning.
+            if let Err(e) = &result {
+                report(Progress::Log(format!("The VS Code extension was not updated: {e}. Run `kstar update` later to try again.")));
+            }
+            report(Progress::Step(3, if result.is_ok() { StepState::Done } else { StepState::Failed }));
+        }
     }
     Ok(())
 }
 
-/// Runs `command`, sending every line it prints (on either stream) to
-/// `report` as it comes. True if it ran and succeeded.
-fn run_reporting(command: &mut Command, report: &mut dyn FnMut(Progress)) -> bool {
-    use std::io::BufRead;
-    command.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped());
-    let Ok(mut child) = command.spawn() else { return false };
-    let (send, receive) = std::sync::mpsc::channel::<String>();
-    let mut readers = Vec::new();
-    let streams: [Option<Box<dyn std::io::Read + Send>>; 2] =
-        [child.stdout.take().map(|s| Box::new(s) as _), child.stderr.take().map(|s| Box::new(s) as _)];
-    for stream in streams.into_iter().flatten() {
-        let send = send.clone();
-        readers.push(std::thread::spawn(move || {
-            for line in std::io::BufReader::new(stream).lines().map_while(Result::ok) {
-                let _ = send.send(line.trim_end_matches('\r').to_string());
-            }
-        }));
-    }
-    drop(send);
-    for line in receive {
-        report(Progress::Log(line));
-    }
-    for reader in readers {
-        let _ = reader.join();
-    }
-    child.wait().is_ok_and(|status| status.success())
-}
-
-/// Renames the programs in `bin` out of the way; returns the ones moved.
-fn set_aside(bin: &std::path::Path) -> Result<Vec<&'static str>, String> {
-    let mut moved = Vec::new();
-    for file in program_files() {
-        let (path, old) = (bin.join(file), bin.join(old_name(file)));
-        if !path.exists() {
-            continue;
+/// Reports step `index` failed, with an error that names it, or (for the
+/// last call of a step) done.
+fn step<T>(report: &mut dyn FnMut(Progress), index: usize, result: Result<T, String>) -> Result<T, String> {
+    let steps = kstar::tui::update::STEPS;
+    match result {
+        Ok(value) => {
+            report(Progress::Step(index, StepState::Done));
+            Ok(value)
         }
-        let _ = std::fs::remove_file(&old);
-        if let Err(e) = patiently(|| std::fs::rename(&path, &old)) {
-            put_back(bin, &moved);
-            return Err(format!("cannot move {} aside to replace it: {e}", path.display()));
+        Err(why) => {
+            report(Progress::Step(index, StepState::Failed));
+            Err(format!("step {} of {} ({}) failed: {why}. kstar was left as it was.", index + 1, steps.len(), steps[index]))
         }
-        moved.push(file);
     }
-    Ok(moved)
 }
 
-/// Runs `f` until it succeeds, up to 25 times a fifth of a second apart.
-/// On Windows a program that was just written or started can be held for a
-/// moment by a virus scanner or the search indexer, and renaming it fails
-/// with "used by another process" until they let go.
-fn patiently<T>(f: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
-    retry(25, std::time::Duration::from_millis(200), f)
-}
-
-/// Runs `f` up to `attempts` times, `pause` apart, until it succeeds;
-/// returns its last error if it never does.
-fn retry<T>(attempts: usize, pause: std::time::Duration, mut f: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
-    let mut last = f();
-    for _ in 1..attempts {
-        if last.is_ok() {
-            break;
-        }
-        std::thread::sleep(pause);
-        last = f();
-    }
-    last
-}
-
-/// Undoes `set_aside`.
-fn put_back(bin: &std::path::Path, moved: &[&str]) {
-    for file in moved {
-        let _ = std::fs::remove_file(bin.join(file));
-        let _ = patiently(|| std::fs::rename(bin.join(old_name(file)), bin.join(file)));
-    }
+/// Downloads archive `name` of release `tag` and checks it against its own
+/// `.sha256` file and the release's `SHA256SUMS`.
+fn download(tag: &str, name: &str, report: &mut dyn FnMut(Progress)) -> Result<Vec<u8>, String> {
+    let base = selfupdate::release_base(&repository())?;
+    let fetch = |file: &str| {
+        let url = format!("{base}/{tag}/{file}");
+        selfupdate::get(&url, &[]).map_err(|e| format!("could not download {file}: {e}"))
+    };
+    report(Progress::Log(format!("Downloading {base}/{tag}/{name}")));
+    let archive = fetch(name)?;
+    let own = fetch(&format!("{name}.sha256"))?;
+    let sums = fetch("SHA256SUMS")?;
+    selfupdate::verify(&archive, name, &String::from_utf8_lossy(&own), &String::from_utf8_lossy(&sums))?;
+    report(Progress::Log(format!("Checked {name} ({} bytes) against {name}.sha256 and SHA256SUMS", archive.len())));
+    Ok(archive)
 }
 
 // ---- the VS Code extension ----
@@ -531,9 +433,9 @@ pub fn extension_version(listing: &str) -> Option<String> {
 }
 
 /// Makes the VS Code extension match this kstar, if VS Code is installed.
-fn match_extension(current: &str, check_only: bool) -> Result<(), String> {
+fn match_extension(current: &str, check_only: bool, say: &mut dyn FnMut(String)) -> Result<(), String> {
     match code_command() {
-        Some(code) => match_extension_with(&code, current, check_only, download_vsix),
+        Some(code) => match_extension_with(&code, current, check_only, download_vsix, say),
         None => Ok(()),
     }
 }
@@ -545,6 +447,7 @@ fn match_extension_with(
     current: &str,
     check_only: bool,
     download: impl Fn(&str, &std::path::Path) -> Result<std::path::PathBuf, String>,
+    say: &mut dyn FnMut(String),
 ) -> Result<(), String> {
     let listing = Command::new(code)
         .args(["--list-extensions", "--show-versions"])
@@ -552,15 +455,15 @@ fn match_extension_with(
         .map_err(|e| format!("could not run {}: {e}", code.display()))?;
     let installed = extension_version(&String::from_utf8_lossy(&listing.stdout));
     if installed.as_deref() == Some(current) {
-        println!("the VS Code extension is {current}, the same as kstar");
+        say(format!("the VS Code extension is {current}, the same as kstar"));
         return Ok(());
     }
     let have = installed.map_or("not installed".to_string(), |v| format!("{v}, not {current}"));
     if check_only {
-        println!("the VS Code extension is {have}; run `kstar update` to install kleene-star-{current}.vsix");
+        say(format!("the VS Code extension is {have}; run `kstar update` to install kleene-star-{current}.vsix"));
         return Ok(());
     }
-    println!("the VS Code extension is {have}; installing kleene-star-{current}.vsix");
+    say(format!("the VS Code extension is {have}; installing kleene-star-{current}.vsix"));
     let work = private_dir()?;
     let result = download(current, &work).and_then(|vsix| {
         let status = Command::new(code)
@@ -572,7 +475,7 @@ fn match_extension_with(
         if !status.success() {
             return Err(format!("VS Code could not install {}", vsix.display()));
         }
-        println!("installed the VS Code extension {current}; reload VS Code windows to use it");
+        say(format!("installed the VS Code extension {current}; reload VS Code windows to use it"));
         Ok(())
     });
     let _ = std::fs::remove_dir_all(&work);
@@ -580,71 +483,26 @@ fn match_extension_with(
 }
 
 /// A new folder for the download that only this user can use, with a name
-/// no one can guess in advance. Creating it fails if the path exists, so a
-/// folder someone else made in the shared temporary folder is never used:
-/// otherwise they could swap the `.vsix` between the checksum and the
-/// install.
+/// no one can guess in advance, in the temporary folder.
 fn private_dir() -> Result<std::path::PathBuf, String> {
-    use std::hash::{BuildHasher, Hasher};
-    for _ in 0..8 {
-        // RandomState is seeded from the operating system's randomness.
-        let mut hasher = std::collections::hash_map::RandomState::new().build_hasher();
-        hasher.write_u32(std::process::id());
-        let path = std::env::temp_dir().join(format!("kstar-update-{:016x}", hasher.finish()));
-        #[cfg_attr(not(unix), allow(unused_mut))]
-        let mut builder = std::fs::DirBuilder::new();
-        #[cfg(unix)]
-        std::os::unix::fs::DirBuilderExt::mode(&mut builder, 0o700);
-        match builder.create(&path) {
-            Ok(()) => return Ok(path),
-            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
-            Err(e) => return Err(format!("could not make {}: {e}", path.display())),
-        }
-    }
-    Err("could not make a private folder for the download".into())
+    selfupdate::private_dir_in(&std::env::temp_dir(), "kstar-update-")
 }
 
 /// Downloads kleene-star-<version>.vsix and its checksum from release
-/// v<version> into `work` (through `gh`, or `curl` without it), checks the
-/// checksum, and returns the file.
+/// v<version> into `work`, checks the checksum, and returns the file.
 fn download_vsix(version: &str, work: &std::path::Path) -> Result<std::path::PathBuf, String> {
-    let repo = repository();
-    let tag = format!("v{version}");
+    let base = selfupdate::release_base(&repository())?;
     let vsix = format!("kleene-star-{version}.vsix");
-    let sum = format!("{vsix}.sha256");
-    let by_gh = Command::new("gh")
-        .args(["release", "download", &tag, "-R", &repo, "-p", &vsix, "-p", &sum, "-D"])
-        .arg(work)
-        .output()
-        .is_ok_and(|o| o.status.success());
-    if !by_gh {
-        for file in [&vsix, &sum] {
-            let status = Command::new("curl")
-                .args(["-fsSL", "-o"])
-                .arg(work.join(file))
-                .arg(format!("https://github.com/{repo}/releases/download/{tag}/{file}"))
-                .status()
-                .map_err(|e| format!("could not run gh or curl: {e}"))?;
-            if !status.success() {
-                return Err(format!("could not download {file} from release {tag} of {repo}"));
-            }
-        }
-    }
+    let fetch = |file: &str| {
+        let url = format!("{base}/v{version}/{file}");
+        selfupdate::get(&url, &[]).map_err(|e| format!("could not download {file}: {e}"))
+    };
+    let bytes = fetch(&vsix)?;
+    let expected = fetch(&format!("{vsix}.sha256"))?;
+    check_sum(&bytes, &String::from_utf8_lossy(&expected), &vsix)?;
     let path = work.join(&vsix);
-    let bytes = std::fs::read(&path).map_err(|e| format!("could not read {}: {e}", path.display()))?;
-    let expected = std::fs::read_to_string(work.join(&sum)).map_err(|e| format!("could not read {sum}: {e}"))?;
-    check_sum(&bytes, &expected, &vsix)?;
+    std::fs::write(&path, bytes).map_err(|e| selfupdate::io(&e, &format!("could not write {}", path.display())))?;
     Ok(path)
-}
-
-/// Checks `bytes` against a checksum file's first word.
-pub fn check_sum(bytes: &[u8], file: &str, name: &str) -> Result<(), String> {
-    let expected = file.split_whitespace().next().unwrap_or("").to_ascii_lowercase();
-    let actual = crate::sha256::hex(bytes);
-    if expected != actual {
-        return Err(format!("the checksum of {name} does not match (expected {expected}, got {actual}); nothing was installed"));
-    }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -673,27 +531,6 @@ mod tests {
         assert_eq!(newest_beta(json), Some(Release { tag: "v0.8.1-beta".into(), notes: "newer beta".into() }));
         assert_eq!(newest_beta("[]"), None);
         assert_eq!(newest_beta("not json"), None);
-    }
-
-    #[test]
-    fn reports_every_line_a_command_prints() {
-        let mut command = if cfg!(windows) {
-            let mut c = Command::new("cmd");
-            c.args(["/C", "echo one&& echo two 1>&2"]);
-            c
-        } else {
-            let mut c = Command::new("sh");
-            c.args(["-c", "echo one; echo two >&2"]);
-            c
-        };
-        let mut lines = Vec::new();
-        assert!(run_reporting(&mut command, &mut |p| {
-            if let Progress::Log(line) = p {
-                lines.push(line.trim().to_string());
-            }
-        }));
-        lines.sort();
-        assert_eq!(lines, vec!["one", "two"]);
     }
 
     #[test]
@@ -760,20 +597,20 @@ if [ \"$1\" = --list-extensions ]; then echo '{listing}'; else echo \"$@\" > '{}
         };
         // An old extension is replaced.
         let (code, log) = fake_code(&dir, "kleene-star.kleene-star@0.2.3");
-        assert_eq!(match_extension_with(&code, "0.5.1", false, download), Ok(()));
+        assert_eq!(match_extension_with(&code, "0.5.1", false, download, &mut |_| ()), Ok(()));
         let call = std::fs::read_to_string(&log).unwrap();
         assert!(call.contains("--install-extension") && call.contains("kleene-star-0.5.1.vsix") && call.contains("--force"), "{call}");
         // With --check, or when it already matches, nothing is installed.
         std::fs::remove_file(&log).unwrap();
         let never = |_: &str, _: &std::path::Path| -> Result<std::path::PathBuf, String> { panic!("downloaded") };
-        assert_eq!(match_extension_with(&code, "0.5.1", true, never), Ok(()));
+        assert_eq!(match_extension_with(&code, "0.5.1", true, never, &mut |_| ()), Ok(()));
         let (code, log) = fake_code(&dir, "kleene-star.kleene-star@0.5.1");
-        assert_eq!(match_extension_with(&code, "0.5.1", false, never), Ok(()));
+        assert_eq!(match_extension_with(&code, "0.5.1", false, never, &mut |_| ()), Ok(()));
         assert!(!log.exists());
         // A failed download installs nothing and says why.
         let (code, log) = fake_code(&dir, "other.ext@1.0.0");
         let failing = |_: &str, _: &std::path::Path| -> Result<std::path::PathBuf, String> { Err("no network".into()) };
-        assert_eq!(match_extension_with(&code, "0.5.1", false, failing), Err("no network".into()));
+        assert_eq!(match_extension_with(&code, "0.5.1", false, failing, &mut |_| ()), Err("no network".into()));
         assert!(!log.exists());
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -812,45 +649,6 @@ if [ \"$1\" = --list-extensions ]; then echo '{listing}'; else echo \"$@\" > '{}
         for answer in ["n", "no", "N\n", "nope", "q"] {
             assert!(!is_yes(answer), "{answer:?}");
         }
-    }
-
-    #[test]
-    fn retries_until_it_works() {
-        let pause = std::time::Duration::from_millis(1);
-        let mut calls = 0;
-        let busy = || std::io::Error::other("used by another process");
-        let result = retry(5, pause, || {
-            calls += 1;
-            if calls < 3 { Err(busy()) } else { Ok(calls) }
-        });
-        assert_eq!(result.unwrap(), 3);
-        let mut calls = 0;
-        assert!(retry(4, pause, || -> std::io::Result<()> {
-            calls += 1;
-            Err(busy())
-        })
-        .is_err());
-        assert_eq!(calls, 4);
-    }
-
-    #[test]
-    fn programs_are_set_aside_and_put_back() {
-        let bin = std::env::temp_dir().join(format!("kstar-update-aside-{}", std::process::id())).join("bin");
-        let _ = std::fs::remove_dir_all(&bin);
-        std::fs::create_dir_all(&bin).unwrap();
-        let [kstar, lsp] = program_files();
-        std::fs::write(bin.join(kstar), "old kstar").unwrap();
-        std::fs::write(bin.join(lsp), "old lsp").unwrap();
-        let moved = set_aside(&bin).unwrap();
-        assert_eq!(moved, vec![kstar, lsp]);
-        assert!(!bin.join(kstar).exists() && bin.join(old_name(kstar)).exists());
-        // A failed install leaves the old programs where they were.
-        std::fs::write(bin.join(kstar), "half written").unwrap();
-        put_back(&bin, &moved);
-        assert_eq!(std::fs::read_to_string(bin.join(kstar)).unwrap(), "old kstar");
-        assert_eq!(std::fs::read_to_string(bin.join(lsp)).unwrap(), "old lsp");
-        assert!(!bin.join(old_name(kstar)).exists());
-        let _ = std::fs::remove_dir_all(bin.parent().unwrap());
     }
 
     #[test]

@@ -1,6 +1,7 @@
 //! The `kstar` command-line tool.
 
 mod repl;
+mod selfupdate;
 mod sha256;
 mod update;
 

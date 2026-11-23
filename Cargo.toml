@@ -34,6 +34,13 @@ serde_json = "1"
 # Terminal, PowerShell and Unix terminals. Only the crossterm backend and
 # the basic widgets are built.
 ratatui = { version = "0.30", default-features = false, features = ["crossterm_0_29", "layout-cache"] }
+# `kstar update` downloads the release itself, over HTTPS with rustls (and
+# its ring backend, which needs no CMake), and unpacks its .zip or .tar.gz:
+# no PowerShell, shell, curl or gh is started to update.
+ureq = { version = "3", default-features = false, features = ["rustls"] }
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+flate2 = "1"
+tar = { version = "0.4", default-features = false }
 
 # Puts the icon into kstar.exe; see build.rs.
 [target.'cfg(windows)'.build-dependencies]

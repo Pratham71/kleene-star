@@ -15,12 +15,14 @@ Left and Right choose stable or beta, Enter updates, q leaves.
 .PP
 Otherwise (with \-\-no-tui, \-\-check or \-\-yes, when standard input or output
 is not a terminal, or with NO_COLOR or TERM=dumb) it works in plain text:
-it asks GitHub for the latest stable release (through the \fBgh\fR command, or
-\fBcurl\fR with GITHUB_TOKEN). If it is newer than this kstar, it shows both
-versions and what the release is about, and asks "Update to vX.Y.Z?
-[Y/n]". On yes it installs the release with its install script into the
-folder kstar is in, which also updates the VS Code extension; on no it
-changes nothing. Betas (pre-releases such as 0.2.5-beta) are offered only
+it asks GitHub for the latest stable release (with GITHUB_TOKEN, if set). If
+it is newer than this kstar, it shows both versions and what the release is
+about, and asks "Update to vX.Y.Z? [Y/n]". On yes it downloads the
+release's archive for this system, checks it against both its .sha256 file
+and SHA256SUMS, and swaps the new kstar and kstar-lsp into the folder kstar
+is in, putting the old ones back if anything fails; then it updates the VS
+Code extension. It does all of this itself, without PowerShell or a shell.
+On no it changes nothing. Betas (pre-releases such as 0.2.5-beta) are offered only
 with \-\-beta, or on the beta channel of the full-screen view.
 .PP
 When standard input is not a terminal (a script or CI), it does not ask and

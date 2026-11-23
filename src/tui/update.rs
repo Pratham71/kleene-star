@@ -59,7 +59,7 @@ pub fn target<'a>(channel: Channel, stable: Option<&'a Release>, beta: Option<&'
 
 /// The steps of an install, in order.
 pub const STEPS: [&str; 4] =
-    ["Set the old programs aside", "Download and install the release", "Check the new programs", "The VS Code extension"];
+    ["Download and check the release", "Unpack the new programs", "Replace the programs", "The VS Code extension"];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepState {
@@ -74,7 +74,7 @@ pub enum StepState {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Progress {
     Step(usize, StepState),
-    /// A line of the install script's output.
+    /// A line saying what the install is doing.
     Log(String),
     /// The end: a message saying what happened, or why it failed.
     Finished(Result<String, String>),

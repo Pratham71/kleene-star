@@ -38,10 +38,11 @@ uninstaller.
 
 ## Windows: install.ps1
 
-In PowerShell:
+The installer above is the recommended way on Windows. If you would rather
+not run an installer, in a PowerShell window:
 
-```bash
-powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex"
+```powershell
+irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex
 ```
 
 The script downloads the build for Windows from the latest release, checks
@@ -198,7 +199,7 @@ In a terminal, when there is something newer, `kstar update` opens a
 full-screen view: your version, the latest stable and beta releases, what
 is new in the one chosen (Left and Right switch between stable and beta,
 Up and Down scroll), and on Enter a question. On yes it shows each step of
-the install, with the install script's output as it comes. `q` leaves
+the install, with what it is doing as it goes. `q` leaves
 without changing anything. It works in Windows Terminal, PowerShell and
 the usual Linux and macOS terminals.
 
@@ -215,11 +216,22 @@ A fix for `kstar update` and `kstar export`: ...
 Update to v0.5.2? [Y/n]
 ```
 
-On yes it installs the new release into the folder `kstar` is in, with the
-release's install script, whichever way you installed it (the installer,
-the script or `cargo install` all put the programs in a `bin` folder). The
-running `kstar` is moved aside first, since it cannot be overwritten while
-it runs, and put back if anything goes wrong. On no it changes nothing.
+On yes it installs the new release into the folder `kstar` is in,
+whichever way you installed it (the installer, the script or `cargo
+install` all put the programs in a `bin` folder). It does this itself,
+without starting PowerShell or a shell: it downloads the release's archive
+for your system over HTTPS, checks it against both its `.sha256` file and
+the release's `SHA256SUMS`, unpacks it into a new folder next to `bin`,
+and swaps in the new `kstar` and `kstar-lsp`. The running `kstar` (and a
+`kstar-lsp` that VS Code is using) is renamed to `kstar.old` first, since
+it cannot be overwritten while it runs, and everything is put back if any
+step fails; the `.old` files are removed the next time `kstar` starts. On
+Linux and macOS it also updates the man pages the install script put in
+`~/.kstar/share`. On no it changes nothing.
+
+When it fails, it says which step (download and check, unpack, replace, or
+the VS Code extension) and why: the HTTP status, a checksum that does not
+match, permission denied, or a file in use by another program.
 `kstar update --yes` updates without asking; in a script or CI, where
 there is nobody to ask, `kstar update` refuses without `--yes` rather than
 wait.
@@ -332,6 +344,20 @@ from starting. If you downloaded it from this project's releases page and
 its [checksum matches](#downloading-by-hand), click *More info*, then *Run
 anyway*. The install scripts download with PowerShell, which does not mark
 files this way, so they do not show this warning.
+
+### Windows Security removed kstar.exe
+
+Version 0.8.0's `kstar update` ran the install script through PowerShell
+(`irm ... | iex`), which Microsoft Defender can take for malware: it may
+stop the update and quarantine `kstar.exe`, after which Windows says it
+"contains a virus" and will not run it. From 0.8.1 on, `kstar update`
+installs by itself and starts no PowerShell. If this happened to you,
+download `kstar-setup-x64.exe` from the
+[latest release](https://github.com/Pratham71/kleene-star/releases/latest),
+check its [checksum](#downloading-by-hand) and run it; it installs over the
+old version. *Windows Security > Virus & threat protection > Protection
+history* lists what was blocked. If `kstar update` ever reports that a new
+program "cannot be opened after it was written", look there too.
 
 ### macOS: "cannot be opened because the developer cannot be verified"
 
