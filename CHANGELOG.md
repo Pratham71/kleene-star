@@ -12,6 +12,29 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Fixed
+
+- `kstar update` no longer starts PowerShell or a shell to install. In
+  0.8.0 it ran `powershell -ExecutionPolicy Bypass -Command "irm ... | iex"`,
+  which Microsoft Defender can flag as malware: it stopped the update and
+  could quarantine `kstar.exe`. Now kstar downloads the release itself
+  over HTTPS, checks the archive against both its `.sha256` file and
+  `SHA256SUMS`, unpacks it next to the `bin` folder and swaps in the new
+  `kstar` and `kstar-lsp` (the old ones are renamed to `.old` and put back
+  if anything fails). On Linux and macOS it also updates the man pages.
+- When `kstar update` fails it says which step failed and why: the HTTP
+  status, a checksum that does not match, permission denied or a file in
+  use. On Windows, if a new program cannot be opened right after it is
+  written, it points to Windows Security's protection history.
+- `kstar update` asks GitHub's API directly (with `GITHUB_TOKEN`, if set)
+  instead of through `gh` or `curl`.
+
+### Changed
+
+- The README and the install guide recommend `kstar-setup-x64.exe` on
+  Windows first, with `irm ... | iex` (now without a nested
+  `powershell -c`) as the other way.
+
 ## [0.8.0] - 2026-11-23
 
 The tools around the language. `kstar help` is rewritten, with every

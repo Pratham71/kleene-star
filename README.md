@@ -70,7 +70,7 @@ it accepts or rejects:
 
 | On | Run |
 |---|---|
-| Windows | Download and run `kstar-setup-x64.exe` from the [latest release](https://github.com/Pratham71/kleene-star/releases/latest), or in PowerShell: `powershell -c "irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 \| iex"` |
+| Windows | Download and run `kstar-setup-x64.exe` from the [latest release](https://github.com/Pratham71/kleene-star/releases/latest) (recommended). Or, in PowerShell: `irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 \| iex` |
 | Linux, macOS | `curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh \| sh` |
 | From source | `cargo install --path . --locked` in a clone of this repository |
 
