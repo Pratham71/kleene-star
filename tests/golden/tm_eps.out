@@ -2,4 +2,4 @@ Error in tm_eps.kstar, line 4:
     s --eps/1,R--> s
         ^^^
 SyntaxError[E0107]: a Turing machine always reads and writes a symbol, so `eps` cannot be used here
-  hint: write `_` for the blank cell
+  hint: write `_` (or `□`) for the blank cell

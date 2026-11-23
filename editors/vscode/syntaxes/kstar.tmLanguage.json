@@ -108,7 +108,7 @@
         { "match": "(?<=,)\\s*\\b([LRS])\\b(?=\\s*-->)", "captures": { "1": { "name": "keyword.other.direction.kstar" } } },
         { "match": "/", "name": "keyword.operator.stack.kstar" },
         { "match": ",", "name": "punctuation.separator.label.kstar" },
-        { "match": "_", "name": "constant.character.blank.kstar" },
+        { "match": "[_□]", "name": "constant.character.blank.kstar" },
         { "match": "[^\\s,/]", "name": "constant.character.symbol.kstar" }
       ]
     },

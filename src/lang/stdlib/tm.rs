@@ -31,6 +31,7 @@ pub const MODULE: Module = Module {
         Function { name: "final_state", params: &[("m", Ty::Tm), ("w", Ty::Str)], ret: Ty::Str, doc: "The state the machine is in when it halts on `w`.", run: final_state },
         Function { name: "halts_within", params: &[("m", Ty::Tm), ("w", Ty::Str), ("n", Ty::Int)], ret: Ty::Bool, doc: "Whether the machine halts on `w` within `n` steps, at most 100000.", run: halts_within },
         Function { name: "tape_symbols", params: &[("m", Ty::Tm)], ret: Ty::Set(&Ty::Str), doc: "The symbols that can be on the tape: the alphabet, the blank `_`, and every symbol the machine writes.", run: tape_symbols },
+        Function { name: "ids", params: &[("m", Ty::Tm), ("w", Ty::Str)], ret: Ty::Str, doc: "The run of `m` on `w` as instantaneous descriptions `u q v` (the head on the first symbol of `v`), one per line after `⊢`, then how it halted; at most 100 steps.", run: ids },
     ],
     explain: None,
 };
@@ -149,6 +150,38 @@ fn halts_within(args: &[Value]) -> Result<Value, Failure> {
         });
     }
     Ok(Value::Bool(run_with(args, n as usize)?.halt != Halt::GaveUp))
+}
+
+/// The run as instantaneous descriptions, as `trace` shows it but one
+/// line per configuration: `X q1 011`, then `⊢ ...` for each step.
+fn ids(args: &[Value]) -> Result<Value, Failure> {
+    let m = machine(args);
+    let limit = crate::lang::trace::TM_TRACE_LIMIT;
+    let run = m.run(text(args, 1), limit, true);
+    if let Halt::Foreign { symbol, .. } = run.halt {
+        return Err(Failure {
+            code: codes::FOREIGN_WORD,
+            arg: Some(1),
+            message: format!("the input contains `{symbol}`, which is not in the machine's alphabet"),
+            hint: format!("the alphabet is {}", fmt_alphabet(&m.alphabet)),
+        });
+    }
+    let mut lines: Vec<String> = Vec::new();
+    for (i, c) in run.configs.iter().enumerate() {
+        let id = c.tape.id(&m.states[c.state], c.head);
+        lines.push(if i == 0 { id } else { format!("⊢ {id}") });
+    }
+    let last = run.last();
+    let state = &m.states[last.state];
+    lines.push(match run.halt {
+        Halt::Accepted => format!("Accepted: halted in accepting state {state}."),
+        Halt::Rejected => format!("Rejected: halted in rejecting state {state}."),
+        Halt::Stuck { symbol } => format!("Rejected: state {state} has no move for `{symbol}`, so the machine halts."),
+        Halt::GaveUp => format!("Still running after {limit} steps; `run` and `accepts` go on for up to {} steps.", tm::STEP_LIMIT),
+        Halt::Foreign { .. } => unreachable!("refused above"),
+    });
+    Ok(Value::str(&lines.join("
+")))
 }
 
 fn tape_symbols(args: &[Value]) -> Result<Value, Failure> {

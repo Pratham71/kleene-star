@@ -106,6 +106,24 @@ impl Tape {
         }
     }
 
+    /// An instantaneous description `u q v`: the tape left of the head, the
+    /// state, then the tape from the head's cell on, so the head is on the
+    /// first symbol after the state. Blanks at either end are left out,
+    /// except the cell under the head.
+    pub fn id(&self, state: &str, head: i64) -> String {
+        let (first, last) = match self.used() {
+            Some((first, last)) => (first.min(head), last.max(head)),
+            None => (head, head),
+        };
+        let left: String = (first..head).map(|i| self.get(i)).collect();
+        let right: String = (head..=last).map(|i| self.get(i)).collect();
+        if left.is_empty() {
+            format!("{state} {right}")
+        } else {
+            format!("{left} {state} {right}")
+        }
+    }
+
     /// The used part of the tape with the head's cell in brackets:
     /// `10[1]1`. The window always includes the head.
     pub fn show(&self, head: i64) -> String {
@@ -266,6 +284,17 @@ impl fmt::Display for Tm {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
+
+    #[test]
+    fn instantaneous_descriptions_mark_the_head() {
+        let mut tape = Tape::new("011");
+        assert_eq!(tape.id("q0", 0), "q0 011");
+        tape.set(0, 'X');
+        assert_eq!(tape.id("q1", 1), "X q1 11");
+        assert_eq!(tape.id("q2", 3), "X11 q2 _");
+        assert_eq!(tape.id("q3", -1), "q3 _X11");
+        assert_eq!(Tape::new("").id("q0", 0), "q0 _");
+    }
 
     fn tm(states: &[&str], accept: &[usize], reject: &[usize], moves: &[(usize, char, char, Dir, usize)]) -> Tm {
         Tm {

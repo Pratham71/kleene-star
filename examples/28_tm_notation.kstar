@@ -1,0 +1,35 @@
+# Chapter 22: Turing machines in the usual textbook notation. A move is
+# `read/write, move`; the blank may be written `□` (or `_`); the machine
+# halts in an accepting or a rejecting state; and a run can be shown as
+# instantaneous descriptions `u q v`, the head on the first symbol of v.
+
+alphabet AB = {a, b}
+
+# The words with as many a's as b's, all a's first: a^n b^n. Each round
+# marks the first a as X and the first b as Y, then goes back.
+tm AnBn over AB {
+    start  q0
+    accept yes
+    reject no
+    q0 --a/X,R--> q1
+    q0 --Y/Y,R--> q3
+    q0 --□/□,S--> yes
+    q0 --b/b,S--> no
+    q1 --a/a,R--> q1
+    q1 --Y/Y,R--> q1
+    q1 --b/Y,L--> q2
+    q1 --□/□,S--> no
+    q2 --a/a,L--> q2
+    q2 --Y/Y,L--> q2
+    q2 --X/X,R--> q0
+    q3 --Y/Y,R--> q3
+    q3 --□/□,S--> yes
+    q3 --a/a,S--> no
+    q3 --b/b,S--> no
+}
+
+for w in {"", "ab", "aabb", "aab", "ba", "abab"} {
+    print w, AnBn accepts w
+}
+print std.tm.ids(AnBn, "aabb")
+print std.tm.ids(AnBn, "aab")

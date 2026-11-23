@@ -76,3 +76,10 @@ pda Notation over AB {
     p --eps, eps/$ --> p
     p --eps, $/eps --> p
 }
+
+# Turing machine notation: `□` for the blank.
+tm Blanks over AB {
+    start  q0
+    accept yes
+    q0 --□/□,S--> yes
+}

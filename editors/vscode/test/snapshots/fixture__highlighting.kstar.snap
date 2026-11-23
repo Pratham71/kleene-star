@@ -507,3 +507,30 @@
 > }
     0 "}" meta.machine.kstar punctuation.section.block.end.kstar
 > 
+> # Turing machine notation: `□` for the blank.
+    0 "# Turing machine notation: `□` for the blank." comment.line.number-sign.kstar
+> tm Blanks over AB {
+    0 "tm" meta.machine.kstar storage.type.machine.kstar
+    3 "Blanks" meta.machine.kstar entity.name.type.machine.kstar
+   10 "over" meta.machine.kstar keyword.other.over.kstar
+   15 "AB" meta.machine.kstar entity.name.type.alphabet.kstar
+   18 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  q0
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "q0" meta.machine.kstar variable.other.state.kstar
+>     accept yes
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "yes" meta.machine.kstar variable.other.state.kstar
+>     q0 --□/□,S--> yes
+    4 "q0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "□" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   10 "/" meta.machine.kstar meta.transition.label.kstar keyword.operator.stack.kstar
+   11 "□" meta.machine.kstar meta.transition.label.kstar constant.character.blank.kstar
+   12 "," meta.machine.kstar meta.transition.label.kstar punctuation.separator.label.kstar
+   13 "S" meta.machine.kstar meta.transition.label.kstar keyword.other.direction.kstar
+   14 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   18 "yes" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 

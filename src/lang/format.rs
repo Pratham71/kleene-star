@@ -393,7 +393,7 @@ impl Formatter<'_> {
         // Line up the transitions of this block: pad the source states so
         // every `--` is in one column, and the labels so every `-->` is.
         let transitions = items.iter().filter_map(|item| match item {
-            MachineItem::Transition { from, action, .. } => Some((self.state(from), action_text(action))),
+            MachineItem::Transition { from, action, .. } => Some((self.state(from), action_text(action, self.src))),
             _ => None,
         });
         let (mut from_width, mut label_width) = (0, 0);
@@ -427,7 +427,7 @@ impl Formatter<'_> {
                         f.push(&format!(
                             "{} --{}--> {to}",
                             pad(&from, from_width),
-                            pad(&action_text(action), label_width)
+                            pad(&action_text(action, f.src), label_width)
                         ));
                     }
                     MachineItem::For { var, items: range, body } => {
@@ -573,8 +573,13 @@ fn item_start(item: &MachineItem) -> usize {
 }
 
 /// What goes between `--` and `-->`: `0,1`; in a PDA `a, Z/AZ`; in a TM `0/1,R`.
-fn action_text(action: &Action) -> String {
-    let label = |l: &Label| l.symbol.map_or("eps".to_string(), |c| c.to_string());
+/// `src` is the program, so a blank written `□` stays `□`.
+fn action_text(action: &Action, src: &str) -> String {
+    let label = |l: &Label| match l.symbol {
+        None => "eps".to_string(),
+        Some(_) if src.get(l.span.start..l.span.end) == Some("□") => "□".to_string(),
+        Some(c) => c.to_string(),
+    };
     match action {
         Action::Symbols(labels) => labels.iter().map(label).collect::<Vec<_>>().join(","),
         Action::Stack { read, pop, push, .. } => {
