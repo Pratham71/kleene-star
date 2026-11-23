@@ -70,7 +70,7 @@ jobs:
           export HOME="$RUNNER_TEMP/home" && mkdir -p "$HOME"
           KSTAR_NO_VSCODE=1 KSTAR_INSTALL_FROM="$PWD/files" sh install.sh
           PATH="$HOME/.kstar/bin:$PATH" man -w kstar | grep -F "/.kstar/share/man/man1/kstar.1"
-          PATH="$HOME/.kstar/bin:$PATH" MANWIDTH=80 man kstar-run | grep -F 'fixed-clock'
+          PATH="$HOME/.kstar/bin:$PATH" MANWIDTH=80 man kstar-run | col -b | grep -F 'fixed-clock'
           if command -v info >/dev/null; then
             info -f "$HOME/.kstar/share/info/kstar.info" -n export -o - | grep -F 'kstar export'
           fi
