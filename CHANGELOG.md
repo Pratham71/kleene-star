@@ -12,6 +12,18 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-23
+
+Three new modules. Programs can read and write files next to them, safely
+(`std.io`); `draw M on "w"` writes a page that plays a run step by step,
+and `std.visual` gives drawings and traces as strings; `std.benchmark`
+measures how the work of the algorithms grows.
+
+### Upgrading from 0.5.2
+
+Nothing changes for existing programs. `visual`, `benchmark` and `io` are
+new module names under `std`, and E0618 to E0621 are new error codes.
+
 ### Added
 
 - `std.benchmark`: how much work the algorithms do. Counts that are the
@@ -506,7 +518,8 @@ It was never published as a release.
 - A tutorial, a reference and an internals guide whose examples are run by
   the tests.
 
-[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/Pratham71/kleene-star/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Pratham71/kleene-star/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/Pratham71/kleene-star/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/Pratham71/kleene-star/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Pratham71/kleene-star/compare/v0.4.0...v0.5.0

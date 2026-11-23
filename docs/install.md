@@ -54,15 +54,15 @@ It reads these settings from the environment, all optional:
 
 | Variable | Meaning |
 |---|---|
-| `KSTAR_VERSION` | The release to install, such as `v0.5.2`. Default: the latest stable release. |
+| `KSTAR_VERSION` | The release to install, such as `v0.6.0`. Default: the latest stable release. |
 | `KSTAR_INSTALL_DIR` | Where to install. Default: `%LOCALAPPDATA%\Programs\Kleene Star`. |
 | `KSTAR_NO_PATH` | `1` leaves your PATH alone. |
 
 Set them in the same PowerShell window as the script. For example, to
-install version 0.5.2 rather than whatever is newest:
+install version 0.6.0 rather than whatever is newest:
 
 ```bash
-$env:KSTAR_VERSION = "v0.5.2"; irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex
+$env:KSTAR_VERSION = "v0.6.0"; irm https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.ps1 | iex
 ```
 
 ## Linux and macOS: install.sh
@@ -80,7 +80,7 @@ them. Running it again does not add the line twice.
 It takes the same settings as `install.ps1`, given to `sh`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | KSTAR_VERSION=v0.5.2 sh
+curl -fsSL https://raw.githubusercontent.com/Pratham71/kleene-star/main/install.sh | KSTAR_VERSION=v0.6.0 sh
 ```
 
 `KSTAR_INSTALL_DIR` defaults to `~/.kstar`, and `KSTAR_NO_PATH=1` leaves
@@ -154,7 +154,7 @@ cargo install --path . --locked
 That builds both programs and puts them in `~/.cargo/bin`, which `rustup`
 already added to your PATH. This works on any system Rust supports,
 including ARM Linux. `main` may be ahead of the latest release; check out a
-tag such as `v0.5.2` first to build a release.
+tag such as `v0.6.0` first to build a release.
 
 ## The VS Code extension
 
@@ -167,7 +167,7 @@ Otherwise:
 3. Install it:
 
    ```bash
-   code --install-extension kleene-star-0.5.2.vsix
+   code --install-extension kleene-star-0.6.0.vsix
    ```
 
    or, in VS Code, *Extensions*, then `...`, then *Install from VSIX...*.
@@ -237,7 +237,7 @@ with a button that runs `kstar update`.
 Releases come in two kinds, both listed on the
 [releases page](https://github.com/Pratham71/kleene-star/releases):
 
-- **Stable** releases, such as 0.5.2, have a plain version number. The
+- **Stable** releases, such as 0.6.0, have a plain version number. The
   newest one is marked *Latest*. The install scripts and `kstar update`
   use it unless told otherwise.
 - **Beta** releases, such as 0.2.4-beta, are marked *Pre-release*. They

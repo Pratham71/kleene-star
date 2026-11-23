@@ -1,6 +1,6 @@
 # Kleene Star: a small, well-designed language for Theory of Computation
 
-> Status: version 0.5.2 (2026-11-23), MIT licensed. Stages 0 to 9 below are built, and so is most of
+> Status: version 0.6.0 (2026-11-23), MIT licensed. Stages 0 to 9 below are built, and so is most of
 > the later list: `kstar fmt`, grammars and PDAs, Turing machines, a language server with
 > a VS Code extension, and release builds with installers for Windows, Linux and macOS.
 > Version 0.3 added imports between files, `kstar export` to Rust and a standard library with
@@ -8,13 +8,18 @@
 > `std.automata`, `std.regex`, `std.binary` and `std.testing`, and machines as JSON
 > (`to_json`, `from_json`, `kstar export --format json`). Version 0.5 added a module for each
 > kind of machine after the regular ones, `std.grammar`, `std.pda` and `std.tm`, and
-> `std.random` for repeatable random words, machines and grammars. This is the design as agreed on
+> `std.random` for repeatable random words, machines and grammars. Version 0.6 added reading
+> and writing files next to a program (`std.io`, sandboxed to the program's folder), a page
+> that plays a run step by step (`draw M on "w"`, and `std.visual`), and `std.benchmark` for
+> measuring how the work grows. This is the design as agreed on
 > 2026-11-10, with the layout, error format and test sections updated to match the code.
 >
-> Roadmap, in order. **Next:** a list type (sets are still the only collection, which is why
-> there is no power set or set of pairs yet), and reading files from a program (`std.io`, so a
-> JSON machine can be loaded from disk). **After that:** packages, so a program can use
-> libraries that are not part of the standard library.
+> Roadmap, in order. **Next:** the notation of the usual textbook course, with step-by-step
+> working (subset tables, k-equivalence partitions, state elimination, Arden's theorem), PDA
+> and Turing machine notation and traces in ID form, formal tuples, and ambiguity of grammars.
+> **Then:** a list type (sets are still the only collection, which is why there is no power set
+> or set of pairs yet). **After that:** packages, so a program can use libraries that are not
+> part of the standard library.
 
 ## Context
 
