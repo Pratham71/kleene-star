@@ -1,0 +1,25 @@
+# std.steps on a regex, an NFA and a DFA with an unreachable state.
+alphabet AB = {a, b}
+print std.steps.eps_closures(/ab*/)
+print std.steps.subset_table(/ab*/)
+nfa N over AB {
+    start  x
+    accept y
+    x --a--> x
+    x --a--> y
+}
+print std.steps.subset_table(N)
+dfa D over AB {
+    start  u
+    accept w
+    u    --a  --> v
+    u    --b  --> u
+    v    --a  --> w
+    v    --b  --> u
+    w    --a,b--> w
+    lost --a,b--> u
+}
+print std.steps.partitions(D)
+print std.steps.elimination(D)
+print to_regex(D)
+print std.steps.elimination(/a[]/)

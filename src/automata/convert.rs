@@ -180,6 +180,39 @@ pub fn dfa_to_regex(dfa: &Dfa) -> Regex {
 /// Like `dfa_to_regex`, but gives up, returning `None`, as soon as a regex
 /// being built has more than `max_size` nodes.
 pub fn dfa_to_regex_within(dfa: &Dfa, max_size: usize) -> Option<Regex> {
+    eliminate(dfa, max_size, None)
+}
+
+/// The working of state elimination, step by step, as `dfa_to_regex` does it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Elimination {
+    /// The states of the minimised DFA, then the new start and final states.
+    pub names: Vec<String>,
+    /// The edges once the new start and final states are added.
+    pub edges: Vec<(State, State, Regex)>,
+    /// Each state removed, in order.
+    pub removals: Vec<Removal>,
+    /// The regex on the one edge left, from the new start to the new final.
+    pub regex: Regex,
+}
+
+/// One state removed: its loop, and the edges the removal made or changed.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Removal {
+    pub state: State,
+    pub looped: Regex,
+    pub edges: Vec<(State, State, Regex)>,
+}
+
+/// State elimination with its working: the same regex as `dfa_to_regex`,
+/// and every step on the way.
+pub fn dfa_to_regex_steps(dfa: &Dfa) -> Elimination {
+    let mut working = Elimination { names: Vec::new(), edges: Vec::new(), removals: Vec::new(), regex: Regex::Empty };
+    working.regex = eliminate(dfa, usize::MAX, Some(&mut working)).expect("no limit");
+    working
+}
+
+fn eliminate(dfa: &Dfa, max_size: usize, mut working: Option<&mut Elimination>) -> Option<Regex> {
     // Fewer states means a much shorter regex, so minimise first.
     let dfa = super::minimize::minimize(dfa);
     let n = dfa.states.len();
@@ -196,6 +229,13 @@ pub fn dfa_to_regex_within(dfa: &Dfa, max_size: usize) -> Option<Regex> {
                 changed = true;
             }
         }
+    }
+    if let Some(w) = working.as_deref_mut() {
+        w.names = dfa.states.clone();
+        let start = super::fresh_name(&w.names, "S");
+        w.names.push(start);
+        let end = super::fresh_name(&w.names, "F");
+        w.names.push(end);
     }
     if !useful[dfa.start] {
         return Some(Regex::Empty);
@@ -218,6 +258,16 @@ pub fn dfa_to_regex_within(dfa: &Dfa, max_size: usize) -> Option<Regex> {
         }
     }
     edge[new_start][dfa.start] = Regex::Eps;
+    if let Some(w) = working.as_deref_mut() {
+        let order = std::iter::once(new_start).chain((0..n).filter(|&s| useful[s]));
+        for i in order {
+            for (j, r) in edge[i].iter().enumerate() {
+                if *r != Regex::Empty {
+                    w.edges.push((i, j, r.clone()));
+                }
+            }
+        }
+    }
 
     let mut alive: Vec<State> = (0..n).filter(|&s| useful[s]).collect();
     alive.extend([new_start, new_final]);
@@ -237,6 +287,7 @@ pub fn dfa_to_regex_within(dfa: &Dfa, max_size: usize) -> Option<Regex> {
         remaining.swap_remove(index);
         alive.retain(|&s| s != k);
         let looped = Regex::star(edge[k][k].clone());
+        let mut changed = Vec::new();
         for &i in &alive {
             if edge[i][k] == Regex::Empty {
                 continue;
@@ -254,7 +305,13 @@ pub fn dfa_to_regex_within(dfa: &Dfa, max_size: usize) -> Option<Regex> {
                 if max_size != usize::MAX && edge[i][j].size() > max_size {
                     return None;
                 }
+                if working.is_some() {
+                    changed.push((i, j, edge[i][j].clone()));
+                }
             }
+        }
+        if let Some(w) = working.as_deref_mut() {
+            w.removals.push(Removal { state: k, looped: edge[k][k].clone(), edges: changed });
         }
     }
     Some(edge[new_start][new_final].clone())

@@ -12,6 +12,16 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Added
+
+- `std.steps`: the working of the conversions, step by step, as it is
+  written out by hand. `eps_closures` (each state's eps-closure),
+  `subset_table` (the subset construction as a table, with the empty set
+  written Ø as the dead state), `partitions` (minimisation by
+  k-equivalence, P0, P1, ... until they settle) and `elimination` (state
+  elimination, one state removed at a time). Each ends where `to_dfa`,
+  `minimize` or `to_regex` does. Example: `examples/25_steps.kstar`.
+
 ## [0.6.0] - 2026-11-23
 
 Three new modules. Programs can read and write files next to them, safely

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  std_steps_too_large.kstar, line 1, in <main>
+    print std.steps.elimination(/(a|b)*a(a|b)(a|b)(a|b)(a|b)(a|b)(a|b)/)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LimitError[E0608]: the working would build a regex of over 5000 parts, too long to show
+  hint: show `partitions` instead, or work on a smaller machine

@@ -11,24 +11,50 @@ use std::collections::{BTreeMap, BTreeSet};
 /// The unique smallest complete DFA for the same language (Moore's algorithm).
 pub fn minimize(dfa: &Dfa) -> Dfa {
     let reachable = dfa.reachable(); // unreachable states are simply dropped
-    let (group, count, _) = refine(dfa, &reachable);
+    let (group, count, _) = refine(dfa, &reachable, |_| ());
     build(dfa, &reachable, &group, count)
+}
+
+/// The partitions P0, P1, ... of the usual k-equivalence working, over the
+/// reachable states: each is a list of groups, each group its states in
+/// order. The last two are the same; that is where the working stops.
+pub fn partitions(dfa: &Dfa) -> Vec<Vec<Vec<State>>> {
+    let reachable = dfa.reachable();
+    let mut sorted = reachable.clone();
+    sorted.sort_unstable();
+    let mut rounds = Vec::new();
+    refine(dfa, &reachable, |group| {
+        // Groups in the order of their first state.
+        let mut groups: Vec<Vec<State>> = Vec::new();
+        let mut index: BTreeMap<usize, usize> = BTreeMap::new();
+        for &s in &sorted {
+            let i = *index.entry(group[s]).or_insert_with(|| {
+                groups.push(Vec::new());
+                groups.len() - 1
+            });
+            groups[i].push(s);
+        }
+        rounds.push(groups);
+    });
+    rounds
 }
 
 /// How many rounds of refinement minimisation takes: the smallest `k` for
 /// which k-equivalence is the same as (k+1)-equivalence, as in the usual
 /// textbook working (0-equivalence splits accepting from not accepting).
 pub fn equivalence_rounds(dfa: &Dfa) -> usize {
-    refine(dfa, &dfa.reachable()).2
+    refine(dfa, &dfa.reachable(), |_| ()).2
 }
 
 /// Moore's partition refinement over the reachable states: each state's
-/// group, the number of groups, and the `k` at which it settled.
-fn refine(dfa: &Dfa, reachable: &[State]) -> (Vec<usize>, usize, usize) {
+/// group, the number of groups, and the `k` at which it settled. `round`
+/// sees each partition, P0 first, as each state's group.
+fn refine(dfa: &Dfa, reachable: &[State], mut round: impl FnMut(&[usize])) -> (Vec<usize>, usize, usize) {
     let mut group: Vec<usize> =
         (0..dfa.states.len()).map(|s| usize::from(dfa.accept.contains(&s))).collect();
     let mut count = reachable.iter().map(|&s| group[s]).collect::<BTreeSet<_>>().len();
     let mut k = 0;
+    round(&group);
     loop {
         // A state's signature: its own group, and the group each symbol leads to.
         let mut ids: BTreeMap<(usize, Vec<usize>), usize> = BTreeMap::new();
@@ -39,6 +65,7 @@ fn refine(dfa: &Dfa, reachable: &[State]) -> (Vec<usize>, usize, usize) {
             refined[s] = *ids.entry(signature).or_insert(fresh);
         }
         group = refined;
+        round(&group);
         if ids.len() == count {
             break;
         }
