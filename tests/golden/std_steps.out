@@ -1,0 +1,52 @@
+Warning in std_steps.kstar, line 20:
+    lost --a,b--> u
+    ^^^^
+Warning[W0100]: state `lost` can never be reached from the start state `u`
+  hint: add a transition into it, or remove it; it does not change the language
+
+       | eps-closure
+->  q0 | {q0}
+    q1 | {q1,q2,q3,q4}
+    q2 | {q2,q3,q4}
+    q3 | {q3}
+   *q4 | {q4}
+    q5 | {q3,q4,q5}
+Start: eps-closure(q0) = {q0}
+                  | a             | b
+->  {q0}          | {q1,q2,q3,q4} | Ø
+   *{q1,q2,q3,q4} | Ø             | {q3,q4,q5}
+    Ø             | Ø             | Ø
+   *{q3,q4,q5}    | Ø             | {q3,q4,q5}
+The DFA has 4 states; Ø is the dead state: every symbol leads from it back to it.
+Start: {x}
+          | a     | b
+->  {x}   | {x,y} | Ø
+   *{x,y} | {x,y} | Ø
+    Ø     | Ø     | Ø
+The DFA has 3 states; Ø is the dead state: every symbol leads from it back to it.
+Unreachable, so dropped first: lost
+P0: {u, v} {w}
+P1: {u} {v} {w}
+P2: {u} {v} {w}
+P2 = P1, so the minimal DFA has 3 states.
+The minimal DFA has 3 states: u, v, w.
+Add a new start state S and a new final state F, joined by eps moves:
+  S --eps--> u
+  u --b--> u
+  u --a--> v
+  v --b--> u
+  v --a--> w
+  w --a|b--> w
+  w --eps--> F
+Remove u, which loops on b:
+  v --bb*a--> v
+  S --b*a--> v
+Remove w, which loops on a|b:
+  v --a(a|b)*--> F
+Remove v, which loops on bb*a:
+  S --b*a(bb*a)*a(a|b)*--> F
+Regex: b*a(bb*a)*a(a|b)*
+/b*a(bb*a)*a(a|b)*/
+The minimal DFA has 1 state: {q0}.
+No accepting state can be reached, so the language is empty.
+Regex: []

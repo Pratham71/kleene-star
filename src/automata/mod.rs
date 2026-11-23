@@ -23,6 +23,7 @@ pub mod random;
 pub mod tm;
 pub mod tms;
 pub mod regex;
+pub mod steps;
 pub mod trace;
 
 pub use dfa::Dfa;

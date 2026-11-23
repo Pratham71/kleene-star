@@ -1073,6 +1073,102 @@ true false
 /(0|1)*11(0|1)*/ true
 ```
 
+### `std.steps`
+
+The working of the conversions, step by step: eps-closures, the subset construction table, the k-equivalence partitions and state elimination.
+
+| Function | What it does |
+|---|---|
+| `elimination(m: Lang) -> Str` | State elimination, as `to_regex` does it: the new start and final states, then each state removed and the edges that replace the paths through it, then the regex. |
+| `eps_closures(m: Lang) -> Str` | A table of each state of `m`'s NFA and its eps-closure, the states it reaches by eps moves alone. |
+| `partitions(m: Lang) -> Str` | Minimisation of `m`'s DFA by k-equivalence: the partitions P0, P1, ... until one is the same as the one before. |
+| `subset_table(m: Lang) -> Str` | The subset construction for `m`'s NFA as a table: each set of states found, in order, and where each symbol leads, with the empty set written Ø. |
+
+Each function gives a string to `print`, laid out the way the usual
+textbook working writes it by hand. It runs the same code as the
+conversion it explains, so the working always ends where `to_dfa`,
+`minimize` or `to_regex` does. `m` may be any regular language: a `Dfa`,
+`Nfa`, `Regex` or `Set[Str]`. A regex or set is first turned into its NFA
+(Thompson's construction), and `partitions` and `elimination` work on the
+DFA, as `minimize` and `to_regex` do.
+
+- `eps_closures` marks the start state `->` and accepting states `*`, as a
+  transition table does.
+- `subset_table` starts from the eps-closure of the start state, and lists
+  the sets in the order they are found. A set is named as `to_dfa` names
+  it, `{a,b}`, except the empty set, written `Ø`: the dead state, which
+  every symbol leads back to.
+- `partitions` first drops the states that cannot be reached, as
+  `minimize` does. P0 splits the accepting states from the rest; each next
+  partition splits a group when its states go to different groups on some
+  symbol. It stops at the first partition equal to the one before, whose
+  groups are the states of the minimal DFA (named `q1+q3`, as `minimize`
+  names them). `std.benchmark.equivalence_rounds` counts the rounds.
+- `elimination` minimises the DFA, adds a new start state `S` and a new
+  final state `F` (primed if those names are taken), then removes one
+  state at a time, in the order `to_regex` does, listing the edges each
+  removal makes or changes: a path `i --a--> k --b--> j` through `k` with a
+  loop `c` becomes `i --ac*b--> j`, joined with `|` to any edge already
+  there. An `eps` label is the empty string. The regex at the end is the
+  one `to_regex` gives. When the working would build a regex of over 5000
+  parts it is a `LimitError` (E0608).
+
+```kstar
+alphabet B = {0, 1}
+nfa N over B {
+    start  p
+    accept r
+    p --1--> q
+    p --1--> r
+    q --0,1--> q
+    q --1--> r
+}
+print std.steps.subset_table(N)
+dfa M over B {
+    start  q0
+    accept q2
+    q0 --0--> q1
+    q0 --1--> q3
+    q1 --0--> q2
+    q1 --1--> q0
+    q2 --0,1--> q2
+    q3 --0--> q2
+    q3 --1--> q0
+}
+print std.steps.partitions(M)
+print std.steps.elimination(M)
+```
+
+```text
+Start: {p}
+          | 0   | 1
+->  {p}   | Ø   | {q,r}
+    Ø     | Ø   | Ø
+   *{q,r} | {q} | {q,r}
+    {q}   | {q} | {q,r}
+The DFA has 4 states; Ø is the dead state: every symbol leads from it back to it.
+P0: {q0, q1, q3} {q2}
+P1: {q0} {q1, q3} {q2}
+P2: {q0} {q1, q3} {q2}
+P2 = P1, so the minimal DFA has 3 states.
+The minimal DFA has 3 states: q0, q1+q3, q2.
+Add a new start state S and a new final state F, joined by eps moves:
+  S --eps--> q0
+  q0 --0|1--> q1+q3
+  q1+q3 --1--> q0
+  q1+q3 --0--> q2
+  q2 --0|1--> q2
+  q2 --eps--> F
+Remove q2, which loops on 0|1:
+  q1+q3 --0(0|1)*--> F
+Remove q0:
+  q1+q3 --1(0|1)--> q1+q3
+  S --0|1--> q1+q3
+Remove q1+q3, which loops on 1(0|1):
+  S --(0|1)(1(0|1))*0(0|1)*--> F
+Regex: (0|1)(1(0|1))*0(0|1)*
+```
+
 ### `std.string`
 
 Words as data: searching, slicing, repeating, and the prefixes, suffixes and substrings of a word.
@@ -1365,6 +1461,9 @@ Postfix operators bind tightest, then concatenation, then `|`.
 | `to_nfa(lang, B)`, `to_dfa(lang, B)` | | The same, over alphabet `B`. |
 | `to_regex(lang)` | `Regex` | State elimination. |
 | `remove_eps(lang)` | `Nfa` | The same language without eps moves. |
+
+To see the working of a conversion step by step, use
+[`std.steps`](#stdsteps).
 
 ### Simplifying
 

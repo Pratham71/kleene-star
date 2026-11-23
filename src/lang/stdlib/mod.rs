@@ -27,6 +27,7 @@ pub mod math;
 pub mod pda;
 pub mod random;
 pub mod regex;
+pub mod steps;
 pub mod string;
 pub mod testing;
 pub mod tm;
@@ -185,7 +186,7 @@ pub struct Module {
 }
 
 /// Every standard-library module, in alphabetical order.
-pub const MODULES: &[Module] = &[automata::MODULE, benchmark::MODULE, binary::MODULE, collections::MODULE, grammar::MODULE, io::MODULE, math::MODULE, pda::MODULE, random::MODULE, regex::MODULE, string::MODULE, testing::MODULE, tm::MODULE, visual::MODULE];
+pub const MODULES: &[Module] = &[automata::MODULE, benchmark::MODULE, binary::MODULE, collections::MODULE, grammar::MODULE, io::MODULE, math::MODULE, pda::MODULE, random::MODULE, regex::MODULE, steps::MODULE, string::MODULE, testing::MODULE, tm::MODULE, visual::MODULE];
 
 /// The module called `name`, if there is one.
 pub fn module(name: &str) -> Option<&'static Module> {
