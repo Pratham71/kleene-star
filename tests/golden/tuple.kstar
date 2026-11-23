@@ -1,0 +1,39 @@
+# Machines as their formal definitions, with δ as a table.
+alphabet B = {0, 1}
+dfa D over B {
+    start  even
+    accept even
+    even --0--> odd
+    even --1--> even
+    odd  --0--> even
+    odd  --1--> odd
+}
+print tuple(D)
+nfa N over B {
+    start  s
+    accept f
+    s --eps--> a
+    a --0,1--> a
+    a --1  --> f
+}
+print tuple(N)
+pda P over B {
+    stack starts Z0
+    start  p
+    accept by empty stack
+    p --0, Z0/0Z0  --> p
+    p --0, 0/00    --> p
+    p --1, 0/eps   --> q
+    q --1, 0/eps   --> q
+    q --eps, Z0/eps--> q
+}
+print tuple(P)
+tm T over B {
+    start  q0
+    accept yes
+    reject no
+    q0 --0/0,R--> q0
+    q0 --1/1,R--> no
+    q0 --_/_,S--> yes
+}
+print tuple(T)

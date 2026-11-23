@@ -26,6 +26,7 @@ pub mod tms;
 pub mod regex;
 pub mod steps;
 pub mod trace;
+pub mod tuple;
 
 pub use dfa::Dfa;
 pub use nfa::Nfa;

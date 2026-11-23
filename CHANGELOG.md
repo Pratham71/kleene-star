@@ -39,6 +39,12 @@ its GitHub release, so write it for people who use Kleene Star.
   (and `kstar fmt` keeps it), and `std.tm.ids(M, "w")` shows a run as
   instantaneous descriptions `u q v` with the head on the first symbol of
   `v`. Example: `examples/28_tm_notation.kstar`.
+- `tuple(M)`: a machine's formal definition, the tuple of the usual
+  textbook definition with δ written as a table. (Q, Σ, δ, q0, F) for a
+  DFA or NFA (with ∅ for no move), (Q, Σ, Γ, δ, q0, Z0, F) for a PDA, with
+  a row `δ(q, a, X) = {(p, γ), ...}` for each choice, and
+  (Q, Σ, Γ, δ, q0, q_accept, q_reject) for a Turing machine. Example:
+  `examples/29_tuple.kstar`.
 
 ## [0.6.0] - 2026-11-23
 
