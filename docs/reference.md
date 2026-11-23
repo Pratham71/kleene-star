@@ -1558,6 +1558,7 @@ To see the working of a conversion step by step, use
 | `equivalent(a, b)` | `Bool` | Do `a` and `b` contain exactly the same strings? |
 | `is_empty(a)` | `Bool` | Does `a` contain no strings? Also works on a `Grammar`. |
 | `states(machine)` | `Int` | The number of states of a `Dfa`, `Nfa`, `Pda` or `Tm`. |
+| `tuple(machine)` | `Str` | The machine's formal definition as in the usual textbook definition, with δ as a table: (Q, Σ, δ, q0, F) for a `Dfa` or `Nfa`, (Q, Σ, Γ, δ, q0, Z0, F) for a `Pda`, (Q, Σ, Γ, δ, q0, q_accept, q_reject) for a `Tm`. |
 | `len(x)` | `Int` | Length of a `Str`, or size of a `Set` or `Alphabet`. |
 
 ### Grammars and pushdown automata

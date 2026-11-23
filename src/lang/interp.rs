@@ -25,7 +25,7 @@ use super::machine::GrammarSpec;
 use crate::automata::grammar::{DeriveError, Grammar};
 use crate::automata::pda::{self, Pda};
 use crate::automata::tm::{self, Halt, Tm};
-use crate::automata::{codegen, convert, dot, fmt_alphabet, json, minimize, ops, trace};
+use crate::automata::{codegen, convert, dot, fmt_alphabet, json, minimize, ops, trace, tuple};
 use std::collections::{BTreeSet, HashMap};
 use std::io::Write;
 use std::path::PathBuf;
@@ -954,6 +954,10 @@ impl Interp {
             ("rename", Value::Nfa(n)) => return Ok(Value::nfa(n.renamed())),
             ("states", Value::Pda(p)) => return Ok(Value::Int(p.states.len() as i64)),
             ("states", Value::Tm(m)) => return Ok(Value::Int(m.states.len() as i64)),
+            ("tuple", Value::Dfa(d)) => return Ok(Value::str(&tuple::dfa(d))),
+            ("tuple", Value::Nfa(n)) => return Ok(Value::str(&tuple::nfa(n))),
+            ("tuple", Value::Pda(p)) => return Ok(Value::str(&tuple::pda(p))),
+            ("tuple", Value::Tm(m)) => return Ok(Value::str(&tuple::tm(m))),
             ("run", Value::Tm(m)) => {
                 let Value::Str(word) = &args[1] else { unreachable!("checker ensures a Str") };
                 let run = self.run_tm(m, word, spans[1])?;

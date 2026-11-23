@@ -1,0 +1,45 @@
+DFA M = (Q, Σ, δ, q0, F)
+Q  = {even, odd}
+Σ  = {0, 1}
+δ:
+  δ    | 0    | 1
+  even | odd  | even
+  odd  | even | odd
+q0 = even
+F  = {even}
+eps-NFA M = (Q, Σ, δ, q0, F)
+Q  = {s, a, f}
+Σ  = {0, 1}
+δ:
+  δ | 0   | 1      | eps
+  s | ∅   | ∅      | {a}
+  a | {a} | {a, f} | ∅
+  f | ∅   | ∅      | ∅
+q0 = s
+F  = {f}
+PDA M = (Q, Σ, Γ, δ, q0, Z0, F)
+Q  = {p, q}
+Σ  = {0, 1}
+Γ  = {0, Z0}
+δ:
+  δ(q, a, X)    | moves
+  δ(p, 0, 0)    | {(p, 00)}
+  δ(p, 0, Z0)   | {(p, 0Z0)}
+  δ(p, 1, 0)    | {(q, eps)}
+  δ(q, eps, Z0) | {(q, eps)}
+  δ(q, 1, 0)    | {(q, eps)}
+q0 = p
+Z0 = Z0
+F  = ∅: it accepts by empty stack
+TM M = (Q, Σ, Γ, δ, q0, q_accept, q_reject)
+Q        = {q0, no, yes}
+Σ        = {0, 1}
+Γ        = {0, 1, _} (the blank is _)
+δ:
+  δ   | 0          | 1          | _
+  q0  | (q0, 0, R) | (no, 1, R) | (yes, _, S)
+  no  | -          | -          | -
+  yes | -          | -          | -
+q0       = q0
+q_accept = {yes}
+q_reject = {no}
