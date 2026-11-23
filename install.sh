@@ -64,8 +64,9 @@ uninstall() {
             install-info --delete --info-dir="$info_dir" "$info_dir/kstar.info" >/dev/null 2>&1 || true
         fi
         rm -f "$info_dir/kstar.info"
-        # The dir file, if it lists nothing else.
-        if [ -f "$info_dir/dir" ] && ! grep -q '^\* ' "$info_dir/dir"; then rm -f "$info_dir/dir"; fi
+        # The dir file, if it lists no other manual: entries look like
+        # "* name: (file).", and its "* Menu:" line is not one.
+        if [ -f "$info_dir/dir" ] && ! grep -q '^\* [^:]*: *(' "$info_dir/dir"; then rm -f "$info_dir/dir"; fi
     fi
     for d in "$man_dir" "$dir/share/man" "$info_dir" "$dir/share" "$bin" "$dir"; do
         rmdir "$d" 2>/dev/null || true
