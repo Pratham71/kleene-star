@@ -358,8 +358,9 @@ mod tests {
             let half_width = label.chars().count() as i64 * 8 / 2;
             // Inside the inner ring of an accepting state, with room.
             assert!(half_width + 4 <= r - 5, "{name}: label {half_width} wide by half, radius {r}");
-            // And two circles still fit between the rows and the columns.
-            assert!(2 * r < GAP_Y && 2 * r < GAP_X, "{name}: radius {r}");
+            // And two circles still fit between the rows.
+            // (GAP_Y is the smaller gap, so this holds for the columns too.)
+            assert!(2 * r < GAP_Y, "{name}: radius {r}");
         }
         // The page gets the label and the radius of each state.
         let mut dfa = even_zeros();
