@@ -761,7 +761,13 @@ packages the `.vsix`.
 
 `.github/workflows/release.yml` runs when a `v*` tag is pushed. Each platform
 runs `cargo test`, then builds `kstar` and `kstar-lsp` in release mode and
-packages them with `.github/scripts/package.sh`. The Windows installer is
+packages them with `.github/scripts/package.sh`; the Windows programs are
+packaged by the `windows-programs` job instead, after it has them signed
+through SignPath when the `SIGNPATH_API_TOKEN` secret exists (see
+`CODE_SIGNING_POLICY.md` and `docs/signing/`), and checks their version
+details (from `build.rs`) with `installer/check-version-info.ps1`. The
+installer is signed the same way before it is tested and its checksum
+taken. The Windows installer is
 built from `installer/kstar.iss` with Inno Setup. It carries the `.vsix`
 and, when VS Code is installed, installs the extension through VS Code's
 `code` command (and removes it on uninstall). It is tested by

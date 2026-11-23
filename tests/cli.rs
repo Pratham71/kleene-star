@@ -495,6 +495,41 @@ fn windows_programs_need_no_vc_runtime() {
     }
 }
 
+/// The value of string `key` in a Windows program's version details: the
+/// key in UTF-16, its terminating zero and padding, then the value up to
+/// its own zero.
+#[cfg(windows)]
+fn version_string(bytes: &[u8], key: &str) -> Option<String> {
+    let units: Vec<u16> = bytes.as_chunks::<2>().0.iter().map(|c| u16::from_le_bytes(*c)).collect();
+    let mut wanted: Vec<u16> = key.encode_utf16().collect();
+    wanted.push(0);
+    // The resource is 16-bit aligned, so searching whole units finds it.
+    let at = units.windows(wanted.len()).position(|w| w == wanted.as_slice())? + wanted.len();
+    let start = at + units[at..].iter().take_while(|&&u| u == 0).count();
+    let len = units[start..].iter().position(|&u| u == 0)?;
+    String::from_utf16(&units[start..start + len]).ok()
+}
+
+/// kstar.exe and kstar-lsp.exe say what they are and which version (in
+/// Properties > Details): code signing only signs files whose product name
+/// and version match the release (see CODE_SIGNING_POLICY.md).
+#[test]
+#[cfg(all(windows, target_env = "msvc"))]
+fn windows_programs_carry_their_version_details() {
+    for exe in [env!("CARGO_BIN_EXE_kstar"), env!("CARGO_BIN_EXE_kstar-lsp")] {
+        let bytes = std::fs::read(exe).unwrap();
+        for (key, value) in [
+            ("ProductName", "Kleene Star"),
+            ("ProductVersion", env!("CARGO_PKG_VERSION")),
+            ("FileVersion", env!("CARGO_PKG_VERSION")),
+            ("CompanyName", "Kleene Star"),
+        ] {
+            assert_eq!(version_string(&bytes, key).as_deref(), Some(value), "{key} of {exe}");
+        }
+        assert!(version_string(&bytes, "LegalCopyright").is_some_and(|c| c.contains("MIT")), "{exe} has no copyright line");
+    }
+}
+
 #[test]
 fn std_io_uses_the_program_folder_and_allowed_ones() {
     let dir = scratch("std-io");
