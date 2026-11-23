@@ -45,6 +45,12 @@ its GitHub release, so write it for people who use Kleene Star.
 - `kstar update --beta` offers the newest beta when it is newer than the
   latest stable release.
 - `kstar-lsp --help` and `kstar-lsp --version`.
+
+### Fixed
+
+- In the page `draw M on "w"` writes, a state's circle grows to hold its
+  name, so a long name such as `ready` or `q_accept` no longer runs over
+  the ring.
 - Man pages: `man kstar` for the overview, `man kstar-run`,
   `man kstar-export` and so on for each command, and `man kstar-lsp`, all
   made from the same text as `kstar help`. And an info manual,
