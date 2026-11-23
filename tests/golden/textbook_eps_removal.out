@@ -1,0 +1,7 @@
+NFA with 4 states over {0, 1}
+      | 0            | 1
+-> *p | {p, q, s, r} | {s}
+   *q | {s, r}       | {s}
+   *s | {s}          | {s}
+    r | -            | {q, s}
+tests: 2 passed, 0 failed
