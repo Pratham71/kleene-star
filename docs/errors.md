@@ -1549,6 +1549,20 @@ If the program really should read that file, run it with
 lets one run write at most 16 MiB in at most 1000 calls, so a mistake in a
 loop cannot fill the disk. Split large data into several files.
 
+## E0620: A value with no states to show
+
+`std.visual.dot_run`, `trace_text` and `player` show a run of a machine, so
+they need a `Dfa`, `Nfa`, `Pda` or `Tm`. A regex or a set of words has no
+states until it is turned into a machine, and a grammar has none at all.
+
+```kstar-error
+alphabet B = {0, 1}
+print std.visual.trace_text(/0*1/, "01")
+```
+
+Convert it first: `std.visual.trace_text(to_dfa(/0*1/), "01")`, or for a
+grammar `to_pda(g)`.
+
 ## W0100: A state that can never be reached
 
 No sequence of moves from the start state leads to this state, so it does

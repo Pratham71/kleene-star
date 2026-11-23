@@ -196,7 +196,7 @@ src/
   automata/          pure library, no knowledge of the language
     dfa.rs  nfa.rs  regex.rs  convert.rs  minimize.rs  ops.rs  dot.rs
     grammar.rs  pda.rs  tm.rs  trace.rs
-    codegen.rs       a DFA as a standalone Rust function (`kstar export`, `to_rust`)
+    codegen.rs       a DFA as a standalone Rust or Python function (`kstar export`, `to_rust`)
   lang/
     token.rs  lexer.rs  ast.rs  parser.rs     with error recovery, so every error is reported
     check.rs  machine.rs         type checker; the rules for a valid DFA/NFA/PDA/TM
@@ -204,6 +204,7 @@ src/
     codes.rs                     error and warning codes, explained by docs/errors.md
     builtins.rs                  built-in function names and their types
     value.rs  interp.rs  trace.rs   runtime values, evaluator, call stack, step-by-step traces
+    player.rs  player.html       `draw M on "w"`: the page that plays a run
     format.rs  index.rs          the formatter; names and their places, for the editor
     module.rs  stdlib/           the loader: finds, reads and checks imported files; std
     error.rs  source.rs          error kinds, traceback and caret rendering; file names and texts

@@ -1,0 +1,33 @@
+# Chapter 17: watching a run. `draw M on "w"` writes a page that plays the
+# run of M on w step by step; std.visual gives drawings and traces as
+# strings, to print, test or save.
+
+alphabet B = {0, 1}
+
+# Binary numbers divisible by 3: the state is the remainder so far.
+dfa Div3 over B {
+    start  r0
+    accept r0
+    r0 --0--> r0
+    r0 --1--> r1
+    r1 --0--> r2
+    r1 --1--> r0
+    r2 --0--> r1
+    r2 --1--> r2
+}
+
+# Writes Div3.html: open it in a browser and press Space to play the run.
+draw Div3 on "1001"
+
+# The same run as a table, as a string.
+print std.visual.trace_text(Div3, "110")
+
+# The diagram with a run drawn on it: Graphviz draws the states and moves
+# used in bold and fills the state the run ends in.
+let run = std.visual.dot_run(Div3, "11")
+test std.string.contains(run, "fillcolor")
+
+# A PDA plays with its stack, a Turing machine with its tape.
+let Balanced = std.pda.anbn("a", "b")
+draw Balanced on "aabb"
+draw std.tm.increment() on "1011"

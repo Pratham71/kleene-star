@@ -27,6 +27,7 @@ comment that runs to the end of the line.
 | `print a, b, c` | Prints the values on one line, separated by spaces. |
 | `test cond` | Checks a condition. Failures are reported and counted. |
 | `draw machine` | Writes a Graphviz `.dot` file (and `.svg` if Graphviz is installed). |
+| `draw machine on word` | Writes an `.html` page that plays the run of the machine on the word step by step (see [Playing a run](#playing-a-run)). |
 | `trace machine on word` | Runs a `Dfa`, `Nfa`, `Pda` or `Tm` on a `Str` and prints every step. See [tracing](#tracing). |
 | `import "file.kstar" as m` | Binds another file as a module; its names are written `m.Name`. See [modules](#modules). |
 | `from "file.kstar" import a, b as c` | Puts names of another file into this one. |
@@ -201,6 +202,28 @@ Reason: Ended in non-accepting state even
 - For a `Tm` the columns are `Step  Move  State  Tape`, with the head's cell
   in brackets (`10[1]1`), and a last line `Tape:` with the final contents.
 - A blank line follows each trace.
+
+## Playing a run
+
+`draw M on "0110"` writes `M.html` (into the folder `kstar run --out`
+names, or the current one): a page that plays the run of `M` on the word
+step by step, like an animated `trace`. Open it in any browser.
+
+- It shows the machine's diagram, with the states the machine is in and
+  the move it just took highlighted, the input with the symbols read so
+  far, a PDA's stack (top first) or a Turing machine's tape with its head,
+  and at the end the result and the reason, in the same words as `trace`.
+- Play and pause with the button or Space, step with the arrow buttons or
+  keys, jump with the slider or Home and End, and pick a speed.
+- `M` may be a `Dfa`, `Nfa`, `Pda` or `Tm`, as for `trace`. An `Nfa` shows
+  the whole set of states it can be in. A Turing machine is played for at
+  most 1000 steps.
+- The page is one file with nothing to download: no Graphviz, no network.
+  The states are laid out in columns by their distance from the start
+  state. It follows the browser's light or dark theme.
+- The layout is for machines of at most 300 states; past that it is a
+  `LimitError` (E0612). `minimize` the machine, or use `trace`.
+- `std.visual.player(M, "w")` gives the same page as a string.
 
 ## Modules
 
@@ -653,6 +676,50 @@ let Again = from_json(Dfa, std.io.read_text("out/m.json"))
 Every statement that is not a declaration needs a value, so the functions
 that write give the number of bytes written: use them with `let`, `print`
 or `test`.
+
+### `std.visual`
+
+Drawings and traces as strings: DOT diagrams, a run drawn on its diagram, the trace table, and the page that plays a run.
+
+| Function | What it does |
+|---|---|
+| `dot(m: Acceptor) -> Str` | The Graphviz DOT text that `draw m` writes; a regex or set is drawn as its NFA. |
+| `dot_run(m: Acceptor, w: Str) -> Str` | The DOT text of machine `m` with its run on `w` drawn on it: the states and moves used in bold, the states it ends in filled. |
+| `player(m: Acceptor, w: Str) -> Str` | The self-contained HTML page that `draw m on w` writes, which plays the run step by step. |
+| `trace_text(m: Acceptor, w: Str) -> Str` | The table `trace m on w` prints, as a string, with `-` in the empty cells. |
+
+These give, as strings, what the statements `draw`, `draw M on "w"` and
+`trace` write or print, so a program can print them, test them, or save
+them with `std.io`. `m` may be a `Dfa`, `Nfa`, `Pda` or `Tm`; `dot` also
+takes a regex or set (drawn as its NFA). A run needs states, so
+`dot_run`, `trace_text` and `player` refuse a regex, a set or a grammar
+with E0620; convert it first, for example `to_dfa(r)`.
+
+```kstar
+alphabet B = {0, 1}
+dfa Ones over B {
+    start  even
+    accept odd
+    even --0--> even
+    even --1--> odd
+    odd  --0--> odd
+    odd  --1--> even
+}
+let run = std.visual.dot_run(Ones, "01")
+print std.string.contains(run, "fillcolor"), std.string.length(std.visual.player(Ones, "01")) > 1000
+print std.visual.trace_text(Ones, "1")
+```
+
+```text
+true true
+Input: 1
+
+Step  Symbol  From  To
+0     -       -     even
+1     1       even  odd
+Result: ACCEPTED
+Reason: Ended in accepting state odd
+```
 
 ### `std.math`
 
@@ -1551,7 +1618,7 @@ statement   := 'alphabet' NAME '=' '{' (symbol (',' symbol)*)? '}'
              | 'for' NAME 'in' expr block
              | 'print' expr (',' expr)*
              | 'test' expr
-             | 'draw' expr
+             | 'draw' expr ( 'on' expr )?
              | 'trace' range 'on' expr
              | 'import' lib ('as' NAME)?                     (top level only)
              | 'from' lib 'import' NAME ('as' NAME)? (',' NAME ('as' NAME)?)*

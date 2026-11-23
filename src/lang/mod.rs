@@ -21,6 +21,7 @@ pub mod lint;
 pub mod machine;
 pub mod module;
 pub mod parser;
+pub mod player;
 pub mod source;
 pub mod stdlib;
 pub mod token;

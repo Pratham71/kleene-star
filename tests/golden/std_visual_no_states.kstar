@@ -1,0 +1,5 @@
+alphabet B = {0, 1}
+grammar G over B {
+    S -> 0 S 1 | eps
+}
+print std.visual.dot_run(G, "01")

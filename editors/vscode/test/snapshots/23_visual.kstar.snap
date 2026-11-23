@@ -1,0 +1,173 @@
+> # Chapter 17: watching a run. `draw M on "w"` writes a page that plays the
+    0 "# Chapter 17: watching a run. `draw M on \"w\"` writes a page that plays the" comment.line.number-sign.kstar
+> # run of M on w step by step; std.visual gives drawings and traces as
+    0 "# run of M on w step by step; std.visual gives drawings and traces as" comment.line.number-sign.kstar
+> # strings, to print, test or save.
+    0 "# strings, to print, test or save." comment.line.number-sign.kstar
+> 
+> alphabet B = {0, 1}
+    0 "alphabet" storage.type.alphabet.kstar
+    9 "B" entity.name.type.alphabet.kstar
+   11 "=" keyword.operator.assignment.kstar
+   13 "{" punctuation.section.braces.begin.kstar
+   14 "0" constant.character.symbol.kstar
+   15 "," punctuation.separator.kstar
+   17 "1" constant.character.symbol.kstar
+   18 "}" punctuation.section.braces.end.kstar
+> 
+> # Binary numbers divisible by 3: the state is the remainder so far.
+    0 "# Binary numbers divisible by 3: the state is the remainder so far." comment.line.number-sign.kstar
+> dfa Div3 over B {
+    0 "dfa" meta.machine.kstar storage.type.machine.kstar
+    4 "Div3" meta.machine.kstar entity.name.type.machine.kstar
+    9 "over" meta.machine.kstar keyword.other.over.kstar
+   14 "B" meta.machine.kstar entity.name.type.alphabet.kstar
+   16 "{" meta.machine.kstar punctuation.section.block.begin.kstar
+>     start  r0
+    4 "start" meta.machine.kstar keyword.control.state-role.kstar
+   11 "r0" meta.machine.kstar variable.other.state.kstar
+>     accept r0
+    4 "accept" meta.machine.kstar keyword.control.state-role.kstar
+   11 "r0" meta.machine.kstar variable.other.state.kstar
+>     r0 --0--> r0
+    4 "r0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r0" meta.machine.kstar variable.other.state.kstar
+>     r0 --1--> r1
+    4 "r0" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r1" meta.machine.kstar variable.other.state.kstar
+>     r1 --0--> r2
+    4 "r1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r2" meta.machine.kstar variable.other.state.kstar
+>     r1 --1--> r0
+    4 "r1" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r0" meta.machine.kstar variable.other.state.kstar
+>     r2 --0--> r1
+    4 "r2" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "0" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r1" meta.machine.kstar variable.other.state.kstar
+>     r2 --1--> r2
+    4 "r2" meta.machine.kstar variable.other.state.kstar
+    7 "--" meta.machine.kstar keyword.operator.transition.begin.kstar
+    9 "1" meta.machine.kstar meta.transition.label.kstar constant.character.symbol.kstar
+   10 "-->" meta.machine.kstar keyword.operator.transition.end.kstar
+   14 "r2" meta.machine.kstar variable.other.state.kstar
+> }
+    0 "}" meta.machine.kstar punctuation.section.block.end.kstar
+> 
+> # Writes Div3.html: open it in a browser and press Space to play the run.
+    0 "# Writes Div3.html: open it in a browser and press Space to play the run." comment.line.number-sign.kstar
+> draw Div3 on "1001"
+    0 "draw" keyword.control.kstar
+    5 "Div3" variable.other.kstar
+   10 "on" keyword.control.kstar
+   13 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   14 "1001" string.quoted.double.kstar
+   18 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 
+> # The same run as a table, as a string.
+    0 "# The same run as a table, as a string." comment.line.number-sign.kstar
+> print std.visual.trace_text(Div3, "110")
+    0 "print" keyword.control.kstar
+    6 "std" entity.name.namespace.kstar
+    9 "." punctuation.accessor.kstar
+   10 "visual" entity.name.namespace.kstar
+   16 "." punctuation.accessor.kstar
+   17 "trace_text" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "Div3" variable.other.kstar
+   32 "," punctuation.separator.comma.kstar
+   34 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   35 "110" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 ")" punctuation.section.parens.end.kstar
+> 
+> # The diagram with a run drawn on it: Graphviz draws the states and moves
+    0 "# The diagram with a run drawn on it: Graphviz draws the states and moves" comment.line.number-sign.kstar
+> # used in bold and fills the state the run ends in.
+    0 "# used in bold and fills the state the run ends in." comment.line.number-sign.kstar
+> let run = std.visual.dot_run(Div3, "11")
+    0 "let" keyword.control.kstar
+    4 "run" variable.other.kstar
+    8 "=" keyword.operator.assignment.kstar
+   10 "std" entity.name.namespace.kstar
+   13 "." punctuation.accessor.kstar
+   14 "visual" entity.name.namespace.kstar
+   20 "." punctuation.accessor.kstar
+   21 "dot_run" entity.name.function.call.kstar
+   28 "(" punctuation.section.parens.begin.kstar
+   29 "Div3" variable.other.kstar
+   33 "," punctuation.separator.comma.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   36 "11" string.quoted.double.kstar
+   38 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   39 ")" punctuation.section.parens.end.kstar
+> test std.string.contains(run, "fillcolor")
+    0 "test" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "string" entity.name.namespace.kstar
+   15 "." punctuation.accessor.kstar
+   16 "contains" entity.name.function.call.kstar
+   24 "(" punctuation.section.parens.begin.kstar
+   25 "run" variable.other.kstar
+   28 "," punctuation.separator.comma.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   31 "fillcolor" string.quoted.double.kstar
+   40 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   41 ")" punctuation.section.parens.end.kstar
+> 
+> # A PDA plays with its stack, a Turing machine with its tape.
+    0 "# A PDA plays with its stack, a Turing machine with its tape." comment.line.number-sign.kstar
+> let Balanced = std.pda.anbn("a", "b")
+    0 "let" keyword.control.kstar
+    4 "Balanced" variable.other.kstar
+   13 "=" keyword.operator.assignment.kstar
+   15 "std" entity.name.namespace.kstar
+   18 "." punctuation.accessor.kstar
+   19 "pda" entity.name.namespace.kstar
+   22 "." punctuation.accessor.kstar
+   23 "anbn" entity.name.function.call.kstar
+   27 "(" punctuation.section.parens.begin.kstar
+   28 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   29 "a" string.quoted.double.kstar
+   30 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   31 "," punctuation.separator.comma.kstar
+   33 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   34 "b" string.quoted.double.kstar
+   35 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+   36 ")" punctuation.section.parens.end.kstar
+> draw Balanced on "aabb"
+    0 "draw" keyword.control.kstar
+    5 "Balanced" variable.other.kstar
+   14 "on" keyword.control.kstar
+   17 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   18 "aabb" string.quoted.double.kstar
+   22 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> draw std.tm.increment() on "1011"
+    0 "draw" keyword.control.kstar
+    5 "std" entity.name.namespace.kstar
+    8 "." punctuation.accessor.kstar
+    9 "tm" entity.name.namespace.kstar
+   11 "." punctuation.accessor.kstar
+   12 "increment" entity.name.function.call.kstar
+   21 "(" punctuation.section.parens.begin.kstar
+   22 ")" punctuation.section.parens.end.kstar
+   24 "on" keyword.control.kstar
+   27 "\"" string.quoted.double.kstar punctuation.definition.string.begin.kstar
+   28 "1011" string.quoted.double.kstar
+   32 "\"" string.quoted.double.kstar punctuation.definition.string.end.kstar
+> 

@@ -286,7 +286,14 @@ impl<'a> Parser<'a> {
             }
             Tok::Draw => {
                 self.advance();
-                StmtKind::Draw(self.expr()?)
+                let machine = self.expr()?;
+                let word = if *self.peek() == Tok::On {
+                    self.advance();
+                    Some(self.expr()?)
+                } else {
+                    None
+                };
+                StmtKind::Draw { machine, word }
             }
             Tok::Trace => self.trace()?,
             Tok::Import | Tok::From => self.import()?,
