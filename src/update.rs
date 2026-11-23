@@ -1,11 +1,16 @@
 //! `kstar version` and `kstar update`.
 //!
 //! `kstar update --check` asks GitHub for the latest release and compares it
-//! with this build. Replacing the running program in place is not done:
-//! on Windows a running `.exe` cannot be overwritten, and getting the
-//! rename-and-replace dance right for every way Kleene Star can be installed
-//! (installer, script, `cargo install`) is more risk than it is worth. So
-//! `kstar update` says what is new and prints the command that installs it.
+//! with this build. `kstar update` shows the same, with the first paragraph
+//! of the release's notes, and asks before it installs anything. On yes it
+//! runs the release's install script into the folder this `kstar` is in
+//! (every way of installing puts the programs in a `bin` folder), which also
+//! updates the VS Code extension.
+//!
+//! A running program cannot be overwritten on Windows, and on Linux not
+//! while it runs. It can be renamed, though, so the programs are first moved
+//! aside as `kstar.old` (and `kstar-lsp.old`), put back if the install
+//! fails, and the old files are removed the next time `kstar` starts.
 
 use std::process::{Command, ExitCode};
 
@@ -47,15 +52,26 @@ pub fn is_newer(candidate: &str, current: &str) -> bool {
     }
 }
 
-/// The tag of the latest release, asked through the `gh` command (which
-/// handles signing in, needed if the repository is private) or, failing
-/// that, `curl` with `GITHUB_TOKEN` if it is set.
-fn latest_tag() -> Result<String, String> {
+/// The latest release: its tag and its notes.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Release {
+    pub tag: String,
+    pub notes: String,
+}
+
+/// The latest release, asked through the `gh` command (which handles
+/// signing in, needed if the repository is private) or, failing that,
+/// `curl` with `GITHUB_TOKEN` if it is set. `KSTAR_LATEST` (a tag) stands in
+/// for GitHub, for testing.
+fn latest_release() -> Result<Release, String> {
+    if let Ok(tag) = std::env::var("KSTAR_LATEST") {
+        return Ok(Release { tag, notes: std::env::var("KSTAR_LATEST_NOTES").unwrap_or_default() });
+    }
     let repo = repository();
-    let gh = Command::new("gh").args(["api", &format!("repos/{repo}/releases/latest"), "--jq", ".tag_name"]).output();
+    let gh = Command::new("gh").args(["api", &format!("repos/{repo}/releases/latest")]).output();
     if let Ok(output) = &gh {
         if output.status.success() {
-            return Ok(String::from_utf8_lossy(&output.stdout).trim().to_string());
+            return parse_release(&String::from_utf8_lossy(&output.stdout));
         }
         if String::from_utf8_lossy(&output.stderr).contains("404") {
             return Err(format!("{repo} has no releases yet, or this GitHub account cannot see it"));
@@ -76,10 +92,38 @@ fn latest_tag() -> Result<String, String> {
              sign in with `gh auth login` (or set GITHUB_TOKEN) and try again"
         ));
     }
-    let body = String::from_utf8_lossy(&output.stdout);
-    let after = body.split("\"tag_name\"").nth(1).ok_or("GitHub's answer has no tag_name")?;
-    let tag = after.split('"').nth(1).ok_or("GitHub's answer has no tag_name")?;
-    Ok(tag.to_string())
+    parse_release(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// A release from GitHub's JSON for it.
+fn parse_release(json: &str) -> Result<Release, String> {
+    let value: serde_json::Value = serde_json::from_str(json).map_err(|e| format!("GitHub's answer is not JSON: {e}"))?;
+    let tag = value["tag_name"].as_str().ok_or("GitHub's answer has no tag_name")?.to_string();
+    let notes = value["body"].as_str().unwrap_or("").to_string();
+    Ok(Release { tag, notes })
+}
+
+/// What a release is about, for the question: the first paragraph of its
+/// notes that is not a heading, on one line, shortened past 300 characters.
+pub fn headline(notes: &str) -> String {
+    let notes = notes.replace("\r\n", "\n");
+    let paragraph = notes
+        .split("\n\n")
+        .map(str::trim)
+        .find(|p| !p.is_empty() && !p.starts_with('#'))
+        .unwrap_or("");
+    let line = paragraph.split_whitespace().collect::<Vec<_>>().join(" ");
+    if line.chars().count() > 300 {
+        let cut: String = line.chars().take(297).collect();
+        format!("{}...", cut.trim_end())
+    } else {
+        line
+    }
+}
+
+/// Whether an answer to "[Y/n]" is a yes: empty (the default), `y` or `yes`.
+pub fn is_yes(answer: &str) -> bool {
+    matches!(answer.trim().to_ascii_lowercase().as_str(), "" | "y" | "yes")
 }
 
 /// The command that installs the latest release on this system: the same
@@ -93,51 +137,188 @@ fn install_command() -> String {
     }
 }
 
-/// `kstar update`, with `--check` and `--no-vscode`.
+/// `kstar update`, with `--check`, `--yes` and `--no-vscode`.
 pub fn update(args: &[&str]) -> ExitCode {
     let mut check_only = false;
+    let mut yes = false;
     let mut vscode = std::env::var("KSTAR_NO_VSCODE").map_or(true, |v| v != "1");
     for arg in args {
         match *arg {
             "--check" => check_only = true,
+            "-y" | "--yes" => yes = true,
             "--no-vscode" => vscode = false,
             _ => {
-                eprintln!("kstar: usage: kstar update [--check] [--no-vscode]");
+                eprintln!("kstar: usage: kstar update [--check] [--yes] [--no-vscode]");
                 return ExitCode::from(2);
             }
         }
     }
     let current = env!("CARGO_PKG_VERSION");
-    let latest = match latest_tag() {
-        Ok(tag) => tag,
+    let release = match latest_release() {
+        Ok(release) => release,
         Err(message) => {
             eprintln!("kstar: {message}");
             return ExitCode::FAILURE;
         }
     };
-    let mut status = ExitCode::SUCCESS;
-    if !is_newer(&latest, current) {
+    let latest = &release.tag;
+    if !is_newer(latest, current) {
         println!("kstar {current} is up to date (the latest release is {latest})");
-    } else {
-        println!("a newer version is available: {latest} (this is {current})");
-        if check_only {
-            println!("run `kstar update` to see how to install it");
-        } else {
-            println!(
-                "kstar does not replace itself while running; install {latest} the way you installed this one.\n\
-                 With the Windows installer, download and run the new kstar-setup-x64.exe. Otherwise:\n\n    {}\n\n\
-                 Both also update the VS Code extension.",
-                install_command()
-            );
+        // The extension may still be from another release.
+        if vscode {
+            if let Err(message) = match_extension(current, check_only) {
+                eprintln!("kstar: {message}");
+                return ExitCode::FAILURE;
+            }
+        }
+        return ExitCode::SUCCESS;
+    }
+    println!("installed: kstar {current}");
+    println!("latest:    kstar {}", latest.trim_start_matches('v'));
+    let summary = headline(&release.notes);
+    if !summary.is_empty() {
+        println!("\n{summary}\n");
+    }
+    if check_only {
+        println!("run `kstar update` to install it");
+        if vscode {
+            if let Err(message) = match_extension(current, true) {
+                eprintln!("kstar: {message}");
+                return ExitCode::FAILURE;
+            }
+        }
+        return ExitCode::SUCCESS;
+    }
+    if !yes {
+        use std::io::{BufRead, IsTerminal, Write};
+        if !std::io::stdin().is_terminal() {
+            eprintln!("kstar: not updating without asking: standard input is not a terminal. Run `kstar update --yes` to update without the question.");
+            return ExitCode::FAILURE;
+        }
+        print!("Update to {latest}? [Y/n] ");
+        let _ = std::io::stdout().flush();
+        let mut answer = String::new();
+        if std::io::stdin().lock().read_line(&mut answer).is_err() || !is_yes(&answer) {
+            println!("Nothing was changed.");
+            return ExitCode::SUCCESS;
         }
     }
-    if vscode {
-        if let Err(message) = match_extension(current, check_only) {
+    match install(latest, vscode) {
+        Ok(()) => {
+            println!("Updated kstar to {latest}.");
+            ExitCode::SUCCESS
+        }
+        Err(message) => {
             eprintln!("kstar: {message}");
-            status = ExitCode::FAILURE;
+            ExitCode::FAILURE
         }
     }
-    status
+}
+
+// ---- installing ----
+
+/// The programs this release installs, as file names in the `bin` folder.
+fn program_files() -> [&'static str; 2] {
+    if cfg!(windows) { ["kstar.exe", "kstar-lsp.exe"] } else { ["kstar", "kstar-lsp"] }
+}
+
+/// What a program is renamed to while it is replaced: `kstar.exe` ->
+/// `kstar.old`.
+fn old_name(file: &str) -> String {
+    format!("{}.old", file.trim_end_matches(".exe"))
+}
+
+/// Removes the programs a previous `kstar update` set aside. Called when
+/// `kstar` starts; quietly does nothing if they are still running or gone.
+pub fn remove_old_programs() {
+    if let Some(bin) = std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())) {
+        for file in program_files() {
+            let old = bin.join(old_name(file));
+            if old.exists() {
+                let _ = std::fs::remove_file(old);
+            }
+        }
+    }
+}
+
+/// Installs release `tag` into the folder above this program's `bin`
+/// folder, with the release's install script (`KSTAR_INSTALL_SCRIPT`, a
+/// local copy of it, for testing).
+fn install(tag: &str, vscode: bool) -> Result<(), String> {
+    let exe = std::env::current_exe().map_err(|e| format!("cannot tell where kstar is: {e}"))?;
+    let bin = exe.parent().ok_or("kstar is not in a folder")?.to_path_buf();
+    let Some(home) = bin.parent().filter(|_| bin.file_name().is_some_and(|n| n.eq_ignore_ascii_case("bin"))) else {
+        return Err(format!(
+            "kstar is in {}, not in a `bin` folder, so it was not installed by the installer, the install \
+             script or cargo. Install {tag} the way you installed this one:\n\n    {}",
+            bin.display(),
+            install_command()
+        ));
+    };
+    let moved = set_aside(&bin)?;
+    let mut command = match std::env::var_os("KSTAR_INSTALL_SCRIPT") {
+        Some(script) if cfg!(windows) => {
+            let mut c = Command::new("powershell");
+            c.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]).arg(script);
+            c
+        }
+        Some(script) => {
+            let mut c = Command::new("sh");
+            c.arg(script);
+            c
+        }
+        None if cfg!(windows) => {
+            let mut c = Command::new("powershell");
+            c.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"])
+                .arg(format!("irm https://raw.githubusercontent.com/{}/main/install.ps1 | iex", repository()));
+            c
+        }
+        None => {
+            let mut c = Command::new("sh");
+            c.arg("-c").arg(format!("curl -fsSL https://raw.githubusercontent.com/{}/main/install.sh | sh", repository()));
+            c
+        }
+    };
+    command.env("KSTAR_VERSION", tag).env("KSTAR_INSTALL_DIR", home).env("KSTAR_NO_PATH", "1");
+    if !vscode {
+        command.env("KSTAR_NO_VSCODE", "1");
+    }
+    let ok = command.status().is_ok_and(|s| s.success()) && program_files().iter().all(|f| bin.join(f).is_file());
+    if !ok {
+        put_back(&bin, &moved);
+        return Err(format!("the install script could not install {tag}; kstar was left as it was"));
+    }
+    for old in &moved {
+        // On Windows the running kstar cannot be deleted; the next start does it.
+        let _ = std::fs::remove_file(bin.join(old_name(old)));
+    }
+    Ok(())
+}
+
+/// Renames the programs in `bin` out of the way; returns the ones moved.
+fn set_aside(bin: &std::path::Path) -> Result<Vec<&'static str>, String> {
+    let mut moved = Vec::new();
+    for file in program_files() {
+        let (path, old) = (bin.join(file), bin.join(old_name(file)));
+        if !path.exists() {
+            continue;
+        }
+        let _ = std::fs::remove_file(&old);
+        if let Err(e) = std::fs::rename(&path, &old) {
+            put_back(bin, &moved);
+            return Err(format!("cannot move {} aside to replace it: {e}", path.display()));
+        }
+        moved.push(file);
+    }
+    Ok(moved)
+}
+
+/// Undoes `set_aside`.
+fn put_back(bin: &std::path::Path, moved: &[&str]) {
+    for file in moved {
+        let _ = std::fs::remove_file(bin.join(file));
+        let _ = std::fs::rename(bin.join(old_name(file)), bin.join(file));
+    }
 }
 
 // ---- the VS Code extension ----
@@ -406,6 +587,48 @@ if [ \"$1\" = --list-extensions ]; then echo '{listing}'; else echo \"$@\" > '{}
             assert_eq!(std::fs::metadata(&a).unwrap().permissions().mode() & 0o777, 0o700);
         }
         let _ = (std::fs::remove_dir(&a), std::fs::remove_dir(&b));
+    }
+
+    #[test]
+    fn reads_a_release_and_its_headline() {
+        let json = r###"{"tag_name": "v0.5.2", "body": "## What changed\r\n\r\nA fix for `kstar export`:\r\nit writes files.\r\n\r\n### Fixed\r\n- more"}"###;
+        let release = parse_release(json).unwrap();
+        assert_eq!(release.tag, "v0.5.2");
+        assert_eq!(headline(&release.notes), "A fix for `kstar export`: it writes files.");
+        assert_eq!(headline(""), "");
+        assert!(headline(&"word ".repeat(100)).ends_with("..."));
+        assert!(headline(&"word ".repeat(100)).chars().count() <= 300);
+        assert!(parse_release("{}").is_err() && parse_release("not json").is_err());
+    }
+
+    #[test]
+    fn yes_is_the_default_answer() {
+        for answer in ["", "\n", "y", "Y\r\n", "yes", " YES "] {
+            assert!(is_yes(answer), "{answer:?}");
+        }
+        for answer in ["n", "no", "N\n", "nope", "q"] {
+            assert!(!is_yes(answer), "{answer:?}");
+        }
+    }
+
+    #[test]
+    fn programs_are_set_aside_and_put_back() {
+        let bin = std::env::temp_dir().join(format!("kstar-update-aside-{}", std::process::id())).join("bin");
+        let _ = std::fs::remove_dir_all(&bin);
+        std::fs::create_dir_all(&bin).unwrap();
+        let [kstar, lsp] = program_files();
+        std::fs::write(bin.join(kstar), "old kstar").unwrap();
+        std::fs::write(bin.join(lsp), "old lsp").unwrap();
+        let moved = set_aside(&bin).unwrap();
+        assert_eq!(moved, vec![kstar, lsp]);
+        assert!(!bin.join(kstar).exists() && bin.join(old_name(kstar)).exists());
+        // A failed install leaves the old programs where they were.
+        std::fs::write(bin.join(kstar), "half written").unwrap();
+        put_back(&bin, &moved);
+        assert_eq!(std::fs::read_to_string(bin.join(kstar)).unwrap(), "old kstar");
+        assert_eq!(std::fs::read_to_string(bin.join(lsp)).unwrap(), "old lsp");
+        assert!(!bin.join(old_name(kstar)).exists());
+        let _ = std::fs::remove_dir_all(bin.parent().unwrap());
     }
 
     #[test]

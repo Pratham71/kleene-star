@@ -12,6 +12,20 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ## [Unreleased]
 
+### Changed
+
+- `kstar update` asks before it updates, and then updates: it shows the
+  installed and the latest version and what the release is about, asks
+  `Update to vX.Y.Z? [Y/n]`, and on yes installs the release (and its VS
+  Code extension) into the folder `kstar` is in. On no it changes nothing.
+  `--yes` (or `-y`) skips the question. Without a terminal to ask on, it
+  refuses unless given `--yes`, instead of waiting. `--check` is unchanged.
+- `kstar export` writes a file instead of printing the code: `<Machine>.rs`
+  (or `.py`, `.json`) next to the program, or where `-o` says, and prints
+  `Wrote <full path> (Rust, N lines)`. It never replaces a file unless
+  given `--force`. **For scripts that read the code from standard output,
+  add `-o -`**, which prints it as before.
+
 ### Fixed
 
 - Highlighting in VS Code: names, brackets, commas and the quotes of
@@ -21,6 +35,9 @@ its GitHub release, so write it for people who use Kleene Star.
 
 ### Added
 
+- `kstar export --format python`: a dependency-free Python file with a
+  function that runs the DFA, and a self-test on sample words when it is
+  run as a script.
 - `std.io`: reading and writing text files next to the program, such as a
   word list to test a machine on (`read_words`, `read_lines`, `read_text`)
   or a machine saved with `to_json` (`write_text`, `write_lines`,
