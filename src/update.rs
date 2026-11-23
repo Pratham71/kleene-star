@@ -147,8 +147,10 @@ pub fn update(args: &[&str]) -> ExitCode {
             "--check" => check_only = true,
             "-y" | "--yes" => yes = true,
             "--no-vscode" => vscode = false,
-            _ => {
-                eprintln!("kstar: usage: kstar update [--check] [--yes] [--no-vscode]");
+            other => {
+                eprintln!(
+                    "kstar: unknown option `{other}`\n\nUsage:\n  kstar update [--check] [--yes] [--no-vscode]\n\nRun `kstar help update` for its options and examples."
+                );
                 return ExitCode::from(2);
             }
         }

@@ -384,6 +384,16 @@ in the source map, so an error can quote a line typed several entries ago.
 The interpreter runs on a thread with a large stack, because a tree-walking
 interpreter uses the Rust stack for every nested Kleene Star call.
 
+**The help.** `src/help.rs` is a table with one entry per command: its
+usage, description, options and examples. `kstar help`, `kstar <command>
+--help` and the help of `kstar-lsp` are made from it, and so is
+`kstar help std.<module>`, from the standard library's own table. The option
+parser in `main.rs` asks `help::accepts` before it takes an option, so a new
+option is refused until it is in the table. A test in `tests/cli.rs` also
+reads `main.rs` and `update.rs` for option strings and dispatched commands,
+and tries every option on every command, so the table and the parsers
+cannot drift apart.
+
 ## 13. Modules
 
 `src/lang/module.rs`, `src/lang/check.rs`, `src/lang/interp.rs`
